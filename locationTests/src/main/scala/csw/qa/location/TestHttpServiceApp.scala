@@ -1,4 +1,4 @@
-package csw.qa
+package csw.qa.location
 
 import akka.actor._
 import csw.services.location.models.Connection.HttpConnection

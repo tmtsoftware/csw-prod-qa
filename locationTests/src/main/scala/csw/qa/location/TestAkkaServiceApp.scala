@@ -1,4 +1,4 @@
-package csw.qa
+package csw.qa.location
 
 import akka.actor._
 import csw.services.location.models.Connection.AkkaConnection
@@ -29,6 +29,9 @@ object TestAkkaService {
   def props(i: Int, locationService: LocationService): Props = Props(new TestAkkaService(i, locationService))
   def componentId(i: Int) = ComponentId(s"TestAkkaService_$i", ComponentType.Assembly)
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
+
+  // Message sent from client once location has been resolved
+  case object ClientMessage
 }
 
 /**
@@ -40,6 +43,8 @@ class TestAkkaService(i: Int, locationService: LocationService) extends Actor wi
   locationService.register(AkkaRegistration(connection(i), self, "test.akka.prefix"))
 
   override def receive: Receive = {
+    case ClientMessage =>
+      log.info(s"Message received from client: ${sender()}")
     case x =>
       log.error(s"Received unexpected message $x")
   }
