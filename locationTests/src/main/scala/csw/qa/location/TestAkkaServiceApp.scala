@@ -14,7 +14,7 @@ import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationSe
  * The client and service applications can be run on the same or different hosts.
  */
 object TestAkkaServiceApp extends App {
-  private val actorRuntime = new ActorRuntime("TestAkkaServiceApp")
+  private val actorRuntime = new ActorRuntime()
   val locationService = LocationServiceFactory.make(actorRuntime)
   import actorRuntime.actorSystem
 
@@ -40,7 +40,7 @@ object TestAkkaService {
 class TestAkkaService(i: Int, locationService: LocationService) extends Actor with ActorLogging {
   import TestAkkaService._
 
-  locationService.register(AkkaRegistration(connection(i), self, "test.akka.prefix"))
+  locationService.register(AkkaRegistration(connection(i), self))
 
   override def receive: Receive = {
     case ClientMessage =>

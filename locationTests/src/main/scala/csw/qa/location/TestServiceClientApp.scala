@@ -3,7 +3,7 @@ package csw.qa.location
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.scaladsl.Sink
 import csw.services.location.models.Connection.AkkaConnection
-import csw.services.location.models.{Location, Resolved, ResolvedAkkaLocation}
+import csw.services.location.models.{AkkaLocation, Location}
 import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationServiceFactory}
 
 import scala.concurrent.Future
@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
-  private val actorRuntime = new ActorRuntime("TestAkkaServiceApp")
+  private val actorRuntime = new ActorRuntime()
   val locationService = LocationServiceFactory.make(actorRuntime)
 
   import actorRuntime.actorSystem
@@ -28,7 +28,7 @@ object TestServiceClientApp extends App {
 
 object TestServiceClient {
   // message sent when all locations have been resolved
-  case class AllResolved(set: Set[Resolved])
+  case class AllResolved(set: Set[Option[Location]])
 
   // message sent when location stream ends (should not happen?)
   case object AllDone
@@ -61,12 +61,14 @@ class TestServiceClient(actorRuntime: ActorRuntime, numServices: Int, locationSe
   connections.foreach(locationService.track(_).to(Sink.actorRef(self, AllDone)).run())
 
   override def receive: Receive = {
-    case AllResolved(resolved) =>
-      log.info(s"All resolved: Received services: ${resolved.map(_.connection.componentId.name).mkString(", ")}")
+    case AllResolved(r) =>
+      r.foreach { resolved =>
+        log.info(s"All resolved: Received services: ${resolved.map(_.connection.componentId.name).mkString(", ")}")
+      }
 
-    case loc: ResolvedAkkaLocation =>
+    case loc: AkkaLocation =>
       log.info(s"Received $loc")
-      loc.actorRef.foreach(_ ! TestAkkaService.ClientMessage)
+      loc.actorRef ! TestAkkaService.ClientMessage
 
     case loc: Location =>
       log.info(s"Received $loc")
