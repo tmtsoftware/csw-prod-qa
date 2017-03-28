@@ -1,6 +1,7 @@
 package csw.qa.location
 
 import akka.actor._
+import csw.services.location.internal.Settings
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
 import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationServiceFactory}
@@ -14,7 +15,7 @@ import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationSe
  * The client and service applications can be run on the same or different hosts.
  */
 object TestAkkaServiceApp extends App {
-  private val actorRuntime = new ActorRuntime()
+  private val actorRuntime = new ActorRuntime(Settings().withPort(9876)) // XXX 0 should be default
   val locationService = LocationServiceFactory.make(actorRuntime)
   import actorRuntime.actorSystem
 

@@ -7,7 +7,7 @@ import Settings._
 lazy val locationTests = project
   .settings(defaultSettings: _*)
   .settings(libraryDependencies ++= Seq(
-    `track-location-local`,
+    `track-location-agent`,
     `akka-slf4j`,
     `scala-logging`,
     `logback-classic`,

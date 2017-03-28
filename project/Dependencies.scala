@@ -2,13 +2,13 @@ import sbt._
 
 object Dependencies {
 
-  val Version = "10000" // XXX FIXME
+  val Version = "0.1-SNAPSHOT"
   val ScalaVersion = "2.12.1"
   val akkaVersion = "2.4.17"
 
 
   val `csw-location-local` = "org.tmt" %% "csw-location" % Version
-  val `track-location-local` = "org.tmt" %% "tracklocation" % Version
+  val `track-location-agent` = "org.tmt" %% "track-location-agent" % Version
 
   val `akka-slf4j` = "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
   val `scala-logging` = "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0" // ApacheV2
