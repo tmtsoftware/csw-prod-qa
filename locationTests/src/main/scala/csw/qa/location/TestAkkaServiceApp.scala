@@ -15,7 +15,7 @@ import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationSe
  * The client and service applications can be run on the same or different hosts.
  */
 object TestAkkaServiceApp extends App {
-  private val actorRuntime = new ActorRuntime(Settings().withPort(9876)) // XXX 0 should be default
+  private val actorRuntime = new ActorRuntime(Settings())
   val locationService = LocationServiceFactory.make(actorRuntime)
   import actorRuntime.actorSystem
 
@@ -41,6 +41,7 @@ object TestAkkaService {
 class TestAkkaService(i: Int, locationService: LocationService) extends Actor with ActorLogging {
   import TestAkkaService._
 
+  println(s"In actor $i")
   locationService.register(AkkaRegistration(connection(i), self))
 
   override def receive: Receive = {

@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.scaladsl.Sink
 import csw.services.location.internal.Settings
 import csw.services.location.models.Connection.AkkaConnection
-import csw.services.location.models.{AkkaLocation, Location}
+import csw.services.location.models.{AkkaLocation, Location, LocationUpdated}
 import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationServiceFactory}
 
 import scala.concurrent.Future
@@ -17,7 +17,7 @@ import scala.util.{Failure, Success}
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
-  private val actorRuntime = new ActorRuntime(Settings().withPort(8765)) // XXX 0 should be default!
+  private val actorRuntime = new ActorRuntime(Settings().withPort(0))
   val locationService = LocationServiceFactory.make(actorRuntime)
 
   import actorRuntime.actorSystem
@@ -73,6 +73,9 @@ class TestServiceClient(actorRuntime: ActorRuntime, numServices: Int, locationSe
 
     case loc: Location =>
       log.info(s"Received $loc")
+
+    case LocationUpdated(loc) =>
+      log.info(s"Location updated $loc")
 
     case x =>
       log.error(s"Received unexpected message $x")
