@@ -17,7 +17,7 @@ import scala.util.{Failure, Success}
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
-  private val actorRuntime = new ActorRuntime(Settings().withPort(0))
+  private val actorRuntime = new ActorRuntime(Settings().joinLocalSeed)
   val locationService = LocationServiceFactory.make(actorRuntime)
 
   import actorRuntime.actorSystem
@@ -62,7 +62,8 @@ class TestServiceClient(actorRuntime: ActorRuntime, numServices: Int, locationSe
   connections.foreach(locationService.track(_).to(Sink.actorRef(self, AllDone)).run())
 
   override def receive: Receive = {
-    case AllResolved(r) =>
+    case a@AllResolved(r) =>
+      log.info(s"Received AllResolved: $a")
       r.foreach { resolved =>
         log.info(s"All resolved: Received services: ${resolved.map(_.connection.componentId.name).mkString(", ")}")
       }
