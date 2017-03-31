@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.scaladsl.Sink
 import csw.services.location.internal.Settings
 import csw.services.location.models.Connection.AkkaConnection
-import csw.services.location.models.{AkkaLocation, Location, LocationUpdated}
+import csw.services.location.models.{AkkaLocation, Location, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationServiceFactory}
 
 import scala.concurrent.Future
@@ -17,7 +17,7 @@ import scala.util.{Failure, Success}
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
-  private val actorRuntime = new ActorRuntime(Settings().joinLocalSeed)
+  private val actorRuntime = new ActorRuntime(Settings().asSeed)
   val locationService = LocationServiceFactory.make(actorRuntime)
 
   import actorRuntime.actorSystem
@@ -28,8 +28,8 @@ object TestServiceClientApp extends App {
 }
 
 object TestServiceClient {
-  // message sent when all locations have been resolved
-  case class AllResolved(set: Set[Option[Location]])
+//  // message sent when all locations have been resolved
+//  case class AllResolved(set: Set[Option[Location]])
 
   // message sent when location stream ends (should not happen?)
   case object AllDone
@@ -50,23 +50,23 @@ class TestServiceClient(actorRuntime: ActorRuntime, numServices: Int, locationSe
   private val connections: Set[AkkaConnection] = (1 to numServices).toList.map(i => TestAkkaService.connection(i)).toSet
   log.info(s"TestServiceClient: looking up connections = $connections")
 
-  // Test calling resolve method on each connection and send AllResolved when done
-  Future.sequence(connections.map(locationService.resolve)).onComplete {
-    case Success(resolved) =>
-      self ! AllResolved(resolved)
-    case Failure(ex) =>
-      log.error(s"Failed to resolve connections:", ex)
-  }
+//  // Test calling resolve method on each connection and send AllResolved when done
+//  Future.sequence(connections.map(locationService.resolve)).onComplete {
+//    case Success(resolved) =>
+//      self ! AllResolved(resolved)
+//    case Failure(ex) =>
+//      log.error(s"Failed to resolve connections:", ex)
+//  }
 
   // Test calling track method for each connection and forward location messages to actor
   connections.foreach(locationService.track(_).to(Sink.actorRef(self, AllDone)).run())
 
   override def receive: Receive = {
-    case a@AllResolved(r) =>
-      log.info(s"Received AllResolved: $a")
-      r.foreach { resolved =>
-        log.info(s"All resolved: Received services: ${resolved.map(_.connection.componentId.name).mkString(", ")}")
-      }
+//    case a@AllResolved(r) =>
+//      log.info(s"Received AllResolved: $a")
+//      r.foreach { resolved =>
+//        log.info(s"All resolved: Received services: ${resolved.map(_.connection.componentId.name).mkString(", ")}")
+//      }
 
     case loc: AkkaLocation =>
       log.info(s"Received $loc")
@@ -77,6 +77,9 @@ class TestServiceClient(actorRuntime: ActorRuntime, numServices: Int, locationSe
 
     case LocationUpdated(loc) =>
       log.info(s"Location updated $loc")
+
+    case LocationRemoved(conn) =>
+      log.info(s"Location removed $conn")
 
     case x =>
       log.error(s"Received unexpected message $x")

@@ -15,7 +15,7 @@ import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationSe
  * The client and service applications can be run on the same or different hosts.
  */
 object TestAkkaServiceApp extends App {
-  private val actorRuntime = new ActorRuntime(Settings().asSeed)
+  private val actorRuntime = new ActorRuntime(Settings().joinLocalSeed)
   val locationService = LocationServiceFactory.make(actorRuntime)
   import actorRuntime.actorSystem
 
