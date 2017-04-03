@@ -5,6 +5,7 @@ import Dependencies._
 import Settings._
 
 lazy val locationTests = project
+  .enablePlugins(DeployApp)
   .settings(defaultSettings: _*)
   .settings(libraryDependencies ++= Seq(
     `track-location-agent`,

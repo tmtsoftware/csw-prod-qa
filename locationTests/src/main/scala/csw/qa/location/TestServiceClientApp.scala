@@ -1,14 +1,16 @@
 package csw.qa.location
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import csw.services.location.internal.Settings
+import csw.qa.location.TestAkkaServiceApp.{locationService, system}
+import csw.services.location.commons.{ClusterSettings, CswCluster}
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaLocation, Location, LocationRemoved, LocationUpdated}
-import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationServiceFactory}
+import csw.services.location.scaladsl.{LocationService, LocationServiceFactory}
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 /**
   * A location service test client application that attempts to resolve one or more sets of
@@ -17,57 +19,50 @@ import scala.util.{Failure, Success}
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
-  private val actorRuntime = new ActorRuntime(Settings().asSeed)
-  val locationService = LocationServiceFactory.make(actorRuntime)
+  val cswCluster = CswCluster.withSettings(ClusterSettings().joinLocal())
+  private val locationService = LocationServiceFactory.withCluster(cswCluster)
+  val system = cswCluster.actorSystem
 
-  import actorRuntime.actorSystem
+  import cswCluster.mat
 
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
-  sys.addShutdownHook(actorSystem.terminate())
-  actorSystem.actorOf(TestServiceClient.props(actorRuntime, numServices, locationService))
+  system.actorOf(TestServiceClient.props(numServices, locationService))
+
+  sys.addShutdownHook(shutdown())
+
+  def shutdown(): Unit = {
+    val timeout = 5.seconds
+    Await.ready(locationService.shutdown(), timeout)
+    Await.ready(system.terminate(), timeout)
+  }
+
 }
 
 object TestServiceClient {
-//  // message sent when all locations have been resolved
-//  case class AllResolved(set: Set[Option[Location]])
 
   // message sent when location stream ends (should not happen?)
   case object AllDone
 
-  def props(actorRuntime: ActorRuntime, numServices: Int, locationService: LocationService): Props =
-    Props(new TestServiceClient(actorRuntime, numServices, locationService))
+  def props(numServices: Int, locationService: LocationService)(implicit mat: Materializer): Props =
+    Props(new TestServiceClient(numServices, locationService))
 }
 
 /**
   * A test client actor that uses the location service to resolve services
   */
-class TestServiceClient(actorRuntime: ActorRuntime, numServices: Int, locationService: LocationService) extends Actor with ActorLogging {
-  import TestServiceClient._
-  import context.dispatcher
-  import actorRuntime.mat
+class TestServiceClient(numServices: Int, locationService: LocationService)(implicit mat: Materializer) extends Actor with ActorLogging {
 
-//  private val connections: Set[Connection] = (1 to numServices).toList.flatMap(i => List(TestAkkaService.connection(i), TestHttpService.connection(i))).toSet
+  import TestServiceClient._
+//  import context.dispatcher
+
   private val connections: Set[AkkaConnection] = (1 to numServices).toList.map(i => TestAkkaService.connection(i)).toSet
   log.info(s"TestServiceClient: looking up connections = $connections")
 
-//  // Test calling resolve method on each connection and send AllResolved when done
-//  Future.sequence(connections.map(locationService.resolve)).onComplete {
-//    case Success(resolved) =>
-//      self ! AllResolved(resolved)
-//    case Failure(ex) =>
-//      log.error(s"Failed to resolve connections:", ex)
-//  }
-
+  // XXX add class for this, suggest reuse!
   // Test calling track method for each connection and forward location messages to actor
   connections.foreach(locationService.track(_).to(Sink.actorRef(self, AllDone)).run())
 
   override def receive: Receive = {
-//    case a@AllResolved(r) =>
-//      log.info(s"Received AllResolved: $a")
-//      r.foreach { resolved =>
-//        log.info(s"All resolved: Received services: ${resolved.map(_.connection.componentId.name).mkString(", ")}")
-//      }
-
     case loc: AkkaLocation =>
       log.info(s"Received $loc")
       loc.actorRef ! TestAkkaService.ClientMessage

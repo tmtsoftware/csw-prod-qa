@@ -1,10 +1,13 @@
 package csw.qa.location
 
 import akka.actor._
-import csw.services.location.internal.Settings
+import csw.services.location.commons.{ClusterSettings, CswCluster}
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
-import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationServiceFactory}
+import csw.services.location.scaladsl.{LocationService, LocationServiceFactory}
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 /**
  * Starts one or more akka services in order to test the location service.
@@ -15,14 +18,21 @@ import csw.services.location.scaladsl.{ActorRuntime, LocationService, LocationSe
  * The client and service applications can be run on the same or different hosts.
  */
 object TestAkkaServiceApp extends App {
-  private val actorRuntime = new ActorRuntime(Settings().joinLocalSeed)
-  val locationService = LocationServiceFactory.make(actorRuntime)
-  import actorRuntime.actorSystem
+  val cswCluster = CswCluster.withSettings(ClusterSettings().joinLocal())
+  private val locationService = LocationServiceFactory.withCluster(cswCluster)
+  val system = cswCluster.actorSystem
 
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
-  sys.addShutdownHook(actorSystem.terminate())
   for (i <- 1 to numServices) {
-    actorSystem.actorOf(TestAkkaService.props(i, locationService))
+    system.actorOf(TestAkkaService.props(i, locationService))
+  }
+
+  sys.addShutdownHook(shutdown())
+
+  def shutdown(): Unit = {
+    val timeout = 5.seconds
+    Await.ready(locationService.shutdown(), timeout)
+    Await.ready(system.terminate(), timeout)
   }
 }
 
