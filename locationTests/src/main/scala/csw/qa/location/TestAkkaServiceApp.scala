@@ -1,6 +1,7 @@
 package csw.qa.location
 
 import akka.actor._
+import akka.stream.ActorMaterializer
 import csw.services.location.commons.{ClusterSettings, CswCluster}
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
@@ -18,9 +19,13 @@ import scala.concurrent.duration._
  * The client and service applications can be run on the same or different hosts.
  */
 object TestAkkaServiceApp extends App {
-  val cswCluster = CswCluster.withSettings(ClusterSettings().joinLocal())
-  private val locationService = LocationServiceFactory.withCluster(cswCluster)
-  val system = cswCluster.actorSystem
+//  val cswCluster = CswCluster.withSettings(ClusterSettings().joinLocal())
+//  private val locationService = LocationServiceFactory.withCluster(cswCluster)
+//  val system = cswCluster.actorSystem
+
+  private val locationService = LocationServiceFactory.make()
+  implicit val system = ActorSystem()
+  implicit val mat = ActorMaterializer()
 
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
   for (i <- 1 to numServices) {
