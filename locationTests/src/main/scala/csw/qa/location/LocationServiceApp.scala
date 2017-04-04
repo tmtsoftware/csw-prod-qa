@@ -1,9 +1,8 @@
 package csw.qa.location
 
-import akka.actor.ActorSystem
-import csw.qa.location.TestAkkaServiceApp.{locationService, system}
-import csw.qa.location.TestServiceClientApp.{locationService, system}
-import csw.services.location.commons.{ClusterSettings, CswCluster}
+// XXX This is no longer needed, since csw-prod provides the csw-cluster-seed app now
+
+import csw.services.location.commons.ClusterSettings
 import csw.services.location.scaladsl.LocationServiceFactory
 
 import scala.concurrent.Await
@@ -14,7 +13,6 @@ import scala.concurrent.duration._
   */
 object LocationServiceApp extends App {
   private val locationService = LocationServiceFactory.withSettings(ClusterSettings().onPort(3552).joinLocal(3552))
-  implicit val system = ActorSystem()
 
 
   sys.addShutdownHook(shutdown())
@@ -22,6 +20,5 @@ object LocationServiceApp extends App {
   def shutdown(): Unit = {
     val timeout = 5.seconds
     Await.ready(locationService.shutdown(), timeout)
-    Await.ready(system.terminate(), timeout)
   }
 }
