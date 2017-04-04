@@ -13,12 +13,7 @@ import scala.concurrent.duration._
   * Starts the location service as a standalone app
   */
 object LocationServiceApp extends App {
-//  val cswCluster = CswCluster.withSettings(ClusterSettings())
-//  private val locationService = LocationServiceFactory.withCluster(cswCluster)
-//  val system = cswCluster.actorSystem
-
   private val locationService = LocationServiceFactory.withSettings(ClusterSettings().onPort(3552).joinLocal(3552))
-
   implicit val system = ActorSystem()
 
 

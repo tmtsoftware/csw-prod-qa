@@ -19,10 +19,6 @@ import scala.concurrent.duration._
  * The client and service applications can be run on the same or different hosts.
  */
 object TestAkkaServiceApp extends App {
-//  val cswCluster = CswCluster.withSettings(ClusterSettings().joinLocal())
-//  private val locationService = LocationServiceFactory.withCluster(cswCluster)
-//  val system = cswCluster.actorSystem
-
   private val locationService = LocationServiceFactory.make()
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
