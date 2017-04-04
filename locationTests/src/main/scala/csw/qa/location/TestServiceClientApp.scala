@@ -12,8 +12,8 @@ import scala.concurrent.duration._
 
 /**
   * A location service test client application that attempts to resolve one or more sets of
-  * akka and http services.
-  * If a command line arg is given, it should be the number of (akka, http) pairs of services to start (default: 1 of each).
+  * akka services.
+  * If a command line arg is given, it should be the number of services to start (default: 1 of each).
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {

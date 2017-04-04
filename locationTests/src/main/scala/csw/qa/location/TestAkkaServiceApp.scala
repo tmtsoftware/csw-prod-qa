@@ -2,7 +2,6 @@ package csw.qa.location
 
 import akka.actor._
 import akka.stream.ActorMaterializer
-import csw.services.location.commons.{ClusterSettings, CswCluster}
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
 import csw.services.location.scaladsl.{LocationService, LocationServiceFactory}
