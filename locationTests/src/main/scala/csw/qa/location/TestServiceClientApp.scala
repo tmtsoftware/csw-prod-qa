@@ -24,13 +24,13 @@ object TestServiceClientApp extends App {
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
   system.actorOf(TestServiceClient.props(numServices, locationService))
 
-  sys.addShutdownHook(shutdown())
-
-  def shutdown(): Unit = {
-    val timeout = 5.seconds
-    Await.ready(locationService.shutdown(), timeout)
-    Await.ready(system.terminate(), timeout)
-  }
+//  sys.addShutdownHook(shutdown())
+//
+//  def shutdown(): Unit = {
+//    val timeout = 5.seconds
+//    Await.ready(locationService.shutdown(), timeout)
+//    Await.ready(system.terminate(), timeout)
+//  }
 
 }
 

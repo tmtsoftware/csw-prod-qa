@@ -27,13 +27,13 @@ object TestAkkaServiceApp extends App {
     system.actorOf(TestAkkaService.props(i, locationService))
   }
 
-  sys.addShutdownHook(shutdown())
-
-  def shutdown(): Unit = {
-    val timeout = 5.seconds
-    Await.ready(locationService.shutdown(), timeout)
-    Await.ready(system.terminate(), timeout)
-  }
+//  sys.addShutdownHook(shutdown())
+//
+//  def shutdown(): Unit = {
+//    val timeout = 5.seconds
+//    Await.ready(locationService.shutdown(), timeout)
+//    Await.ready(system.terminate(), timeout)
+//  }
 }
 
 object TestAkkaService {
