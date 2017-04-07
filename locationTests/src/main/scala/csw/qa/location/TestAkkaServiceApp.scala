@@ -4,10 +4,7 @@ import akka.actor._
 import akka.stream.ActorMaterializer
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
-import csw.services.location.scaladsl.{LocationService, LocationServiceFactory}
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
 
 /**
  * Starts one or more akka services in order to test the location service.
@@ -19,7 +16,7 @@ import scala.concurrent.duration._
  */
 object TestAkkaServiceApp extends App {
   private val locationService = LocationServiceFactory.make()
-  implicit val system = ActorSystem()
+  implicit val system = new ActorSystemFactory().remote
   implicit val mat = ActorMaterializer()
 
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
@@ -27,13 +24,6 @@ object TestAkkaServiceApp extends App {
     system.actorOf(TestAkkaService.props(i, locationService))
   }
 
-//  sys.addShutdownHook(shutdown())
-//
-//  def shutdown(): Unit = {
-//    val timeout = 5.seconds
-//    Await.ready(locationService.shutdown(), timeout)
-//    Await.ready(system.terminate(), timeout)
-//  }
 }
 
 object TestAkkaService {

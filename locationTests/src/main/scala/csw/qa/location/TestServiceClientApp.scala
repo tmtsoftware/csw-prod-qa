@@ -1,14 +1,11 @@
 package csw.qa.location
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.Sink
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaLocation, Location, LocationRemoved, LocationUpdated}
-import csw.services.location.scaladsl.{LocationService, LocationServiceFactory}
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
 
 /**
   * A location service test client application that attempts to resolve one or more sets of
@@ -18,19 +15,11 @@ import scala.concurrent.duration._
   */
 object TestServiceClientApp extends App {
   private val locationService = LocationServiceFactory.make()
-  implicit val system = ActorSystem()
+  implicit val system = new ActorSystemFactory().remote
   implicit val mat = ActorMaterializer()
 
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
   system.actorOf(TestServiceClient.props(numServices, locationService))
-
-//  sys.addShutdownHook(shutdown())
-//
-//  def shutdown(): Unit = {
-//    val timeout = 5.seconds
-//    Await.ready(locationService.shutdown(), timeout)
-//    Await.ready(system.terminate(), timeout)
-//  }
 
 }
 
