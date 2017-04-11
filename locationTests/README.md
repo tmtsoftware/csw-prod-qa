@@ -9,11 +9,12 @@ Before running the applications here, the location service needs to be started. 
     csw-cluster-seed -DclusterPort=3552 -DinterfaceName=enp0s31f6
 
 Replace the value of `interfaceName` with the name of the network interface you want the location service to use.
+(Use `ifconfig -a` to list the network interfaces.)
 
 These properties can also be specified as environment variables. Note that if interfaceName is not specified,
 the location service might choose the wrong one by default (For example, a virtual vmware network or the wireless network).
 
-The commands described below can be found under csw-prod-qa/locationTests/target/universal/stage/bin.
+The commands described below can be found under `csw-prod-qa/locationTests/target/universal/stage/bin`.
 You can run them in different terminals, on the same or different hosts.
 
 Make sure to use the same `interfaceName` as above, if running on the same host. 
