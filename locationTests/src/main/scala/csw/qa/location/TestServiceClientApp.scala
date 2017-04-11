@@ -47,6 +47,7 @@ class TestServiceClient(numServices: Int, locationService: LocationService)(impl
   connections.foreach(locationService.track(_).to(Sink.actorRef(self, AllDone)).run())
 
   override def receive: Receive = {
+
     case LocationUpdated(loc) =>
       log.info(s"Location updated $loc")
       loc match {
@@ -57,9 +58,6 @@ class TestServiceClient(numServices: Int, locationService: LocationService)(impl
 
     case LocationRemoved(conn) =>
       log.info(s"Location removed $conn")
-
-    case TestAkkaService.ClientMessage =>
-      log.info(s"Received client message from ${sender()}")
 
     case x =>
       log.error(s"Received unexpected message $x")

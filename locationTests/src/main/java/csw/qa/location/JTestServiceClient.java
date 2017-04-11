@@ -67,7 +67,6 @@ public class JTestServiceClient extends AbstractActor {
                     }
                 })
                 .match(LocationRemoved.class, loc -> log.info("Location removed: " + loc))
-                .match(JTestAkkaService.ClientMessage.class, loc -> log.info("Received client message from: " + sender()))
                 .matchAny(x -> log.warning("Unknown message received: " + x))
                 .build();
     }

@@ -61,9 +61,10 @@ public class JTestAkkaService extends AbstractActor {
 
     @Override
     public Receive createReceive() {
-        return receiveBuilder().
-                matchAny(t -> log.warning("Unknown message received: " + t)).
-                build();
+        return receiveBuilder()
+                .match(JTestAkkaService.ClientMessage.class, loc -> log.info("Received client message from: " + sender()))
+                .matchAny(t -> log.warning("Unknown message received: " + t))
+                .build();
     }
 
     // main: Starts and registers the given number of services (default: 1)
