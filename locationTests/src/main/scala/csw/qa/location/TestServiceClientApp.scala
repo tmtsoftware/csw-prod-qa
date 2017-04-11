@@ -10,12 +10,12 @@ import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, Loca
 /**
   * A location service test client application that attempts to resolve one or more sets of
   * akka services.
-  * If a command line arg is given, it should be the number of services to start (default: 1 of each).
+  * If a command line arg is given, it should be the number of services to resolve (default: 1).
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
   private val locationService = LocationServiceFactory.make()
-  implicit val system = new ActorSystemFactory().remote
+  implicit val system = ActorSystemFactory.remote
   implicit val mat = ActorMaterializer()
 
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
@@ -38,7 +38,6 @@ object TestServiceClient {
 class TestServiceClient(numServices: Int, locationService: LocationService)(implicit mat: Materializer) extends Actor with ActorLogging {
 
   import TestServiceClient._
-//  import context.dispatcher
 
   private val connections: Set[AkkaConnection] = (1 to numServices).toList.map(i => TestAkkaService.connection(i)).toSet
   log.info(s"TestServiceClient: looking up connections = $connections")
@@ -48,18 +47,19 @@ class TestServiceClient(numServices: Int, locationService: LocationService)(impl
   connections.foreach(locationService.track(_).to(Sink.actorRef(self, AllDone)).run())
 
   override def receive: Receive = {
-    case loc: AkkaLocation =>
-      log.info(s"Received $loc")
-      loc.actorRef ! TestAkkaService.ClientMessage
-
-    case loc: Location =>
-      log.info(s"Received $loc")
-
     case LocationUpdated(loc) =>
       log.info(s"Location updated $loc")
+      loc match {
+        case AkkaLocation(_, _, actorRef) =>
+          actorRef ! TestAkkaService.ClientMessage
+        case x => log.error(s"Received unexpected location type: $x")
+      }
 
     case LocationRemoved(conn) =>
       log.info(s"Location removed $conn")
+
+    case TestAkkaService.ClientMessage =>
+      log.info(s"Received client message from ${sender()}")
 
     case x =>
       log.error(s"Received unexpected message $x")

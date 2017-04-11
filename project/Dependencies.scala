@@ -4,7 +4,7 @@ object Dependencies {
 
   val Version = "0.1-SNAPSHOT"
   val ScalaVersion = "2.12.1"
-  val akkaVersion = "2.4.17"
+  val akkaVersion = "2.5.0-RC2"
 
 
   val `csw-location-local` = "org.tmt" %% "csw-location" % Version

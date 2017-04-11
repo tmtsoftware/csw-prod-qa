@@ -16,7 +16,7 @@ import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, Loca
  */
 object TestAkkaServiceApp extends App {
   private val locationService = LocationServiceFactory.make()
-  implicit val system = new ActorSystemFactory().remote
+  implicit val system = ActorSystemFactory.remote
   implicit val mat = ActorMaterializer()
 
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
