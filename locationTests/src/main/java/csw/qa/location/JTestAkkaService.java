@@ -28,7 +28,7 @@ import java.io.Serializable;
 public class JTestAkkaService extends AbstractActor {
     // Component id for the ith service
     static ComponentId componentId(int i) {
-        return new ComponentId("JTestAkkaService_" + i, JComponentType.Assembly);
+        return new ComponentId("TestAkkaService_" + i, JComponentType.Assembly);
     }
 
     // Connection for the ith service
@@ -51,7 +51,7 @@ public class JTestAkkaService extends AbstractActor {
     private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     // Message sent from client once location has been resolved
-    static class ClientMessage implements Serializable {
+    public static class ClientMessage implements Serializable {
     }
 
     // Constructor: registers self with the location service
@@ -62,7 +62,8 @@ public class JTestAkkaService extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(JTestAkkaService.ClientMessage.class, loc -> log.info("Received client message from: " + sender()))
+                .match(ClientMessage.class, loc -> log.info("Received java client message from: " + sender()))
+                .matchEquals(TestAkkaService.ClientMessage$.MODULE$, loc -> log.info("Received scala client message from: " + sender()))
                 .matchAny(t -> log.warning("Unknown message received: " + t))
                 .build();
     }

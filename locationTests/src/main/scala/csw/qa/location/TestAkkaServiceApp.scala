@@ -39,14 +39,15 @@ object TestAkkaService {
  * A dummy akka test service that registers with the location service
  */
 class TestAkkaService(i: Int, locationService: LocationService) extends Actor with ActorLogging {
-  import TestAkkaService._
 
   println(s"In actor $i")
-  locationService.register(AkkaRegistration(connection(i), self))
+  locationService.register(AkkaRegistration(TestAkkaService.connection(i), self))
 
   override def receive: Receive = {
-    case ClientMessage =>
-      log.info(s"Message received from client: ${sender()}")
+    case TestAkkaService.ClientMessage =>
+      log.info(s"Received scala client message from: ${sender()}")
+    case m: JTestAkkaService.ClientMessage =>
+      log.info(s"Received java client message from: ${sender()}")
     case x =>
       log.error(s"Received unexpected message $x")
   }
