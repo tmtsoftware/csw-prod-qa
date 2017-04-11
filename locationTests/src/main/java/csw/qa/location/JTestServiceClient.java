@@ -21,7 +21,7 @@ import static csw.services.location.javadsl.JConnectionType.AkkaType;
 
 /**
  * A location service test client application that attempts to resolve one or more sets of
- * akka and http services.
+ * akka services.
  */
 public class JTestServiceClient extends AbstractActor {
 
@@ -48,7 +48,7 @@ public class JTestServiceClient extends AbstractActor {
 
     private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
-    // Constructor: tracks the given number of akka and http connections
+    // Constructor: tracks the given number of akka connections
     private JTestServiceClient(int numServices, ILocationService locationService) {
         ActorMaterializer mat = ActorMaterializer.create(context());
         for (int i = 0; i < numServices; i++) {
