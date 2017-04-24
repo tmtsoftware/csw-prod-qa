@@ -5,8 +5,8 @@ This project contains some simple applications using the location service.
 
 Before running the applications here, the location service needs to be started. For example:
 
-    cd csw-prod/apps/csw-cluster-seed/target/universal/stage/bin
-    csw-cluster-seed -DclusterPort=3552 -DinterfaceName=enp0s31f6
+    cd csw-prod/csw-cluster-seed/target/universal/stage/bin
+    csw-cluster-seed --clusterPort=3552 -DinterfaceName=enp0s31f6 -DclusterSeeds=192.168.178.66:3552
 
 Replace the value of `interfaceName` with the name of the network interface you want the location service to use.
 (Use `ifconfig -a` to list the network interfaces.)
