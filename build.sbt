@@ -16,3 +16,17 @@ lazy val locationTests = project
     janino
   ))
 
+lazy val configTests = project
+  .enablePlugins(DeployApp)
+  .settings(defaultSettings: _*)
+  .settings(libraryDependencies ++= Seq(
+    `csw-config-client`,
+    `akka-slf4j`,
+    `scala-logging`,
+    `logback-classic`,
+    `logstash-logback-encoder`,
+    janino,
+    scalaTest % Test
+  ))
+
+
