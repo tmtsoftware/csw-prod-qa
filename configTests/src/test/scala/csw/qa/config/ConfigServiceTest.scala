@@ -152,25 +152,25 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
     assert(Try(cs.create(path1, ConfigData.fromString(contents2), oversize, comment2).await).isFailure)
   }
 
-  // Does some updates and gets
-  private def test3(cs: ConfigService): Unit = {
-    cs.getLatest(path1).await
-    cs.update(path1, ConfigData.fromString(s"${contents2}Added by ${cs.name}\n"), s"$comment1 - ${cs.name}").await
-    cs.getLatest(path2).await
-    cs.update(path2, ConfigData.fromString(s"${contents1}Added by ${cs.name}\n"), s"$comment2 - ${cs.name}").await
-  }
-
-  // Tests concurrent access to a central repository (see if there are any conflicts, etc.)
-  def concurrentTest(managers: List[ConfigService], oversize: Boolean): Future[Unit] = {
-    val result = Future.sequence {
-      val f = for (cs <- managers) yield {
-        Future(test3(cs))
-      }
-      // wait here, since we want to do the updates sequentially for each configManager
-      f.foreach(Await.ready(_, 10.seconds))
-      f
-    }
-    result.map(_ => ())
-  }
+//  // Does some updates and gets
+//  private def test3(cs: ConfigService): Unit = {
+//    cs.getLatest(path1).await
+//    cs.update(path1, ConfigData.fromString(s"${contents2}Added by ${cs.name}\n"), s"$comment1 - ${cs.name}").await
+//    cs.getLatest(path2).await
+//    cs.update(path2, ConfigData.fromString(s"${contents1}Added by ${cs.name}\n"), s"$comment2 - ${cs.name}").await
+//  }
+//
+//  // Tests concurrent access to a central repository (see if there are any conflicts, etc.)
+//  def concurrentTest(managers: List[ConfigService], oversize: Boolean): Future[Unit] = {
+//    val result = Future.sequence {
+//      val f = for (cs <- managers) yield {
+//        Future(test3(cs))
+//      }
+//      // wait here, since we want to do the updates sequentially for each configManager
+//      f.foreach(Await.ready(_, 10.seconds))
+//      f
+//    }
+//    result.map(_ => ())
+//  }
 }
 
