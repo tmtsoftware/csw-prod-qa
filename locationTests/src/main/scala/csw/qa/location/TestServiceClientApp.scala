@@ -8,7 +8,7 @@ import csw.services.location.models.{AkkaLocation, Location, LocationRemoved, Lo
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
 
 /**
-  * A location service test client application that attempts to resolve one or more sets of
+  * A location service test client application that attempts to resolve one or more
   * akka services.
   * If a command line arg is given, it should be the number of services to resolve (default: 1).
   * The client and service applications can be run on the same or different hosts.
@@ -42,8 +42,9 @@ class TestServiceClient(numServices: Int, locationService: LocationService)(impl
   private val connections: Set[AkkaConnection] = (1 to numServices).toList.map(i => TestAkkaService.connection(i)).toSet
   log.info(s"TestServiceClient: looking up connections = $connections")
 
-  // XXX add class for this, suggest reuse!
-  // Test calling track method for each connection and forward location messages to actor
+  // TODO: add a reusable class that does the below:
+
+  // Calls track method for each connection and forwards location messages to this actor
   connections.foreach(locationService.track(_).to(Sink.actorRef(self, AllDone)).run())
 
   override def receive: Receive = {
