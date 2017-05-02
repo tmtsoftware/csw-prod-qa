@@ -8,11 +8,11 @@ Before running the applications here, the location service needs to be started. 
     cd csw-cluster-seed/target/universal/stage/bin
     csw-cluster-seed --clusterPort=7777 -DinterfaceName=enp0s31f6 -DclusterSeeds=192.168.178.66:7777
 
-Replace the IP address and port with your IP address and the desired port.
+Replace the IP address and port with the IP address and port where the location service cluster is started.
 Replace the value for `interfaceName` with the name of the network interface you want the location service to use.
 (Use `ifconfig -a` to list the network interfaces.)
 
-Note: The system properties specified with -D can instead be set as environment variables:
+Note: The system properties specified with -D can instead be set as environment variables. For example:
 
 ```bash
 export interfaceName=enp0s31f6
@@ -28,16 +28,13 @@ csw-cluster-seed --clusterPort 7777
 ```
 
 The commands described below can be found under `locationTests/target/universal/stage/bin`.
-You can run them in different terminals, on the same or different hosts.
+After setting the above environment variables, you can run them in different terminals, on the same or different hosts.
 
-    cd locationTests/target/universal/stage/bin
-
-Make sure to use the same `interfaceName` as above, if running on the same host. 
-In addition, the `clusterSeeds` property must indicate the IP address and port number of the location 
+The `clusterSeeds` property must indicate the IP address and port number of the location 
 service `csw-cluster-seed` application. For redundancy, you can run multiple instances of the location service
-on different hosts. In that case, separate the values by a comma. For example:
+on different hosts. In that case, separate the `clusterSeeds` values by a comma. For example:
 
-    test-akka-service-app 10
+    export clusterSeeds='192.168.178.66:7777,192.168.178.68:7777'
 
 Scala Version
 -------------
