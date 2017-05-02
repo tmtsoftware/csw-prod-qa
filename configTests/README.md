@@ -10,7 +10,7 @@ Assuming your host IP address is 192.168.178.66 and you want to start the locati
 * Start the location service cluster:
 
 ```bash
-cd csw-config-client-cli/target/universal/stage/bin/
+cd csw-cluster-seed/target/universal/stage/bin/
 csw-cluster-seed -DclusterSeeds=192.168.178.66:7777 --clusterPort 7777 -DinterfaceName=enp0s31f6
 ```
 
@@ -21,6 +21,14 @@ export interfaceName=enp0s31f6
 export clusterSeeds=192.168.178.66:7777
 csw-cluster-seed --clusterPort 7777
 ```
+or 
+
+```csh
+setenv interfaceName enp0s31f6
+setenv clusterSeeds 192.168.178.66:7777
+csw-cluster-seed --clusterPort 7777
+```
+
 
 The following examples assume the two environment variables above have been set.
 
