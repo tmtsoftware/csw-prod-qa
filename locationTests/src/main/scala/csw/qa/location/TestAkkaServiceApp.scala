@@ -19,6 +19,7 @@ object TestAkkaServiceApp extends App {
   implicit val system = ActorSystemFactory.remote
   implicit val mat = ActorMaterializer()
 
+  // Starts the given number of akka services (or 1)
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
   for (i <- 1 to numServices) {
     system.actorOf(TestAkkaService.props(i, locationService))
@@ -27,8 +28,13 @@ object TestAkkaServiceApp extends App {
 }
 
 object TestAkkaService {
+  // Creates the ith service
   def props(i: Int, locationService: LocationService): Props = Props(new TestAkkaService(i, locationService))
+
+  // Component ID of the ith service
   def componentId(i: Int) = ComponentId(s"TestAkkaService_$i", ComponentType.Assembly)
+
+  // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
 
   // Message sent from client once location has been resolved
@@ -41,13 +47,19 @@ object TestAkkaService {
 class TestAkkaService(i: Int, locationService: LocationService) extends Actor with ActorLogging {
 
   println(s"In actor $i")
+
+  // Register with the location service
   locationService.register(AkkaRegistration(TestAkkaService.connection(i), self))
 
   override def receive: Receive = {
+    // This is the message that TestServiceClient sends when it discovers this service
     case TestAkkaService.ClientMessage =>
       log.info(s"Received scala client message from: ${sender()}")
+
+    // This is the message that JTestServiceClient sends when it discovers this service
     case m: JTestAkkaService.ClientMessage =>
       log.info(s"Received java client message from: ${sender()}")
+
     case x =>
       log.error(s"Received unexpected message $x")
   }

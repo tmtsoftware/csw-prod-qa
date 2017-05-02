@@ -18,6 +18,7 @@ object TestServiceClientApp extends App {
   implicit val system = ActorSystemFactory.remote
   implicit val mat = ActorMaterializer()
 
+  // Starts the application actor with the given number arg (or 1)
   val numServices = args.headOption.map(_.toInt).getOrElse(1)
   system.actorOf(TestServiceClient.props(numServices, locationService))
 
@@ -49,6 +50,7 @@ class TestServiceClient(numServices: Int, locationService: LocationService)(impl
 
   override def receive: Receive = {
 
+    // Receive a location from the location service and if it is an akka location, send it a message
     case LocationUpdated(loc) =>
       log.info(s"Location updated $loc")
       loc match {
@@ -57,6 +59,7 @@ class TestServiceClient(numServices: Int, locationService: LocationService)(impl
         case x => log.error(s"Received unexpected location type: $x")
       }
 
+    // A location was removed
     case LocationRemoved(conn) =>
       log.info(s"Location removed $conn")
 
