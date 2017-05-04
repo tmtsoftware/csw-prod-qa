@@ -1,6 +1,9 @@
 Testing the Config Service
 ==========================
 
+Before running `sbt test` the environment variables listed below should be set and the location and
+config services should be running (see below).
+
 Manually testing the command line app
 -------------------------------------
 
@@ -28,7 +31,6 @@ setenv interfaceName enp0s31f6
 setenv clusterSeeds 192.168.178.66:7777
 csw-cluster-seed --clusterPort 7777
 ```
-
 
 The following examples assume the two environment variables above have been set.
 

@@ -42,22 +42,22 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
   implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
   import actorSystem.dispatcher
   implicit val mat = ActorMaterializer()
-  private val configService: ConfigService = ConfigClientFactory.make(actorSystem, clientLocationService)
+  private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
 
-  runTests(configService, oversize = false)
-  runTests(configService, oversize = true)
+  runTests(configService, annex = false)
+  runTests(configService, annex = true)
 
   // Run tests using the given config cs instance
-  def runTests(cs: ConfigService, oversize: Boolean): Unit = {
-    logger.info(s"Running tests with oversize = $oversize")
+  def runTests(cs: ConfigService, annex: Boolean): Unit = {
+    logger.info(s"Running tests with annex = $annex")
 
     if (cs.exists(path1).await) cs.delete(path1).await
     if (cs.exists(path2).await) cs.delete(path2).await
     // Add, then update the file twice
     val date1 = Instant.now
     Thread.sleep(100)
-    val createId1 = cs.create(path1, ConfigData.fromString(contents1), oversize, comment1).await
-    val createId2 = cs.create(path2, ConfigData.fromString(contents1), oversize, comment1).await
+    val createId1 = cs.create(path1, ConfigData.fromString(contents1), annex, comment1).await
+    val createId2 = cs.create(path2, ConfigData.fromString(contents1), annex, comment1).await
     val date1a = Instant.now
     Thread.sleep(100) // make sure date is different
     val updateId1 = cs.update(path1, ConfigData.fromString(contents2), comment2).await
@@ -68,6 +68,7 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
 
     // Check that we can access each version
     assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
+//    assert(cs.getActive(path1).await.get.toStringF.await == comment1)
     assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
     assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
     assert(cs.getById(path1, updateId2).await.get.toStringF.await == contents3)
@@ -89,27 +90,27 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
     assert(historyList2.head.comment == comment1)
     assert(historyList1(2).comment == comment1)
 
-    // Test default file features
-    assert(cs.getDefault(path1).await.get.toStringF.await == contents3)
+    // Test Active file features
+    assert(cs.getActive(path1).await.get.toStringF.await == contents3)
 
-    cs.setDefault(path1, updateId1).await
-    assert(cs.getDefault(path1).await.get.toStringF.await == contents2)
+    cs.setActive(path1, updateId1).await
+    assert(cs.getActive(path1).await.get.toStringF.await == contents2)
 
-    cs.resetDefault(path1).await
-    assert(cs.getDefault(path1).await.get.toStringF.await == contents3)
+    cs.resetActive(path1).await
+    assert(cs.getActive(path1).await.get.toStringF.await == contents3)
 
-    cs.setDefault(path1, updateId2).await
+    cs.setActive(path1, updateId2).await
 
     // test list()
     val list = cs.list().await
-    assert(list.size == 2)
-    for (info <- list) {
-      info.path match {
-        case this.path1 => assert(info.comment == this.comment3)
-        case this.path2 => assert(info.comment == this.comment1)
-        case _          =>
-      }
-    }
+//    assert(list.size == 2)
+//    for (info <- list) {
+//      info.path match {
+//        case this.path1 => assert(info.comment == this.comment3)
+//        case this.path2 => assert(info.comment == this.comment1)
+//        case _          =>
+//      }
+//    }
 
     // Test delete
     //    cs.delete(path1)
@@ -117,11 +118,11 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
     // XXX TODO: Fix getting previous versions of deleted file using the svn implementation
     //    assert(cs.get(path1, Some(createId1)).get.toString == contents1)
     //    assert(cs.get(path1, Some(updateId1)).get.toString == contents2)
-    //    assert(cs.getDefault(path1).get.toString == contents3)
+    //    assert(cs.getActive(path1).get.toString == contents3)
   }
 
   // Verify that a second config service can still see all the files that were checked in by the first
-  def runTests2(cs: ConfigService, oversize: Boolean): Unit = {
+  def runTests2(cs: ConfigService, annex: Boolean): Unit = {
 
     // Check that we can access each version
     assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
@@ -144,12 +145,12 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
       info.path match {
         case this.path1 => assert(info.comment == this.comment3)
         case this.path2 => assert(info.comment == this.comment1)
-        case _          => // other files: README, *.default...
+        case _          => // other files: README, *.Active...
       }
     }
 
     // Should throw exception if we try to create a file that already exists
-    assert(Try(cs.create(path1, ConfigData.fromString(contents2), oversize, comment2).await).isFailure)
+    assert(Try(cs.create(path1, ConfigData.fromString(contents2), annex, comment2).await).isFailure)
   }
 
 //  // Does some updates and gets
@@ -161,7 +162,7 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
 //  }
 //
 //  // Tests concurrent access to a central repository (see if there are any conflicts, etc.)
-//  def concurrentTest(managers: List[ConfigService], oversize: Boolean): Future[Unit] = {
+//  def concurrentTest(managers: List[ConfigService], annex: Boolean): Future[Unit] = {
 //    val result = Future.sequence {
 //      val f = for (cs <- managers) yield {
 //        Future(test3(cs))
