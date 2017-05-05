@@ -44,9 +44,9 @@ csw-config-server --initRepo
 * Create, get, update a file:
 
 ```bash
-csw-config-client-cli create x/y/z.txt -c "test this xxx" -i ~/.tcshrc
+csw-config-client-cli create x/y/z.txt -c "test 1 comment" -i ~/.tcshrc
 csw-config-client-cli get x/y/z.txt --out xxx
-csw-config-client-cli update x/y/z.txt -c "test this xxx" -i ~/.emacs
+csw-config-client-cli update x/y/z.txt -c "test 2 comment" -i ~/.emacs
 csw-config-client-cli list
 csw-config-client-cli history x/y/z.txt
 
