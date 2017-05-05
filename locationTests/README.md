@@ -66,5 +66,5 @@ Java Version
 
   Example: `j-test-service-client 10`
 
-One the 3 applications are running, you should see log messages indicating that the connections were located.
+Once the 3 applications are running, you should see log messages indicating that the connections were located.
 If you kill the TestAkkaService application, the TestServiceClient should receive a LocationRemoved message.
