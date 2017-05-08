@@ -68,7 +68,7 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
 
     // Check that we can access each version
     assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
-//    assert(cs.getActive(path1).await.get.toStringF.await == comment1)
+    assert(cs.getActive(path1).await.get.toStringF.await == comment1)
     assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
     assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
     assert(cs.getById(path1, updateId2).await.get.toStringF.await == contents3)
@@ -91,15 +91,15 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
     assert(historyList1(2).comment == comment1)
 
     // Test Active file features
-    assert(cs.getActive(path1).await.get.toStringF.await == contents3)
+    assert(cs.getActive(path1).await.get.toStringF.await == contents1)
 
-    cs.setActive(path1, updateId1).await
+    cs.setActiveVersion(path1, updateId1).await
     assert(cs.getActive(path1).await.get.toStringF.await == contents2)
 
-    cs.resetActive(path1).await
+    cs.resetActiveVersion(path1).await
     assert(cs.getActive(path1).await.get.toStringF.await == contents3)
 
-    cs.setActive(path1, updateId2).await
+    cs.setActiveVersion(path1, updateId2).await
 
     // test list()
     val list = cs.list().await

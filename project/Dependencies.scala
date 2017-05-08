@@ -4,8 +4,8 @@ import sbt._
 object Dependencies {
 
   val Version = "0.1-SNAPSHOT"
-  val ScalaVersion = "2.12.1"
-  val akkaVersion = "2.5.0-RC2"
+  val ScalaVersion = "2.12.2"
+  val akkaVersion = "2.5.1"
 
 
   val `csw-location-local` = "org.tmt" %% "csw-location" % Version
