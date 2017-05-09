@@ -7,7 +7,8 @@ Contains additional tests and example applications for the csw-prod software
 To build, run sbt stage. 
 
 Note that the tests and applications here require that the csw location service cluster and config service are
-running and that the required environment variables are set. For example:
+running, `csw-prod/target/universal/stage/bin` is in your shell path,
+and the required environment variables are set. For example:
 
 * Start the location service:
 
@@ -27,6 +28,5 @@ csw-cluster-seed --clusterPort 7777
 * and start the config service:
 
 ```bash
-cd ../csw-prod/csw-config-server/target/universal/stage/bin/
 csw-config-server --initRepo
 ```

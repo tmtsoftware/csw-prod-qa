@@ -5,7 +5,7 @@ This project contains some simple applications using the location service.
 
 Before running the applications here, the location service needs to be started. For example:
 
-    cd csw-cluster-seed/target/universal/stage/bin
+    # Assuming csw-prod/target/universal/stage/bin is in your shell path:
     csw-cluster-seed --clusterPort=7777 -DinterfaceName=enp0s31f6 -DclusterSeeds=192.168.178.66:7777
 
 Replace the IP address and port with the IP address and port where the location service cluster is started.
@@ -27,7 +27,7 @@ setenv clusterSeeds 192.168.178.66:7777
 csw-cluster-seed --clusterPort 7777
 ```
 
-The commands described below can be found under `locationTests/target/universal/stage/bin`.
+The commands described below can be found under `csw-prod/target/universal/stage/bin`.
 After setting the above environment variables, you can run them in different terminals, on the same or different hosts.
 
 The `clusterSeeds` property must indicate the IP address and port number of the location 
