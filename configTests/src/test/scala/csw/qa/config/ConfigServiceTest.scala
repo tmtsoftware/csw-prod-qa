@@ -68,7 +68,8 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
 
     // Check that we can access each version
     assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
-    assert(cs.getActive(path1).await.get.toStringF.await == comment1)
+    assert(cs.getActive(path1).await.get.toStringF.await == contents1)
+    assert(cs.getActiveVersion(path1).await == createId1)
     assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
     assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
     assert(cs.getById(path1, updateId2).await.get.toStringF.await == contents3)
@@ -95,9 +96,11 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
 
     cs.setActiveVersion(path1, updateId1).await
     assert(cs.getActive(path1).await.get.toStringF.await == contents2)
+    assert(cs.getActiveVersion(path1).await == updateId1)
 
     cs.resetActiveVersion(path1).await
     assert(cs.getActive(path1).await.get.toStringF.await == contents3)
+    assert(cs.getActiveVersion(path1).await == updateId2)
 
     cs.setActiveVersion(path1, updateId2).await
 
