@@ -6,6 +6,9 @@ import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 /**
  * Starts one or more akka services in order to test the location service.
  * If a command line arg is given, it should be the number of services to start (default: 1).
@@ -49,7 +52,10 @@ class TestAkkaService(i: Int, locationService: LocationService) extends Actor wi
   println(s"In actor $i")
 
   // Register with the location service
-  locationService.register(AkkaRegistration(TestAkkaService.connection(i), self))
+  Thread.sleep(3000) // Delaying here to test handling of duplicate registrations
+  println(s"Ready $i")
+  private val reg = Await.result(locationService.register(AkkaRegistration(TestAkkaService.connection(i), self)), 3.seconds)
+  println(s"Registration result: $reg")
 
   override def receive: Receive = {
     // This is the message that TestServiceClient sends when it discovers this service
