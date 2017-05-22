@@ -2,7 +2,6 @@ package csw.qa.config
 
 import java.io.File
 import java.time.Instant
-import java.util.UUID
 
 import akka.actor.ActorSystem
 import csw.services.config.api.models.ConfigData
@@ -11,9 +10,7 @@ import csw.services.config.client.scaladsl.ConfigClientFactory
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
 import org.scalatest.FunSuite
 
-import scala.concurrent.{Await, Future}
 import scala.util.Try
-import scala.concurrent.duration._
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.LazyLogging
@@ -51,8 +48,8 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
   def runTests(cs: ConfigService, annex: Boolean): Unit = {
     logger.info(s"Running tests with annex = $annex")
 
-    if (cs.exists(path1).await) cs.delete(path1).await
-    if (cs.exists(path2).await) cs.delete(path2).await
+    if (cs.exists(path1).await) cs.delete(path1, "some comment").await
+    if (cs.exists(path2).await) cs.delete(path2, "another comment").await
     // Add, then update the file twice
     val date1 = Instant.now
     Thread.sleep(100)
@@ -69,7 +66,7 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
     // Check that we can access each version
     assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
     assert(cs.getActive(path1).await.get.toStringF.await == contents1)
-    assert(cs.getActiveVersion(path1).await == createId1)
+    assert(cs.getActiveVersion(path1).await.contains(createId1))
     assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
     assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
     assert(cs.getById(path1, updateId2).await.get.toStringF.await == contents3)
@@ -94,15 +91,15 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
     // Test Active file features
     assert(cs.getActive(path1).await.get.toStringF.await == contents1)
 
-    cs.setActiveVersion(path1, updateId1).await
+    cs.setActiveVersion(path1, updateId1, "Setting active version").await
     assert(cs.getActive(path1).await.get.toStringF.await == contents2)
-    assert(cs.getActiveVersion(path1).await == updateId1)
+    assert(cs.getActiveVersion(path1).await.contains(updateId1))
 
-    cs.resetActiveVersion(path1).await
+    cs.resetActiveVersion(path1, "Resetting active version").await
     assert(cs.getActive(path1).await.get.toStringF.await == contents3)
-    assert(cs.getActiveVersion(path1).await == updateId2)
+    assert(cs.getActiveVersion(path1).await.contains(updateId2))
 
-    cs.setActiveVersion(path1, updateId2).await
+    cs.setActiveVersion(path1, updateId2, "Setting active version").await
 
     // test list()
     val list = cs.list().await
