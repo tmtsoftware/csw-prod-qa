@@ -50,8 +50,7 @@ csw-config-client-cli update x/y/z.txt -c "test 2 comment" -i ~/.emacs
 csw-config-client-cli list
 csw-config-client-cli history x/y/z.txt
 
-# These are likely to change...
-csw-config-client-cli setDefault x/y/z.txt --id 1
+csw-config-client-cli setActive x/y/z.txt --id 3
 # csw-config-client-cli get x/y/z.txt --out xxx
-csw-config-client-cli getDefault x/y/z.txt --out xxx
+csw-config-client-cli getActive x/y/z.txt --out xxx
 ```
