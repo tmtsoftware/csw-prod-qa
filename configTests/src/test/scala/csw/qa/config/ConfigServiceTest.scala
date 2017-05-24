@@ -108,13 +108,12 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
 
     // Test delete
     assert(cs.exists(path1).await)
-    cs.delete(path1, "test delete")
-    assert(cs.exists(path1).await)
-//    assert(cs.getActive(path1).await.isEmpty)  // XXX What should it do here?
-//    assert(cs.getLatest(path1).await.isEmpty)
+    cs.delete(path1, "test delete").await
+    assert(!cs.exists(path1).await)
+    assert(cs.getActive(path1).await.isEmpty)
+    assert(cs.getLatest(path1).await.isEmpty)
     assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
     assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
-//    assert(cs.getActive(path1).await.get.toStringF.await == contents3)
   }
 
 //  // Verify that a second config service can still see all the files that were checked in by the first
