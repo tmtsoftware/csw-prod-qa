@@ -26,6 +26,7 @@ lazy val configTests = project
     `logback-classic`,
     `logstash-logback-encoder`,
     janino,
+    `junit-interface` % Test,
     scalaTest % Test
   ))
 

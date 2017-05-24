@@ -5,7 +5,7 @@ import java.time.Instant
 
 import akka.actor.ActorSystem
 import csw.services.config.api.models.ConfigData
-import csw.services.config.api.scaladsl.ConfigService
+import csw.services.config.api.scaladsl.{ConfigClientService, ConfigService}
 import csw.services.config.client.scaladsl.ConfigClientFactory
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
 import org.scalatest.FunSuite
@@ -46,6 +46,7 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
 
   // Run tests using the given config cs instance
   def runTests(cs: ConfigService, annex: Boolean): Unit = {
+    val csClient: ConfigClientService = cs
     logger.info(s"Running tests with annex = $annex")
 
     if (cs.exists(path1).await) cs.delete(path1, "some comment").await
@@ -65,7 +66,7 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
 
     // Check that we can access each version
     assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
-    assert(cs.getActive(path1).await.get.toStringF.await == contents1)
+    assert(csClient.getActive(path1).await.get.toStringF.await == contents1)
     assert(cs.getActiveVersion(path1).await.contains(createId1))
     assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
     assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
@@ -89,69 +90,64 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
     assert(historyList1(2).comment == comment1)
 
     // Test Active file features
-    assert(cs.getActive(path1).await.get.toStringF.await == contents1)
+    assert(csClient.getActive(path1).await.get.toStringF.await == contents1)
 
     cs.setActiveVersion(path1, updateId1, "Setting active version").await
-    assert(cs.getActive(path1).await.get.toStringF.await == contents2)
+    assert(csClient.getActive(path1).await.get.toStringF.await == contents2)
     assert(cs.getActiveVersion(path1).await.contains(updateId1))
 
     cs.resetActiveVersion(path1, "Resetting active version").await
-    assert(cs.getActive(path1).await.get.toStringF.await == contents3)
+    assert(csClient.getActive(path1).await.get.toStringF.await == contents3)
     assert(cs.getActiveVersion(path1).await.contains(updateId2))
 
     cs.setActiveVersion(path1, updateId2, "Setting active version").await
 
     // test list()
     val list = cs.list().await
-//    assert(list.size == 2)
+    list.foreach(i => println(i))
+
+    // Test delete
+    assert(cs.exists(path1).await)
+    cs.delete(path1, "test delete")
+    assert(cs.exists(path1).await)
+//    assert(cs.getActive(path1).await.isEmpty)  // XXX What should it do here?
+//    assert(cs.getLatest(path1).await.isEmpty)
+    assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
+    assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
+//    assert(cs.getActive(path1).await.get.toStringF.await == contents3)
+  }
+
+//  // Verify that a second config service can still see all the files that were checked in by the first
+//  def runTests2(cs: ConfigService, annex: Boolean): Unit = {
+//
+//    // Check that we can access each version
+//    assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
+//    assert(cs.getLatest(path2).await.get.toStringF.await == contents1)
+//
+//    // test history()
+//    val historyList1 = cs.history(path1).await
+//    assert(historyList1.size == 3)
+//    assert(historyList1.head.comment == comment3)
+//    assert(historyList1(1).comment == comment2)
+//    assert(historyList1(2).comment == comment1)
+//
+//    val historyList2 = cs.history(path2).await
+//    assert(historyList2.size == 1)
+//    assert(historyList2.head.comment == comment1)
+//
+//    // test list()
+//    val list = cs.list().await
 //    for (info <- list) {
 //      info.path match {
 //        case this.path1 => assert(info.comment == this.comment3)
 //        case this.path2 => assert(info.comment == this.comment1)
-//        case _          =>
+//        case _          => // other files: README, *.Active...
 //      }
 //    }
-
-    // Test delete
-    //    cs.delete(path1)
-    //    assert(cs.get(path1).isEmpty)
-    // XXX TODO: Fix getting previous versions of deleted file using the svn implementation
-    //    assert(cs.get(path1, Some(createId1)).get.toString == contents1)
-    //    assert(cs.get(path1, Some(updateId1)).get.toString == contents2)
-    //    assert(cs.getActive(path1).get.toString == contents3)
-  }
-
-  // Verify that a second config service can still see all the files that were checked in by the first
-  def runTests2(cs: ConfigService, annex: Boolean): Unit = {
-
-    // Check that we can access each version
-    assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
-    assert(cs.getLatest(path2).await.get.toStringF.await == contents1)
-
-    // test history()
-    val historyList1 = cs.history(path1).await
-    assert(historyList1.size == 3)
-    assert(historyList1.head.comment == comment3)
-    assert(historyList1(1).comment == comment2)
-    assert(historyList1(2).comment == comment1)
-
-    val historyList2 = cs.history(path2).await
-    assert(historyList2.size == 1)
-    assert(historyList2.head.comment == comment1)
-
-    // test list()
-    val list = cs.list().await
-    for (info <- list) {
-      info.path match {
-        case this.path1 => assert(info.comment == this.comment3)
-        case this.path2 => assert(info.comment == this.comment1)
-        case _          => // other files: README, *.Active...
-      }
-    }
-
-    // Should throw exception if we try to create a file that already exists
-    assert(Try(cs.create(path1, ConfigData.fromString(contents2), annex, comment2).await).isFailure)
-  }
+//
+//    // Should throw exception if we try to create a file that already exists
+//    assert(Try(cs.create(path1, ConfigData.fromString(contents2), annex, comment2).await).isFailure)
+//  }
 
 //  // Does some updates and gets
 //  private def test3(cs: ConfigService): Unit = {

@@ -20,5 +20,6 @@ object Dependencies {
   val janino = "org.codehaus.janino" % "janino" % "3.0.6" // BSD
 
   val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" // ApacheV2
+  val `junit-interface` = "com.novocode" % "junit-interface" % "0.11"
 }
 
