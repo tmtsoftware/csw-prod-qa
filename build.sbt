@@ -8,12 +8,7 @@ lazy val locationTests = project
   .enablePlugins(DeployApp)
   .settings(defaultSettings: _*)
   .settings(libraryDependencies ++= Seq(
-    `track-location-agent`,
-    `akka-slf4j`,
-    `scala-logging`,
-    `logback-classic`,
-    `logstash-logback-encoder`,
-    janino
+    `track-location-agent`
   ))
 
 lazy val configTests = project
@@ -21,11 +16,6 @@ lazy val configTests = project
   .settings(defaultSettings: _*)
   .settings(libraryDependencies ++= Seq(
     `csw-config-client`,
-    `akka-slf4j`,
-    `scala-logging`,
-    `logback-classic`,
-    `logstash-logback-encoder`,
-    janino,
     `junit-interface` % Test,
     scalaTest % Test
   ))

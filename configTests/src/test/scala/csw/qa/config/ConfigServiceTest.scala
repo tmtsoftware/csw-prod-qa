@@ -9,11 +9,12 @@ import csw.services.config.api.scaladsl.{ConfigClientService, ConfigService}
 import csw.services.config.client.scaladsl.ConfigClientFactory
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
 import org.scalatest.FunSuite
-
-import scala.util.Try
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
-import com.typesafe.scalalogging.LazyLogging
+import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
+
+import scala.concurrent.duration._
+import scala.concurrent.Await
 
 /**
   * Some tests for the config service.
@@ -23,7 +24,7 @@ import com.typesafe.scalalogging.LazyLogging
   * For example, on my Linux box that is:
   *    -DinterfaceName=enp0s31f6 -DclusterSeeds=192.168.178.66:7777
   */
-class ConfigServiceTest extends FunSuite with LazyLogging {
+class ConfigServiceTest extends FunSuite with GenericLogger.Simple {
   private val path1 = new File(s"some/test1/TestConfig1").toPath
   private val path2 = new File(s"some/test2/TestConfig2").toPath
 
@@ -35,19 +36,21 @@ class ConfigServiceTest extends FunSuite with LazyLogging {
   private val comment2 = "update 1 comment"
   private val comment3 = "update 2 comment"
 
+//  private val loggingSystem = LoggingSystemFactory.start()
   private val clientLocationService = LocationServiceFactory.make()
   implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
-  import actorSystem.dispatcher
   implicit val mat = ActorMaterializer()
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
 
   runTests(configService, annex = false)
   runTests(configService, annex = true)
+//  Await.result(loggingSystem.stop, 10.seconds)
+
 
   // Run tests using the given config cs instance
   def runTests(cs: ConfigService, annex: Boolean): Unit = {
     val csClient: ConfigClientService = cs
-    logger.info(s"Running tests with annex = $annex")
+    log.info(s"Running tests with annex = $annex")
 
     if (cs.exists(path1).await) cs.delete(path1, "some comment").await
     if (cs.exists(path2).await) cs.delete(path2, "another comment").await
