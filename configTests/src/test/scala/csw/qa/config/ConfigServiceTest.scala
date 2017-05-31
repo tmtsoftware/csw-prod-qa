@@ -36,7 +36,7 @@ class ConfigServiceTest extends FunSuite with GenericLogger.Simple {
   private val comment2 = "update 1 comment"
   private val comment3 = "update 2 comment"
 
-//  private val loggingSystem = LoggingSystemFactory.start()
+  private val loggingSystem = LoggingSystemFactory.start()
   private val clientLocationService = LocationServiceFactory.make()
   implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
   implicit val mat = ActorMaterializer()
@@ -44,7 +44,7 @@ class ConfigServiceTest extends FunSuite with GenericLogger.Simple {
 
   runTests(configService, annex = false)
   runTests(configService, annex = true)
-//  Await.result(loggingSystem.stop, 10.seconds)
+  Await.result(loggingSystem.stop, 10.seconds)
 
 
   // Run tests using the given config cs instance
