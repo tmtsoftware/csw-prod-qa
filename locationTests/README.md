@@ -41,6 +41,7 @@ Scala Version
 
 * TestAkkaServiceApp - Starts one or more akka services in order to test the location service.
   If a command line arg is given, it should be the number of services to start (default: 1).
+  An additional command line arg indicates the service number to start with (default: 1).
   Each service will have a number appended to its name.
   You should start the TestServiceClient with the same number, so that it
   will try to find all the services.
