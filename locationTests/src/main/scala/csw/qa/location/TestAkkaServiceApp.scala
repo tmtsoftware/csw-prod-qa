@@ -72,11 +72,11 @@ class TestAkkaService(i: Int, autostop: Int, locationService: LocationService) e
   override def receive: Receive = {
     // This is the message that TestServiceClient sends when it discovers this service
     case TestAkkaService.ClientMessage =>
-      log.info(s"Received scala client message from: ${sender()}")
+//      log.info(s"Received scala client message from: ${sender()}")
 
     // This is the message that JTestServiceClient sends when it discovers this service
     case m: JTestAkkaService.ClientMessage =>
-      log.info(s"Received java client message from: ${sender()}")
+//      log.info(s"Received java client message from: ${sender()}")
 
     case TestAkkaService.Quit =>
       log.info(s"Actor $i is shutting down after $autostop seconds")
