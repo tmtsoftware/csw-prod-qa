@@ -1,5 +1,6 @@
 import sbt.Keys._
 import sbt._
+import com.typesafe.sbt.packager.Keys._
 
 //noinspection TypeAnnotation
 // Defines the global build settings so they don't need to be edited everywhere
@@ -13,7 +14,8 @@ object Settings {
     scalaVersion := Dependencies.ScalaVersion,
     crossPaths := true,
     parallelExecution in Test := false,
-    fork := true
+    fork := true,
+    bashScriptExtraDefines ++= Seq(s"addJava -DCSW_VERSION=${Dependencies.Version}")
   )
 
   lazy val defaultSettings = buildSettings ++ Seq(

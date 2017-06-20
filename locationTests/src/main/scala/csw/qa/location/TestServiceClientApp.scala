@@ -11,8 +11,9 @@ import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
 /**
   * A location service test client application that attempts to resolve one or more
   * akka services.
-  * If a command line arg is given, it should be the number of services to resolve (default: 1).
-  * An additional command line arg indicates the service number to start with (default: 1)
+
+  * Type test-akka-service-app --help (or see below) for a description of the command line options.
+  *
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
@@ -21,11 +22,40 @@ object TestServiceClientApp extends App {
   implicit val system = ActorSystemFactory.remote
   implicit val mat = ActorMaterializer()
 
-  // Starts the application actor with the given number arg (or 1)
-  val numServices = args.headOption.map(_.toInt).getOrElse(1)
-  val firstService = args.tail.headOption.map(_.toInt).getOrElse(1)
-  system.actorOf(TestServiceClient.props(numServices, firstService, locationService))
+  case class Options(numServices: Int = 1, firstService: Int = 1)
 
+  // Parses the command line options
+  private val parser = new scopt.OptionParser[Options]("test-akka-service-app") {
+    head("test-akka-service-app", System.getProperty("CSW_VERSION"))
+
+    opt[Int]("numServices") valueName "<count>" action { (x, c) =>
+      c.copy(numServices = x)
+    } text "the number of services to resolve (default: 1)"
+
+    opt[Int]("firstService") valueName "<n>" action { (x, c) =>
+      c.copy(firstService = x)
+    } text "the service number to start with (default: 1)"
+
+    help("help")
+    version("version")
+  }
+
+  // Parse the command line options
+  parser.parse(args, Options()) match {
+    case Some(options) =>
+      try {
+        run(options)
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          System.exit(1)
+      }
+    case None => System.exit(1)
+  }
+
+  private def run(options: Options): Unit = {
+    system.actorOf(TestServiceClient.props(options, locationService))
+  }
 }
 
 object TestServiceClient {
@@ -33,18 +63,20 @@ object TestServiceClient {
   // message sent when location stream ends (should not happen?)
   case object AllDone
 
-  def props(numServices: Int, firstService: Int, locationService: LocationService)(implicit mat: Materializer): Props =
-    Props(new TestServiceClient(numServices, firstService, locationService))
+  def props(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer): Props =
+    Props(new TestServiceClient(options, locationService))
 }
 
 /**
   * A test client actor that uses the location service to resolve services
   */
-class TestServiceClient(numServices: Int, firstService: Int, locationService: LocationService)(implicit mat: Materializer) extends Actor with GenericLogger.Simple {
+class TestServiceClient(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer) extends Actor with GenericLogger.Simple {
 
   import TestServiceClient._
+  import options._
 
-  private val connections: Set[AkkaConnection] = (firstService until firstService+numServices).toList.map(i => TestAkkaService.connection(i)).toSet
+  private val connections: Set[AkkaConnection] = (firstService until firstService+numServices).
+    toList.map(i => TestAkkaService.connection(i)).toSet
 
   // TODO: add a reusable class that does the below:
 
