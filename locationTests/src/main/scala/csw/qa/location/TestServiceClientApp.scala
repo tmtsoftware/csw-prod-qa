@@ -6,7 +6,8 @@ import akka.stream.scaladsl.Sink
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
+import csw.services.logging.appenders.StdOutAppender
+import csw.services.logging.scaladsl.{GenericLogger, LoggingSystem}
 
 /**
   * A location service test client application that attempts to resolve one or more
@@ -17,7 +18,7 @@ import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
-  private val loggingSystem = LoggingSystemFactory.start()
+  private val loggingSystem = new LoggingSystem("TestServiceClientApp", appenderBuilders = Seq(StdOutAppender))
   private val locationService = LocationServiceFactory.make()
   implicit val system = ActorSystemFactory.remote
   implicit val mat = ActorMaterializer()

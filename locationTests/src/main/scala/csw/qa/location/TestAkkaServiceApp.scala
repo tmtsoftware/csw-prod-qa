@@ -1,11 +1,14 @@
 package csw.qa.location
 
+import java.net.InetAddress
+
 import akka.actor._
 import akka.stream.ActorMaterializer
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
+import csw.services.logging.appenders.StdOutAppender
+import csw.services.logging.scaladsl.{GenericLogger, LoggingSystem}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -22,7 +25,8 @@ import scala.concurrent.duration._
   * The client and service applications can be run on the same or different hosts.
   */
 object TestAkkaServiceApp extends App {
-  private val loggingSystem = LoggingSystemFactory.start()
+  private val loggingSystem = new LoggingSystem("TestAkkaServiceApp", appenderBuilders = Seq(StdOutAppender))
+
   private val locationService = LocationServiceFactory.make()
   implicit val system = ActorSystemFactory.remote
   implicit val mat = ActorMaterializer()
