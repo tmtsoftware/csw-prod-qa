@@ -7,8 +7,9 @@ import akka.stream.ActorMaterializer
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.appenders.StdOutAppender
-import csw.services.logging.scaladsl.{GenericLogger, LoggingSystem}
+import csw.services.logging.appenders.{FileAppender, StdOutAppender}
+import csw.services.logging.internal.LoggingSystem
+import csw.services.logging.scaladsl.GenericLogger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -25,10 +26,15 @@ import scala.concurrent.duration._
   * The client and service applications can be run on the same or different hosts.
   */
 object TestAkkaServiceApp extends App {
-  private val loggingSystem = new LoggingSystem("TestAkkaServiceApp", appenderBuilders = Seq(StdOutAppender))
-
-  private val locationService = LocationServiceFactory.make()
   implicit val system = ActorSystemFactory.remote
+  private val locationService = LocationServiceFactory.make()
+  private val host = InetAddress.getLocalHost.getHostName
+  private val loggingSystem = new LoggingSystem(
+    name = "TestAkkaServiceApp",
+    host = host,
+    system = system,
+    appenderBuilders = Seq(StdOutAppender, FileAppender))
+
   implicit val mat = ActorMaterializer()
 
   case class Options(numServices: Int = 1, firstService: Int = 1,
@@ -55,7 +61,7 @@ object TestAkkaServiceApp extends App {
       c.copy(delay = x)
     } text "the number of ms to wait before starting each service (default: 100)"
 
-    opt[Unit]("logMessages") action { (x, c) =>
+    opt[Unit]("logMessages") action { (_, c) =>
       c.copy(logMessages = true)
     } text "If given, log messages received from the client app (default: not logged)"
 
@@ -108,7 +114,7 @@ object TestAkkaService {
   * A dummy akka test service that registers with the location service
   */
 class TestAkkaService(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService)
-  extends Actor with GenericLogger.Simple {
+  extends Actor with GenericLogger.Actor {
 
   import context.dispatcher
   import options._

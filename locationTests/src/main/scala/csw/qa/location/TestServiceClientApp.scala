@@ -1,27 +1,36 @@
 package csw.qa.location
 
+import java.net.InetAddress
+
 import akka.actor.{Actor, Props}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.Sink
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.appenders.StdOutAppender
-import csw.services.logging.scaladsl.{GenericLogger, LoggingSystem}
+import csw.services.logging.appenders.{FileAppender, StdOutAppender}
+import csw.services.logging.internal.LoggingSystem
+import csw.services.logging.scaladsl.GenericLogger
 
 /**
   * A location service test client application that attempts to resolve one or more
   * akka services.
-
+  *
   * Type test-akka-service-app --help (or see below) for a description of the command line options.
   *
   * The client and service applications can be run on the same or different hosts.
   */
-object TestServiceClientApp extends App {
-  private val loggingSystem = new LoggingSystem("TestServiceClientApp", appenderBuilders = Seq(StdOutAppender))
+object TestServiceClientApp extends App with GenericLogger.Simple {
   private val locationService = LocationServiceFactory.make()
+  private val host = InetAddress.getLocalHost.getHostName
   implicit val system = ActorSystemFactory.remote
+  private val loggingSystem = new LoggingSystem(
+    name = "TestServiceClientApp",
+    host = host,
+    system = system,
+    appenderBuilders = Seq(StdOutAppender, FileAppender))
   implicit val mat = ActorMaterializer()
+  log.info(s"TestServiceClientApp is running on $host")
 
   case class Options(numServices: Int = 1, firstService: Int = 1)
 
@@ -71,12 +80,12 @@ object TestServiceClient {
 /**
   * A test client actor that uses the location service to resolve services
   */
-class TestServiceClient(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer) extends Actor with GenericLogger.Simple {
+class TestServiceClient(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer) extends Actor with GenericLogger.Actor {
 
   import TestServiceClient._
   import options._
 
-  private val connections: Set[AkkaConnection] = (firstService until firstService+numServices).
+  private val connections: Set[AkkaConnection] = (firstService until firstService + numServices).
     toList.map(i => TestAkkaService.connection(i)).toSet
 
   // TODO: add a reusable class that does the below:

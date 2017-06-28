@@ -11,7 +11,6 @@ import csw.services.location.javadsl.JComponentType;
 import csw.services.location.javadsl.JLocationServiceFactory;
 import csw.services.location.models.AkkaRegistration;
 import csw.services.location.models.ComponentId;
-import csw.services.location.models.TmtSerializable;
 import csw.services.location.scaladsl.ActorSystemFactory;
 import csw.services.location.models.Connection.AkkaConnection;
 
