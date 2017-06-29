@@ -40,7 +40,7 @@ object TestAkkaServiceApp extends App {
 
   case class Options(numServices: Int = 1, firstService: Int = 1,
                      autostop: Int = 0, delay: Int = 100,
-                     logMessages: Boolean = false)
+                     logMessages: Boolean = false, startSecond: Boolean = false)
 
   // Parses the command line options
   private val parser = new scopt.OptionParser[Options]("test-akka-service-app") {
@@ -66,6 +66,10 @@ object TestAkkaServiceApp extends App {
       c.copy(logMessages = true)
     } text "If given, log messages received from the client app (default: not logged)"
 
+    opt[Unit]("startSecond") action { (_, c) =>
+      c.copy(startSecond = true)
+    } text "If given, start a second service for each service (with 2 appended to name) (default: not started)"
+
     help("help")
     version("version")
   }
@@ -88,6 +92,8 @@ object TestAkkaServiceApp extends App {
     for (i <- firstService until firstService + numServices) {
       Thread.sleep(delay) // Avoid timeouts?
       system.actorOf(TestAkkaService.props(i, options, locationService))
+      if (startSecond)
+        system.actorOf(TestAkkaService2.props(i, options, locationService))
     }
   }
 }
@@ -141,6 +147,68 @@ class TestAkkaService(i: Int, options: TestAkkaServiceApp.Options, locationServi
         log.debug(s"Received java client message from: ${sender()}")
 
     case TestAkkaService.Quit =>
+      log.info(s"Actor $i is shutting down after $autostop seconds")
+      Await.result(reg.unregister(), 10.seconds)
+      context.stop(self)
+
+    case x =>
+      log.error(s"Received unexpected message $x")
+  }
+}
+
+
+// ---- test second component -----
+
+object TestAkkaService2 {
+  // Creates the ith service
+  def props(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService): Props =
+    Props(new TestAkkaService2(i, options, locationService))
+
+  // Component ID of the ith service
+  def componentId(i: Int) = ComponentId(s"TestAkkaService2_$i", ComponentType.Assembly)
+
+  // Connection for the ith service
+  def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
+
+  // Message sent from client once location has been resolved
+  case object ClientMessage
+
+  // Message to unregister and quit
+  case object Quit
+
+}
+
+
+object TestAkkaServiceLogger2 extends ComponentLogger("TestAkkaService2")
+
+/**
+  * A dummy akka test service that registers with the location service
+  */
+class TestAkkaService2(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService)
+  extends Actor with TestAkkaServiceLogger2.Actor {
+
+  import context.dispatcher
+  import options._
+
+  // Register with the location service
+  private val reg = Await.result(locationService.register(AkkaRegistration(TestAkkaService2.connection(i), self)), 30.seconds)
+  log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
+
+  if (autostop != 0)
+    context.system.scheduler.scheduleOnce(autostop.seconds, self, TestAkkaService2.Quit)
+
+  override def receive: Receive = {
+    // This is the message that TestServiceClient sends when it discovers this service
+    case TestAkkaService2.ClientMessage =>
+      if (logMessages)
+        log.debug(s"Received scala client message from: ${sender()}")
+
+    // This is the message that JTestServiceClient sends when it discovers this service
+    case m: JTestAkkaService.ClientMessage =>
+      if (logMessages)
+        log.debug(s"Received java client message from: ${sender()}")
+
+    case TestAkkaService2.Quit =>
       log.info(s"Actor $i is shutting down after $autostop seconds")
       Await.result(reg.unregister(), 10.seconds)
       context.stop(self)
