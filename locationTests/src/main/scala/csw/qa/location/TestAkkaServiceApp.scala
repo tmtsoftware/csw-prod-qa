@@ -9,7 +9,7 @@ import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentTyp
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
 import csw.services.logging.appenders.{FileAppender, StdOutAppender}
 import csw.services.logging.internal.LoggingSystem
-import csw.services.logging.scaladsl.GenericLogger
+import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -31,6 +31,7 @@ object TestAkkaServiceApp extends App {
   private val host = InetAddress.getLocalHost.getHostName
   private val loggingSystem = new LoggingSystem(
     name = "TestAkkaServiceApp",
+    version = "0.1",
     host = host,
     system = system,
     appenderBuilders = Seq(StdOutAppender, FileAppender))
@@ -110,18 +111,20 @@ object TestAkkaService {
 
 }
 
+object TestAkkaServiceLogger extends ComponentLogger("TestAkkaService")
+
 /**
   * A dummy akka test service that registers with the location service
   */
 class TestAkkaService(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService)
-  extends Actor with GenericLogger.Actor {
+  extends Actor with TestAkkaServiceLogger.Actor {
 
   import context.dispatcher
   import options._
 
   // Register with the location service
   private val reg = Await.result(locationService.register(AkkaRegistration(TestAkkaService.connection(i), self)), 30.seconds)
-  log.info(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
+  log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
 
   if (autostop != 0)
     context.system.scheduler.scheduleOnce(autostop.seconds, self, TestAkkaService.Quit)
@@ -130,12 +133,12 @@ class TestAkkaService(i: Int, options: TestAkkaServiceApp.Options, locationServi
     // This is the message that TestServiceClient sends when it discovers this service
     case TestAkkaService.ClientMessage =>
       if (logMessages)
-        log.info(s"Received scala client message from: ${sender()}")
+        log.debug(s"Received scala client message from: ${sender()}")
 
     // This is the message that JTestServiceClient sends when it discovers this service
     case m: JTestAkkaService.ClientMessage =>
       if (logMessages)
-        log.info(s"Received java client message from: ${sender()}")
+        log.debug(s"Received java client message from: ${sender()}")
 
     case TestAkkaService.Quit =>
       log.info(s"Actor $i is shutting down after $autostop seconds")

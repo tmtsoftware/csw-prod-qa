@@ -10,7 +10,7 @@ import csw.services.location.models.{AkkaLocation, LocationRemoved, LocationUpda
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
 import csw.services.logging.appenders.{FileAppender, StdOutAppender}
 import csw.services.logging.internal.LoggingSystem
-import csw.services.logging.scaladsl.GenericLogger
+import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger}
 
 /**
   * A location service test client application that attempts to resolve one or more
@@ -26,6 +26,7 @@ object TestServiceClientApp extends App with GenericLogger.Simple {
   implicit val system = ActorSystemFactory.remote
   private val loggingSystem = new LoggingSystem(
     name = "TestServiceClientApp",
+    version = "0.1",
     host = host,
     system = system,
     appenderBuilders = Seq(StdOutAppender, FileAppender))
@@ -77,10 +78,13 @@ object TestServiceClient {
     Props(new TestServiceClient(options, locationService))
 }
 
+object TestServiceClientLogger extends ComponentLogger("TestServiceClient")
+
 /**
   * A test client actor that uses the location service to resolve services
   */
-class TestServiceClient(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer) extends Actor with GenericLogger.Actor {
+class TestServiceClient(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer)
+  extends Actor with TestServiceClientLogger.Actor {
 
   import TestServiceClient._
   import options._
@@ -97,7 +101,7 @@ class TestServiceClient(options: TestServiceClientApp.Options, locationService: 
 
     // Receive a location from the location service and if it is an akka location, send it a message
     case LocationUpdated(loc) =>
-      log.info(s"Location updated ${loc.connection.name}")
+      log.debug(s"Location updated ${loc.connection.name}")
       loc match {
         case AkkaLocation(_, _, actorRef) =>
           actorRef ! TestAkkaService.ClientMessage
@@ -106,7 +110,7 @@ class TestServiceClient(options: TestServiceClientApp.Options, locationService: 
 
     // A location was removed
     case LocationRemoved(conn) =>
-      log.info(s"Location removed ${conn.name}")
+      log.debug(s"Location removed ${conn.name}")
 
     case x =>
       log.error(s"Received unexpected message $x")
