@@ -8,7 +8,6 @@ import akka.stream.scaladsl.Sink
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.appenders.{FileAppender, StdOutAppender}
 import csw.services.logging.internal.LoggingSystem
 import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger}
 
@@ -28,8 +27,7 @@ object TestServiceClientApp extends App with GenericLogger.Simple {
     name = "TestServiceClientApp",
     version = "0.1",
     host = host,
-    system = system,
-    appenderBuilders = Seq(StdOutAppender, FileAppender))
+    system = system)
   implicit val mat = ActorMaterializer()
   log.info(s"TestServiceClientApp is running on $host")
 

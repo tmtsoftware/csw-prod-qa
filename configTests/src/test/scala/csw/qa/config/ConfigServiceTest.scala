@@ -1,6 +1,7 @@
 package csw.qa.config
 
 import java.io.File
+import java.net.InetAddress
 import java.time.Instant
 
 import akka.actor.ActorSystem
@@ -11,10 +12,14 @@ import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactor
 import org.scalatest.FunSuite
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
-import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
+import csw.services.logging.internal.LoggingSystem
+import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger}
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
+
+object ConfigServiceTestLogger extends ComponentLogger("ConfigServiceTest")
+
 
 /**
   * Some tests for the config service.
@@ -24,7 +29,7 @@ import scala.concurrent.Await
   * For example, on my Linux box that is:
   *    -DinterfaceName=enp0s31f6 -DclusterSeeds=192.168.178.66:7777
   */
-class ConfigServiceTest extends FunSuite with GenericLogger.Simple {
+class ConfigServiceTest extends FunSuite with ConfigServiceTestLogger.Simple {
   private val path1 = new File(s"some/test1/TestConfig1").toPath
   private val path2 = new File(s"some/test2/TestConfig2").toPath
 
@@ -36,15 +41,22 @@ class ConfigServiceTest extends FunSuite with GenericLogger.Simple {
   private val comment2 = "update 1 comment"
   private val comment3 = "update 2 comment"
 
-  private val loggingSystem = LoggingSystemFactory.start()
-  private val clientLocationService = LocationServiceFactory.make()
   implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
+  private val locationService = LocationServiceFactory.make()
+  private val host = InetAddress.getLocalHost.getHostName
+  private val loggingSystem = new LoggingSystem(
+    name = "ConfigServiceTest",
+    version = "0.1",
+    host = host,
+    system = actorSystem)
+  private val clientLocationService = LocationServiceFactory.make()
   implicit val mat = ActorMaterializer()
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
 
   runTests(configService, annex = false)
   runTests(configService, annex = true)
-  Await.result(loggingSystem.stop, 10.seconds)
+  Await.result(loggingSystem.stop, 15.seconds)
+  Await.result(actorSystem.terminate(), 5.seconds)
 
 
   // Run tests using the given config cs instance

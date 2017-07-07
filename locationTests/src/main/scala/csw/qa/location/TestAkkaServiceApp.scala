@@ -7,9 +7,8 @@ import akka.stream.ActorMaterializer
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.appenders.{FileAppender, StdOutAppender}
 import csw.services.logging.internal.LoggingSystem
-import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger}
+import csw.services.logging.scaladsl.ComponentLogger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -33,8 +32,7 @@ object TestAkkaServiceApp extends App {
     name = "TestAkkaServiceApp",
     version = "0.1",
     host = host,
-    system = system,
-    appenderBuilders = Seq(StdOutAppender, FileAppender))
+    system = system)
 
   implicit val mat = ActorMaterializer()
 
