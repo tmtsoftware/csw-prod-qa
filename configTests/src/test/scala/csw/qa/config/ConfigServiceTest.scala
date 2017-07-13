@@ -9,11 +9,11 @@ import csw.services.config.api.models.ConfigData
 import csw.services.config.api.scaladsl.{ConfigClientService, ConfigService}
 import csw.services.config.client.scaladsl.ConfigClientFactory
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
 import csw.services.logging.internal.LoggingSystem
-import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger}
+import csw.services.logging.scaladsl.ComponentLogger
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -29,7 +29,7 @@ object ConfigServiceTestLogger extends ComponentLogger("ConfigServiceTest")
   * For example, on my Linux box that is:
   *    -DinterfaceName=enp0s31f6 -DclusterSeeds=192.168.178.66:7777
   */
-class ConfigServiceTest extends FunSuite with ConfigServiceTestLogger.Simple {
+class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServiceTestLogger.Simple {
   private val path1 = new File(s"some/test1/TestConfig1").toPath
   private val path2 = new File(s"some/test2/TestConfig2").toPath
 
@@ -53,11 +53,18 @@ class ConfigServiceTest extends FunSuite with ConfigServiceTestLogger.Simple {
   implicit val mat = ActorMaterializer()
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
 
-  runTests(configService, annex = false)
-  runTests(configService, annex = true)
-//  Await.result(loggingSystem.stop, 15.seconds)
-//  Await.result(actorSystem.terminate(), 5.seconds)
+  override def afterAll() {
+    println("--------------------- Done 1 ---------------------------")
+    actorSystem.terminate().await
+    locationService.shutdown().await
+//    loggingSystem.stop
+    println("--------------------- Done 2 ---------------------------")
+  }
 
+  test("") {
+    runTests(configService, annex = false)
+    runTests(configService, annex = true)
+  }
 
   // Run tests using the given config cs instance
   def runTests(cs: ConfigService, annex: Boolean): Unit = {
