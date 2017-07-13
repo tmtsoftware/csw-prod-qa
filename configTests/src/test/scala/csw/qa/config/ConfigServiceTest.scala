@@ -26,8 +26,6 @@ object ConfigServiceTestLogger extends ComponentLogger("ConfigServiceTest")
   *
   * Note: This test assumes that the location and config services are running and that the necessary
   * csw cluster environment variables or system properties are defined.
-  * For example, on my Linux box that is:
-  *    -DinterfaceName=enp0s31f6 -DclusterSeeds=192.168.178.66:7777
   */
 class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServiceTestLogger.Simple {
   private val path1 = new File(s"some/test1/TestConfig1").toPath
