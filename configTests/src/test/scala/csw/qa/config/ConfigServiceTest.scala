@@ -52,11 +52,8 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServi
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
 
   override def afterAll() {
-    println("--------------------- Done 1 ---------------------------")
     actorSystem.terminate().await
     locationService.shutdown().await
-//    loggingSystem.stop
-    println("--------------------- Done 2 ---------------------------")
   }
 
   test("") {
