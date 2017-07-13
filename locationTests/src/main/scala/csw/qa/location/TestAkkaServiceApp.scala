@@ -101,12 +101,12 @@ object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
       system.scheduler.scheduleOnce(autoshutdown.seconds) {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         for {
-          _ <- loggingSystem.stop
           _ <- locationService.shutdown()
+          _ <- loggingSystem.stop
           _ <- system.terminate()
         } {
           println("Shutdown complete")
-          System.exit(0)
+//          System.exit(0)
         }
       }
 
