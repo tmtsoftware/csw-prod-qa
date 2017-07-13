@@ -102,11 +102,10 @@ object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         for {
           _ <- locationService.shutdown()
-          _ <- loggingSystem.stop
+//          _ <- loggingSystem.stop
           _ <- system.terminate()
         } {
           println("Shutdown complete")
-//          System.exit(0)
         }
       }
 
