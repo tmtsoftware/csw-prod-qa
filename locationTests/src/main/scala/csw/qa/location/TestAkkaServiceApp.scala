@@ -8,10 +8,12 @@ import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
 import csw.services.logging.internal.LoggingSystem
-import csw.services.logging.scaladsl.ComponentLogger
+import csw.services.logging.scaladsl.{BasicLogger, ComponentLogger}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+object TestAkkaServiceAppLogger extends ComponentLogger("TestAkkaService")
 
 /**
   * Starts one or more akka services in order to test the location service.
@@ -24,7 +26,7 @@ import scala.concurrent.duration._
   *
   * The client and service applications can be run on the same or different hosts.
   */
-object TestAkkaServiceApp extends App {
+object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
   implicit val system = ActorSystemFactory.remote
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
@@ -34,10 +36,13 @@ object TestAkkaServiceApp extends App {
     host = host,
     system = system)
 
+  log.debug("Started TestAkkaServiceApp")
+
+
   implicit val mat = ActorMaterializer()
 
   case class Options(numServices: Int = 1, firstService: Int = 1,
-                     autostop: Int = 0, delay: Int = 100,
+                     autostop: Int = 0, autoshutdown: Int = 0, delay: Int = 100,
                      logMessages: Boolean = false, startSecond: Boolean = false)
 
   // Parses the command line options
@@ -54,7 +59,11 @@ object TestAkkaServiceApp extends App {
 
     opt[Int]("autostop") valueName "<count>" action { (x, c) =>
       c.copy(autostop = x)
-    } text "the number of seconds before unregistering and shutdown (default: 0)"
+    } text "the number of seconds before unregistering and stopping each actor (default: 0 = no stopping)"
+
+    opt[Int]("autoshutdown") valueName "<count>" action { (x, c) =>
+      c.copy(autoshutdown = x)
+    } text "the number of seconds before shutting down the app (default: 0, no shutting down)"
 
     opt[Int]("delay") valueName "<ms>" action { (x, c) =>
       c.copy(delay = x)
@@ -87,6 +96,20 @@ object TestAkkaServiceApp extends App {
 
   private def run(options: Options): Unit = {
     import options._
+    import system.dispatcher
+    if (options.autoshutdown != 0)
+      system.scheduler.scheduleOnce(autoshutdown.seconds) {
+        log.info(s"Auto-shutdown starting after $autoshutdown seconds")
+        for {
+          _ <- loggingSystem.stop
+          _ <- locationService.shutdown()
+          _ <- system.terminate()
+        } {
+          println("Shutdown complete")
+          System.exit(0)
+        }
+      }
+
     for (i <- firstService until firstService + numServices) {
       Thread.sleep(delay) // Avoid timeouts?
       system.actorOf(TestAkkaService.props(i, options, locationService))

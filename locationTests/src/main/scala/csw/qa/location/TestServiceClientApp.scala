@@ -10,6 +10,7 @@ import csw.services.location.models.{AkkaLocation, LocationRemoved, LocationUpda
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
 import csw.services.logging.internal.LoggingSystem
 import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger}
+import scala.concurrent.duration._
 
 /**
   * A location service test client application that attempts to resolve one or more
@@ -31,7 +32,7 @@ object TestServiceClientApp extends App with GenericLogger.Simple {
   implicit val mat = ActorMaterializer()
   log.info(s"TestServiceClientApp is running on $host")
 
-  case class Options(numServices: Int = 1, firstService: Int = 1)
+  case class Options(numServices: Int = 1, firstService: Int = 1, autoshutdown: Int = 0)
 
   // Parses the command line options
   private val parser = new scopt.OptionParser[Options]("test-akka-service-app") {
@@ -44,6 +45,10 @@ object TestServiceClientApp extends App with GenericLogger.Simple {
     opt[Int]("firstService") valueName "<n>" action { (x, c) =>
       c.copy(firstService = x)
     } text "the service number to start with (default: 1)"
+
+    opt[Int]("autoshutdown") valueName "<count>" action { (x, c) =>
+      c.copy(autoshutdown = x)
+    } text "the number of seconds before shutting down the app (default: 0, no shutting down)"
 
     help("help")
     version("version")
@@ -63,7 +68,23 @@ object TestServiceClientApp extends App with GenericLogger.Simple {
   }
 
   private def run(options: Options): Unit = {
+    import options._
+    import system.dispatcher
+
     system.actorOf(TestServiceClient.props(options, locationService))
+
+    if (options.autoshutdown != 0)
+      system.scheduler.scheduleOnce(autoshutdown.seconds) {
+        log.info(s"Auto-shutdown starting after $autoshutdown seconds")
+        for {
+          _ <- loggingSystem.stop
+          _ <- locationService.shutdown()
+          _ <- system.terminate()
+        } {
+          println("Shutdown complete")
+          System.exit(0)
+        }
+      }
   }
 }
 

@@ -55,8 +55,8 @@ class ConfigServiceTest extends FunSuite with ConfigServiceTestLogger.Simple {
 
   runTests(configService, annex = false)
   runTests(configService, annex = true)
-  Await.result(loggingSystem.stop, 15.seconds)
-  Await.result(actorSystem.terminate(), 5.seconds)
+//  Await.result(loggingSystem.stop, 15.seconds)
+//  Await.result(actorSystem.terminate(), 5.seconds)
 
 
   // Run tests using the given config cs instance
