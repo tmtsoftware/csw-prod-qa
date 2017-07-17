@@ -115,7 +115,7 @@ class LoggingTest(i: Int, options: LoggingTestApp.Options)
     context.system.scheduler.scheduleOnce(autostop.seconds, self, LoggingTest.Quit)
 
   private val logMsgTimer = context.system.scheduler.schedule(delay.millis, delay.millis, self, LoggingTest.LogMessages)
-  private val log4j2Test = new Log4j2Test()
+  private val log4j2Test = new Slf4jTest()
 
   override def receive: Receive = {
     case LoggingTest.LogMessages =>

@@ -17,8 +17,7 @@ lazy val loggingTests = project
   .settings(libraryDependencies ++= Seq(
     `csw-logging`,
     scopt,
-    `log4j-api`,
-    `log4j-core`
+    `slf4j-api`
   ))
 
 lazy val configTests = project
