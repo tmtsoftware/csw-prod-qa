@@ -8,8 +8,8 @@ import akka.stream.scaladsl.Sink
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.internal.LoggingSystem
-import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger}
+import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger, LoggingSystemFactory}
+
 import scala.concurrent.duration._
 
 /**
@@ -24,11 +24,7 @@ object TestServiceClientApp extends App with GenericLogger.Simple {
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
   implicit val system = ActorSystemFactory.remote
-  private val loggingSystem = new LoggingSystem(
-    name = "TestServiceClientApp",
-    version = "0.1",
-    host = host,
-    system = system)
+  private val loggingSystem = LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
   implicit val mat = ActorMaterializer()
   log.info(s"TestServiceClientApp is running on $host")
 

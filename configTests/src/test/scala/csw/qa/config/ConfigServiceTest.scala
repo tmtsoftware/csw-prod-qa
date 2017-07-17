@@ -13,7 +13,7 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
 import csw.services.logging.internal.LoggingSystem
-import csw.services.logging.scaladsl.ComponentLogger
+import csw.services.logging.scaladsl.{ComponentLogger, LoggingSystemFactory}
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -42,11 +42,7 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServi
   implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
-  private val loggingSystem = new LoggingSystem(
-    name = "ConfigServiceTest",
-    version = "0.1",
-    host = host,
-    system = actorSystem)
+  private val loggingSystem = LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, actorSystem)
   private val clientLocationService = LocationServiceFactory.make()
   implicit val mat = ActorMaterializer()
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)

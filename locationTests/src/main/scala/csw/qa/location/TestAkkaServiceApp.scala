@@ -7,8 +7,7 @@ import akka.stream.ActorMaterializer
 import csw.services.location.models.Connection.AkkaConnection
 import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.internal.LoggingSystem
-import csw.services.logging.scaladsl.{BasicLogger, ComponentLogger}
+import csw.services.logging.scaladsl.{ComponentLogger, LoggingSystemFactory}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -30,11 +29,7 @@ object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
   implicit val system = ActorSystemFactory.remote
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
-  private val loggingSystem = new LoggingSystem(
-    name = "TestAkkaServiceApp",
-    version = "0.1",
-    host = host,
-    system = system)
+  private val loggingSystem = LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
 
   log.debug("Started TestAkkaServiceApp")
 

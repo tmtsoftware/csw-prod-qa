@@ -14,14 +14,14 @@ and the required environment variables are set. For example:
 
 ```bash
 export interfaceName=enp0s31f6
-export clusterSeeds=192.168.178.66:7777
+export clusterSeeds=192.168.178.77:7777
 csw-cluster-seed --clusterPort 7777
 ```
 or 
 
 ```csh
 setenv interfaceName enp0s31f6
-setenv clusterSeeds 192.168.178.66:7777
+setenv clusterSeeds 192.168.178.77:7777
 csw-cluster-seed --clusterPort 7777
 ```
 

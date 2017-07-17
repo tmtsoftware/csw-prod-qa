@@ -7,28 +7,28 @@ config services should be running (see below).
 Manually testing the command line app
 -------------------------------------
 
-Assuming your host IP address is 192.168.178.66 and you want to start the location service cluster on port 7777:
+Assuming your host IP address is 192.168.178.77 and you want to start the location service cluster on port 7777:
 (Replace IP address, port and interface name as needed):
 
 * Start the location service cluster:
 
 ```bash
 # Assuming csw-prod/target/universal/stage/bin is in your shell path:
-csw-cluster-seed -DclusterSeeds=192.168.178.66:7777 --clusterPort 7777 -DinterfaceName=enp0s31f6
+csw-cluster-seed -DclusterSeeds=192.168.178.77:7777 --clusterPort 7777 -DinterfaceName=enp0s31f6
 ```
 
 Note: The system properties specified with -D can instead be set as environment variables:
 
 ```bash
 export interfaceName=enp0s31f6
-export clusterSeeds=192.168.178.66:7777
+export clusterSeeds=192.168.178.77:7777
 csw-cluster-seed --clusterPort 7777
 ```
 or 
 
 ```csh
 setenv interfaceName enp0s31f6
-setenv clusterSeeds 192.168.178.66:7777
+setenv clusterSeeds 192.168.178.77:7777
 csw-cluster-seed --clusterPort 7777
 ```
 

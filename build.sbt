@@ -11,6 +11,14 @@ lazy val locationTests = project
     `track-location-agent`
   ))
 
+lazy val loggingTests = project
+  .enablePlugins(DeployApp)
+  .settings(defaultSettings: _*)
+  .settings(libraryDependencies ++= Seq(
+    `csw-logging`,
+    scopt
+  ))
+
 lazy val configTests = project
   .enablePlugins(DeployApp)
   .settings(defaultSettings: _*)
