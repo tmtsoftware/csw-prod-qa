@@ -69,7 +69,7 @@ object LoggingTestApp extends App with LoggingTestAppLogger.Simple {
       system.scheduler.scheduleOnce(autoshutdown.seconds) {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         for {
-          //          _ <- loggingSystem.stop
+        //          _ <- loggingSystem.stop
           _ <- system.terminate()
         } {
           println("Shutdown complete")
@@ -115,10 +115,14 @@ class LoggingTest(i: Int, options: LoggingTestApp.Options)
     context.system.scheduler.scheduleOnce(autostop.seconds, self, LoggingTest.Quit)
 
   private val logMsgTimer = context.system.scheduler.schedule(delay.millis, delay.millis, self, LoggingTest.LogMessages)
+  private val log4j2Test = new Log4j2Test()
 
   override def receive: Receive = {
     case LoggingTest.LogMessages =>
-      log.info(s"Actor $i info")
+      log.debug(s"Actor $i debug message")
+      log.info(s"Actor $i info message")
+      log.warn(s"Actor $i warn message")
+      log4j2Test.foo();
 
     case LoggingTest.Quit =>
       log.info(s"Actor $i is shutting down after $autostop seconds")

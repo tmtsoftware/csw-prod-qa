@@ -16,5 +16,9 @@ object Dependencies {
   val scopt = "com.github.scopt" %% "scopt" % "3.5.0" //MIT License
   val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" // ApacheV2
   val `junit-interface` = "com.novocode" % "junit-interface" % "0.11"
+
+  val `log4j-api` = "org.apache.logging.log4j" % "log4j-api" % "2.8.2"
+  val `log4j-core` = "org.apache.logging.log4j" % "log4j-core" % "2.8.2"
+
 }
 
