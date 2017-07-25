@@ -104,7 +104,7 @@ object LoggingTestLogger extends ComponentLogger("LoggingTest")
   * A dummy akka test actor
   */
 class LoggingTest(i: Int, options: LoggingTestApp.Options)
-  extends Actor with LoggingTestLogger.Actor {
+  extends LoggingTestLogger.Actor {
 
   import context.dispatcher
   import options._

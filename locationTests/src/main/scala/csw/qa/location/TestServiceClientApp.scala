@@ -2,7 +2,7 @@ package csw.qa.location
 
 import java.net.InetAddress
 
-import akka.actor.{Actor, Props}
+import akka.actor.{ActorSystem, Props}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.Sink
 import csw.services.location.models.Connection.AkkaConnection
@@ -23,9 +23,9 @@ import scala.concurrent.duration._
 object TestServiceClientApp extends App with GenericLogger.Simple {
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
-  implicit val system = ActorSystemFactory.remote
+  implicit val system: ActorSystem = ActorSystemFactory.remote
   private val loggingSystem = LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
-  implicit val mat = ActorMaterializer()
+  implicit val mat: ActorMaterializer = ActorMaterializer()
   log.info(s"TestServiceClientApp is running on $host")
 
   case class Options(numServices: Int = 1, firstService: Int = 1, autoshutdown: Int = 0)
@@ -98,7 +98,7 @@ object TestServiceClientLogger extends ComponentLogger("TestServiceClient")
   * A test client actor that uses the location service to resolve services
   */
 class TestServiceClient(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer)
-  extends Actor with TestServiceClientLogger.Actor {
+  extends TestServiceClientLogger.Actor {
 
   import TestServiceClient._
   import options._

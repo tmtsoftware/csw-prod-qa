@@ -26,15 +26,15 @@ object TestAkkaServiceAppLogger extends ComponentLogger("TestAkkaService")
   * The client and service applications can be run on the same or different hosts.
   */
 object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
-  implicit val system = ActorSystemFactory.remote
+  implicit val system: ActorSystem = ActorSystemFactory.remote
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
-  private val loggingSystem = LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
+  LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
 
   log.debug("Started TestAkkaServiceApp")
 
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: ActorMaterializer = ActorMaterializer()
 
   case class Options(numServices: Int = 1, firstService: Int = 1,
                      autostop: Int = 0, autoshutdown: Int = 0, delay: Int = 100,
@@ -138,7 +138,7 @@ object TestAkkaServiceLogger extends ComponentLogger("TestAkkaService")
   * A dummy akka test service that registers with the location service
   */
 class TestAkkaService(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService)
-  extends Actor with TestAkkaServiceLogger.Actor {
+  extends TestAkkaServiceLogger.Actor {
 
   import context.dispatcher
   import options._
@@ -157,7 +157,7 @@ class TestAkkaService(i: Int, options: TestAkkaServiceApp.Options, locationServi
         log.debug(s"Received scala client message from: ${sender()}")
 
     // This is the message that JTestServiceClient sends when it discovers this service
-    case m: JTestAkkaService.ClientMessage =>
+    case _: JTestAkkaService.ClientMessage =>
       if (logMessages)
         log.debug(s"Received java client message from: ${sender()}")
 
@@ -200,7 +200,7 @@ object TestAkkaServiceLogger2 extends ComponentLogger("TestAkkaService2")
   * A dummy akka test service that registers with the location service
   */
 class TestAkkaService2(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService)
-  extends Actor with TestAkkaServiceLogger2.Actor {
+  extends TestAkkaServiceLogger2.Actor {
 
   import context.dispatcher
   import options._
@@ -219,7 +219,7 @@ class TestAkkaService2(i: Int, options: TestAkkaServiceApp.Options, locationServ
         log.debug(s"Received scala client message from: ${sender()}")
 
     // This is the message that JTestServiceClient sends when it discovers this service
-    case m: JTestAkkaService.ClientMessage =>
+    case _: JTestAkkaService.ClientMessage =>
       if (logMessages)
         log.debug(s"Received java client message from: ${sender()}")
 
