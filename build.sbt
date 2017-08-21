@@ -29,4 +29,8 @@ lazy val configTests = project
     scalaTest % Test
   ))
 
+lazy val perfTests = project
+  .enablePlugins(DeployApp)
+  .settings(defaultSettings: _*)
+
 
