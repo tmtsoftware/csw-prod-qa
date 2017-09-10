@@ -14,13 +14,13 @@ object LoggingTestAppLogger extends ComponentLogger("LoggingTest")
   * An test application that uses the logging service
   */
 object LoggingTestApp extends App with LoggingTestAppLogger.Simple {
-  implicit val system = ActorSystem("LoggingTest")
+  implicit val system: ActorSystem = ActorSystem("LoggingTest")
   private val host = InetAddress.getLocalHost.getHostName
-  private val loggingSystem = LoggingSystemFactory.start("LoggingTestApp", "0.1", host, system)
+  LoggingSystemFactory.start("LoggingTestApp", "0.1", host, system)
 
   log.debug("Started LoggingTestApp")
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: ActorMaterializer = ActorMaterializer()
 
   case class Options(numActors: Int = 1, autostop: Int = 0, autoshutdown: Int = 0,
                      delay: Int = 1000)

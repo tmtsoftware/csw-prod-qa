@@ -2,14 +2,12 @@ package csw.qa.location
 
 import java.net.InetAddress
 
-import akka.actor._
+import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import csw.services.location.models.Connection.AkkaConnection
-import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
-import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
+import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
 import csw.services.logging.scaladsl.{ComponentLogger, LoggingSystemFactory}
+import akka.typed.scaladsl.adapter._
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object TestAkkaServiceAppLogger extends ComponentLogger("TestAkkaService")
@@ -26,13 +24,13 @@ object TestAkkaServiceAppLogger extends ComponentLogger("TestAkkaService")
   * The client and service applications can be run on the same or different hosts.
   */
 object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
+
   implicit val system: ActorSystem = ActorSystemFactory.remote
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
   LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
 
   log.debug("Started TestAkkaServiceApp")
-
 
   implicit val mat: ActorMaterializer = ActorMaterializer()
 
@@ -91,144 +89,33 @@ object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
 
   private def run(options: Options): Unit = {
     import options._
+
+    for (i <- firstService until firstService + numServices) {
+      Thread.sleep(delay) // Avoid timeouts?
+      // Note: Need to start with the untyped system in order to have mixed typed/untyped actors!
+      system.spawn(TestAkkaService.behavior(i, options, locationService), s"TestAkkaService$i")
+      if (startSecond)
+        system.spawn(TestAkkaService2.behavior(i, options, locationService), s"TestAkkaService2$i")
+    }
+    autoShutdown(options)
+
+  }
+
+  // If the autoshutdown option was specified, shutdown the app after the given number of seconds
+  private def autoShutdown(options: Options): Unit = {
+    import options._
     import system.dispatcher
-    if (options.autoshutdown != 0)
+    if (options.autoshutdown != 0) {
       system.scheduler.scheduleOnce(autoshutdown.seconds) {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         for {
           _ <- locationService.shutdown()
-//          _ <- loggingSystem.stop
           _ <- system.terminate()
         } {
           println("Shutdown complete")
         }
       }
-
-    for (i <- firstService until firstService + numServices) {
-      Thread.sleep(delay) // Avoid timeouts?
-      system.actorOf(TestAkkaService.props(i, options, locationService))
-      if (startSecond)
-        system.actorOf(TestAkkaService2.props(i, options, locationService))
     }
   }
 }
 
-object TestAkkaService {
-  // Creates the ith service
-  def props(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService): Props =
-    Props(new TestAkkaService(i, options, locationService))
-
-  // Component ID of the ith service
-  def componentId(i: Int) = ComponentId(s"TestAkkaService_$i", ComponentType.Assembly)
-
-  // Connection for the ith service
-  def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
-
-  // Message sent from client once location has been resolved
-  case object ClientMessage
-
-  // Message to unregister and quit
-  case object Quit
-
-}
-
-object TestAkkaServiceLogger extends ComponentLogger("TestAkkaService")
-
-/**
-  * A dummy akka test service that registers with the location service
-  */
-class TestAkkaService(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService)
-  extends TestAkkaServiceLogger.Actor {
-
-  import context.dispatcher
-  import options._
-
-  // Register with the location service
-  private val reg = Await.result(locationService.register(AkkaRegistration(TestAkkaService.connection(i), self)), 30.seconds)
-  log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
-
-  if (autostop != 0)
-    context.system.scheduler.scheduleOnce(autostop.seconds, self, TestAkkaService.Quit)
-
-  override def receive: Receive = {
-    // This is the message that TestServiceClient sends when it discovers this service
-    case TestAkkaService.ClientMessage =>
-      if (logMessages)
-        log.debug(s"Received scala client message from: ${sender()}")
-
-    // This is the message that JTestServiceClient sends when it discovers this service
-    case _: JTestAkkaService.ClientMessage =>
-      if (logMessages)
-        log.debug(s"Received java client message from: ${sender()}")
-
-    case TestAkkaService.Quit =>
-      log.info(s"Actor $i is shutting down after $autostop seconds")
-      Await.result(reg.unregister(), 10.seconds)
-      context.stop(self)
-
-    case x =>
-      log.error(s"Received unexpected message $x")
-  }
-}
-
-
-// ---- test second component -----
-
-object TestAkkaService2 {
-  // Creates the ith service
-  def props(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService): Props =
-    Props(new TestAkkaService2(i, options, locationService))
-
-  // Component ID of the ith service
-  def componentId(i: Int) = ComponentId(s"TestAkkaService2_$i", ComponentType.Assembly)
-
-  // Connection for the ith service
-  def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
-
-  // Message sent from client once location has been resolved
-  case object ClientMessage
-
-  // Message to unregister and quit
-  case object Quit
-
-}
-
-
-object TestAkkaServiceLogger2 extends ComponentLogger("TestAkkaService2")
-
-/**
-  * A dummy akka test service that registers with the location service
-  */
-class TestAkkaService2(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService)
-  extends TestAkkaServiceLogger2.Actor {
-
-  import context.dispatcher
-  import options._
-
-  // Register with the location service
-  private val reg = Await.result(locationService.register(AkkaRegistration(TestAkkaService2.connection(i), self)), 30.seconds)
-  log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
-
-  if (autostop != 0)
-    context.system.scheduler.scheduleOnce(autostop.seconds, self, TestAkkaService2.Quit)
-
-  override def receive: Receive = {
-    // This is the message that TestServiceClient sends when it discovers this service
-    case TestAkkaService2.ClientMessage =>
-      if (logMessages)
-        log.debug(s"Received scala client message from: ${sender()}")
-
-    // This is the message that JTestServiceClient sends when it discovers this service
-    case _: JTestAkkaService.ClientMessage =>
-      if (logMessages)
-        log.debug(s"Received java client message from: ${sender()}")
-
-    case TestAkkaService2.Quit =>
-      log.info(s"Actor $i is shutting down after $autostop seconds")
-      Await.result(reg.unregister(), 10.seconds)
-      context.stop(self)
-
-    case x =>
-      log.error(s"Received unexpected message $x")
-  }
-}

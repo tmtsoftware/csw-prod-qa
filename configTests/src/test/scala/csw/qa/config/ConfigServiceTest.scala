@@ -12,11 +12,7 @@ import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactor
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
-import csw.services.logging.internal.LoggingSystem
 import csw.services.logging.scaladsl.{ComponentLogger, LoggingSystemFactory}
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 object ConfigServiceTestLogger extends ComponentLogger("ConfigServiceTest")
 
@@ -44,7 +40,7 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServi
   private val host = InetAddress.getLocalHost.getHostName
   private val loggingSystem = LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, actorSystem)
   private val clientLocationService = LocationServiceFactory.make()
-  implicit val mat = ActorMaterializer()
+  implicit val mat: ActorMaterializer = ActorMaterializer()
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
 
   override def afterAll() {

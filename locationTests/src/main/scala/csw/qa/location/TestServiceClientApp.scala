@@ -2,13 +2,11 @@ package csw.qa.location
 
 import java.net.InetAddress
 
-import akka.actor.{ActorSystem, Props}
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.scaladsl.Sink
-import csw.services.location.models.Connection.AkkaConnection
-import csw.services.location.models.{AkkaLocation, LocationRemoved, LocationUpdated}
-import csw.services.location.scaladsl.{ActorSystemFactory, LocationService, LocationServiceFactory}
-import csw.services.logging.scaladsl.{ComponentLogger, GenericLogger, LoggingSystemFactory}
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
+import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
+import akka.typed.scaladsl.adapter._
 
 import scala.concurrent.duration._
 
@@ -24,7 +22,7 @@ object TestServiceClientApp extends App with GenericLogger.Simple {
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
   implicit val system: ActorSystem = ActorSystemFactory.remote
-  private val loggingSystem = LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
+  LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
   implicit val mat: ActorMaterializer = ActorMaterializer()
   log.info(s"TestServiceClientApp is running on $host")
 
@@ -64,70 +62,26 @@ object TestServiceClientApp extends App with GenericLogger.Simple {
   }
 
   private def run(options: Options): Unit = {
+    // Note: Need to start with the untyped system in order to have mixed typed/untyped actors!
+    system.spawn(TestServiceClient.behavior(options, locationService), "TestServiceClientApp")
+    autoShutdown(options)
+  }
+
+  // If the autoshutdown option was specified, shutdown the app after the given number of seconds
+  private def autoShutdown(options: Options): Unit = {
     import options._
     import system.dispatcher
-
-    system.actorOf(TestServiceClient.props(options, locationService))
-
-    if (options.autoshutdown != 0)
+    if (options.autoshutdown != 0) {
       system.scheduler.scheduleOnce(autoshutdown.seconds) {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         for {
           _ <- locationService.shutdown()
-//          _ <- loggingSystem.stop
           _ <- system.terminate()
         } {
           println("Shutdown complete")
         }
       }
-  }
-}
-
-object TestServiceClient {
-
-  // message sent when location stream ends (should not happen?)
-  case object AllDone
-
-  def props(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer): Props =
-    Props(new TestServiceClient(options, locationService))
-}
-
-object TestServiceClientLogger extends ComponentLogger("TestServiceClient")
-
-/**
-  * A test client actor that uses the location service to resolve services
-  */
-class TestServiceClient(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer)
-  extends TestServiceClientLogger.Actor {
-
-  import TestServiceClient._
-  import options._
-
-  private val connections: Set[AkkaConnection] = (firstService until firstService + numServices).
-    toList.map(i => TestAkkaService.connection(i)).toSet
-
-  // TODO: add a reusable class that does the below:
-
-  // Calls track method for each connection and forwards location messages to this actor
-  connections.foreach(locationService.track(_).to(Sink.actorRef(self, AllDone)).run())
-
-  override def receive: Receive = {
-
-    // Receive a location from the location service and if it is an akka location, send it a message
-    case LocationUpdated(loc) =>
-      log.debug(s"Location updated ${loc.connection.name}")
-      loc match {
-        case AkkaLocation(_, _, actorRef) =>
-          actorRef ! TestAkkaService.ClientMessage
-        case x => log.error(s"Received unexpected location type: $x")
-      }
-
-    // A location was removed
-    case LocationRemoved(conn) =>
-      log.debug(s"Location removed ${conn.name}")
-
-    case x =>
-      log.error(s"Received unexpected message $x")
+    }
   }
 
 }
