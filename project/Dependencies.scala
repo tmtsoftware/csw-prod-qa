@@ -9,7 +9,7 @@ object Dependencies {
 
   val `csw-location-local` = "org.tmt" %% "csw-location" % Version
   val `csw-logging` = "org.tmt" %% "csw-logging" % Version
-  val `track-location-agent` = "org.tmt" %% "track-location-agent" % Version
+  val `csw-location-agent` = "org.tmt" %% "csw-location-agent" % Version
   val `csw-config-client` = "org.tmt" %% "csw-config-client" % Version
   val `csw-framework` = "org.tmt" %% "csw-framework" % Version
 
