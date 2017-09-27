@@ -6,14 +6,14 @@ import Settings._
 
 lazy val locationTests = project
   .enablePlugins(DeployApp)
-  .settings(defaultSettings: _*)
+  .settings(appSettings: _*)
   .settings(libraryDependencies ++= Seq(
     `track-location-agent`
   ))
 
 lazy val loggingTests = project
   .enablePlugins(DeployApp)
-  .settings(defaultSettings: _*)
+  .settings(appSettings: _*)
   .settings(libraryDependencies ++= Seq(
     `csw-logging`,
     scopt,
@@ -22,15 +22,18 @@ lazy val loggingTests = project
 
 lazy val configTests = project
   .enablePlugins(DeployApp)
-  .settings(defaultSettings: _*)
+  .settings(appSettings: _*)
   .settings(libraryDependencies ++= Seq(
     `csw-config-client`,
     `junit-interface` % Test,
     scalaTest % Test
   ))
 
-lazy val perfTests = project
+lazy val frameworkTests = project
   .enablePlugins(DeployApp)
-  .settings(defaultSettings: _*)
-
-
+  .settings(appSettings: _*)
+  .settings(libraryDependencies ++= Seq(
+    `csw-framework`,
+    `junit-interface` % Test,
+    scalaTest % Test
+  ))

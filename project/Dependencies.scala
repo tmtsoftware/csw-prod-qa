@@ -11,7 +11,7 @@ object Dependencies {
   val `csw-logging` = "org.tmt" %% "csw-logging" % Version
   val `track-location-agent` = "org.tmt" %% "track-location-agent" % Version
   val `csw-config-client` = "org.tmt" %% "csw-config-client" % Version
-
+  val `csw-framework` = "org.tmt" %% "csw-framework" % Version
 
   val scopt = "com.github.scopt" %% "scopt" % "3.5.0" //MIT License
   val scalaTest = "org.scalatest" %% "scalatest" % "3.0.3" // ApacheV2
