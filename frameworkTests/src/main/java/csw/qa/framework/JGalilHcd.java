@@ -14,6 +14,7 @@ import csw.param.models.Validations;
 import csw.param.states.CurrentState;
 import csw.services.location.commons.ClusterAwareSettings;
 import csw.services.location.javadsl.ILocationService;
+import csw.services.location.models.TrackingEvent;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JComponentLogger;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
@@ -75,6 +76,11 @@ public class JGalilHcd {
     public CompletableFuture<BoxedUnit> jOnRun() {
       log.debug("jOnRun called");
       return CompletableFuture.supplyAsync(this::doNothing);
+    }
+
+    @Override
+    public void onLocationTrackingEvent(TrackingEvent trackingEvent) {
+      log.debug("onLocationTrackingEvent called: " + trackingEvent);
     }
 
     @Override
