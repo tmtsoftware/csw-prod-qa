@@ -1,7 +1,7 @@
 package csw.qa.location
 
 import akka.typed.ActorRef
-import csw.services.location.models.TrackingEvent
+import csw.messages.location.TrackingEvent
 
 
 

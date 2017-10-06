@@ -1,10 +1,12 @@
 package csw.qa.location
 
-import akka.typed.Behavior
+import akka.typed.{ActorRef, Behavior}
 import akka.typed.scaladsl.{Actor, ActorContext, TimerScheduler}
-import csw.services.location.models.Connection.AkkaConnection
-import csw.services.location.models.{AkkaRegistration, ComponentId, ComponentType}
+import csw.messages.location.Connection.AkkaConnection
+import csw.messages.location.{ComponentId, ComponentType}
+import csw.services.location.models.AkkaRegistration
 import csw.services.location.scaladsl.LocationService
+import csw.services.logging.internal.LogControlMessages
 import csw.services.logging.scaladsl.ComponentLogger
 
 import scala.concurrent.duration._
@@ -12,8 +14,11 @@ import scala.concurrent.Await
 
 object TestAkkaService {
   // Behaviour of the ith service
-  def behavior(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService): Behavior[ServiceMessageType] =
-    Actor.withTimers(timers => Actor.mutable[ServiceMessageType](ctx ⇒ new TestAkkaService(ctx, timers, i, options, locationService)))
+  def behavior(i: Int, options: TestAkkaServiceApp.Options,
+               locationService: LocationService,
+               adminActorRef: ActorRef[LogControlMessages]): Behavior[ServiceMessageType] =
+    Actor.withTimers(timers => Actor.mutable[ServiceMessageType](ctx ⇒
+      new TestAkkaService(ctx, timers, i, options, locationService, adminActorRef)))
 
   // Component ID of the ith service
   def componentId(i: Int) = ComponentId(s"TestAkkaService_$i", ComponentType.Assembly)
@@ -33,14 +38,15 @@ object TestAkkaServiceLogger extends ComponentLogger("TestAkkaService")
 class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       timers: TimerScheduler[ServiceMessageType],
                       i: Int, options: TestAkkaServiceApp.Options,
-                      locationService: LocationService)
+                      locationService: LocationService,
+                      adminActorRef: ActorRef[LogControlMessages])
   extends TestAkkaServiceLogger.TypedActor[ServiceMessageType](ctx) {
 
   import options._
 
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(AkkaRegistration(TestAkkaService.connection(i), ctx.self)),
+    locationService.register(AkkaRegistration(TestAkkaService.connection(i), ctx.self, adminActorRef)),
     30.seconds)
 
   log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
@@ -69,8 +75,11 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
 
 object TestAkkaService2 {
   // Behaviour of the ith service
-  def behavior(i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService): Behavior[ServiceMessageType] =
-    Actor.withTimers(timers => Actor.mutable[ServiceMessageType](ctx ⇒ new TestAkkaService2(ctx, timers, i, options, locationService)))
+  def behavior(i: Int, options: TestAkkaServiceApp.Options,
+               locationService: LocationService,
+               adminActorRef: ActorRef[LogControlMessages]): Behavior[ServiceMessageType] =
+    Actor.withTimers(timers => Actor.mutable[ServiceMessageType]( ctx ⇒
+      new TestAkkaService2(ctx, timers, i, options, locationService, adminActorRef)))
 
   // Component ID of the ith service
   def componentId(i: Int) = ComponentId(s"TestAkkaService2_$i", ComponentType.Assembly)
@@ -89,14 +98,16 @@ object TestAkkaServiceLogger2 extends ComponentLogger("TestAkkaService2")
   */
 class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        timers: TimerScheduler[ServiceMessageType],
-                       i: Int, options: TestAkkaServiceApp.Options, locationService: LocationService)
+                       i: Int, options: TestAkkaServiceApp.Options,
+                       locationService: LocationService,
+                       adminActorRef: ActorRef[LogControlMessages])
   extends TestAkkaServiceLogger2.TypedActor[ServiceMessageType](ctx) {
 
   import options._
 
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(AkkaRegistration(TestAkkaService2.connection(i), ctx.self)),
+    locationService.register(AkkaRegistration(TestAkkaService2.connection(i), ctx.self, adminActorRef)),
     30.seconds)
 
   log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")

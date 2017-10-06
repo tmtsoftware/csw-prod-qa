@@ -6,11 +6,13 @@ import akka.actor.Props;
 import akka.japi.Creator;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
+import csw.messages.location.AkkaLocation;
+import csw.messages.location.Connection;
+import csw.messages.location.LocationRemoved;
+import csw.messages.location.LocationUpdated;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.location.javadsl.JLocationServiceFactory;
-import csw.services.location.models.*;
 import csw.services.location.scaladsl.ActorSystemFactory;
-import csw.services.location.models.Connection.AkkaConnection;
 import akka.typed.javadsl.Adapter;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JComponentLoggerActor;
@@ -54,8 +56,8 @@ public class JTestServiceClient extends JTestServiceClientLoggerActor {
     }
 
     // Connection for the ith service
-    private static AkkaConnection connection(int i) {
-        return new AkkaConnection(JTestAkkaService.componentId(i));
+    private static Connection.AkkaConnection connection(int i) {
+        return new Connection.AkkaConnection(JTestAkkaService.componentId(i));
     }
 
     // Constructor: tracks the given number of akka connections

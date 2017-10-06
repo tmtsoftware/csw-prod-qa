@@ -3,16 +3,20 @@ package csw.qa.location;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.Creator;
+import akka.typed.ActorRef;
+import csw.messages.location.ComponentId;
+import csw.messages.location.Connection;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.location.javadsl.JComponentType;
 import csw.services.location.javadsl.JLocationServiceFactory;
 import csw.services.location.models.AkkaRegistration;
-import csw.services.location.models.ComponentId;
 import csw.services.location.scaladsl.ActorSystemFactory;
-import csw.services.location.models.Connection.AkkaConnection;
 import akka.typed.javadsl.Adapter;
+import csw.services.logging.internal.LogControlMessages;
+import csw.services.logging.internal.LoggingSystem;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JComponentLoggerActor;
+import csw.services.logging.scaladsl.LogAdminActor$;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
 
 import java.net.InetAddress;
@@ -43,18 +47,18 @@ public class JTestAkkaService extends JTestAkkaServiceLoggerActor {
     }
 
     // Connection for the ith service
-    private static AkkaConnection connection(int i) {
-        return new AkkaConnection(componentId(i));
+    private static Connection.AkkaConnection connection(int i) {
+        return new Connection.AkkaConnection(componentId(i));
     }
 
     // Used to create the ith JTestAkkaService actor
-    private static Props props(int i, ILocationService locationService) {
+    private static Props props(int i, ILocationService locationService, ActorRef<LogControlMessages> adminActorRef) {
         return Props.create(new Creator<JTestAkkaService>() {
             private static final long serialVersionUID = 1L;
 
             @Override
             public JTestAkkaService create() throws Exception {
-                return new JTestAkkaService(i, locationService);
+                return new JTestAkkaService(i, locationService, adminActorRef);
             }
         });
     }
@@ -62,8 +66,9 @@ public class JTestAkkaService extends JTestAkkaServiceLoggerActor {
 //    private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     // Constructor: registers self with the location service
-    private JTestAkkaService(int i, ILocationService locationService) {
-        locationService.register(new AkkaRegistration(JTestAkkaService.connection(i), Adapter.toTyped(self())));
+    private JTestAkkaService(int i, ILocationService locationService, ActorRef<LogControlMessages> adminActorRef) {
+        locationService.register(new AkkaRegistration(JTestAkkaService.connection(i),
+            Adapter.toTyped(self()), adminActorRef));
     }
 
     @Override
@@ -85,10 +90,11 @@ public class JTestAkkaService extends JTestAkkaServiceLoggerActor {
 
         // Start the logging service
         String host = InetAddress.getLocalHost().getHostName();
-        LoggingSystemFactory.start("JTestAkkaService", "0.1", host, system);
+        LoggingSystem loggingSystem = LoggingSystemFactory.start("JTestAkkaService", "0.1", host, system);
+        akka.typed.ActorRef<LogControlMessages> adminActorRef = Adapter.spawn(system, LogAdminActor$.MODULE$.behavior(loggingSystem), "");
 
         for (int i = 1; i <= numServices; i++)
-            system.actorOf(JTestAkkaService.props(i, locationService));
+            system.actorOf(JTestAkkaService.props(i, locationService, adminActorRef));
     }
 }
 

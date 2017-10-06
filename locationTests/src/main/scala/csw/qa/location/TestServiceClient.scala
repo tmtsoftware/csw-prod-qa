@@ -3,8 +3,8 @@ package csw.qa.location
 import akka.stream.Materializer
 import akka.typed.Behavior
 import akka.typed.scaladsl.{Actor, ActorContext, TimerScheduler}
-import csw.services.location.models.Connection.AkkaConnection
-import csw.services.location.models.{AkkaLocation, LocationRemoved, LocationUpdated}
+import csw.messages.location.Connection.AkkaConnection
+import csw.messages.location.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.scaladsl.ComponentLogger
 

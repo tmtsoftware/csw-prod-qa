@@ -4,9 +4,11 @@ import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.typed.ActorRef
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
-import csw.services.logging.scaladsl.{ComponentLogger, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{ComponentLogger, LogAdminActor, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
+import csw.services.logging.internal.LogControlMessages
 
 import scala.concurrent.duration._
 
@@ -28,7 +30,10 @@ object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
   implicit val system: ActorSystem = ActorSystemFactory.remote
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
-  LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
+  val loggingSystem = LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
+
+  private val adminActorRef: ActorRef[LogControlMessages] =
+    system.spawn(LogAdminActor.behavior(loggingSystem), "my-actor-1-admin")
 
   log.debug("Started TestAkkaServiceApp")
 
@@ -93,9 +98,9 @@ object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
     for (i <- firstService until firstService + numServices) {
       Thread.sleep(delay) // Avoid timeouts?
       // Note: Need to start with the untyped system in order to have mixed typed/untyped actors!
-      system.spawn(TestAkkaService.behavior(i, options, locationService), s"TestAkkaService$i")
+      system.spawn(TestAkkaService.behavior(i, options, locationService, adminActorRef), s"TestAkkaService$i")
       if (startSecond)
-        system.spawn(TestAkkaService2.behavior(i, options, locationService), s"TestAkkaService2$i")
+        system.spawn(TestAkkaService2.behavior(i, options, locationService, adminActorRef), s"TestAkkaService2$i")
     }
     autoShutdown(options)
 
