@@ -4,11 +4,11 @@ import java.net.InetAddress
 
 import akka.actor._
 import akka.stream.ActorMaterializer
-import csw.services.logging.scaladsl.{ComponentLogger, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{ServiceLogger, LoggingSystemFactory}
 
 import scala.concurrent.duration._
 
-object LoggingTestAppLogger extends ComponentLogger("LoggingTest")
+object LoggingTestAppLogger extends ServiceLogger("LoggingTest")
 
 /**
   * An test application that uses the logging service
@@ -98,7 +98,7 @@ object LoggingTest {
 
 }
 
-object LoggingTestLogger extends ComponentLogger("LoggingTest")
+object LoggingTestLogger extends ServiceLogger("LoggingTest")
 
 /**
   * A dummy akka test actor

@@ -6,13 +6,13 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.typed.ActorRef
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
-import csw.services.logging.scaladsl.{ComponentLogger, LogAdminActor, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{ServiceLogger, LogAdminActor, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import csw.services.logging.internal.LogControlMessages
 
 import scala.concurrent.duration._
 
-object TestAkkaServiceAppLogger extends ComponentLogger("TestAkkaService")
+object TestAkkaServiceAppLogger extends ServiceLogger("TestAkkaService")
 
 /**
   * Starts one or more akka services in order to test the location service.
@@ -30,10 +30,10 @@ object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
   implicit val system: ActorSystem = ActorSystemFactory.remote
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
-  val loggingSystem = LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
+  LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
 
   private val adminActorRef: ActorRef[LogControlMessages] =
-    system.spawn(LogAdminActor.behavior(loggingSystem), "my-actor-1-admin")
+    system.spawn(LogAdminActor.behavior(), "my-actor-1-admin")
 
   log.debug("Started TestAkkaServiceApp")
 

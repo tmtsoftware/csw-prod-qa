@@ -7,7 +7,7 @@ import csw.messages.location.{ComponentId, ComponentType}
 import csw.services.location.models.AkkaRegistration
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.internal.LogControlMessages
-import csw.services.logging.scaladsl.ComponentLogger
+import csw.services.logging.scaladsl.ServiceLogger
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -30,7 +30,7 @@ object TestAkkaService {
 
 }
 
-object TestAkkaServiceLogger extends ComponentLogger("TestAkkaService")
+object TestAkkaServiceLogger extends ServiceLogger("TestAkkaService")
 
 /**
   * A dummy akka test service that registers with the location service
@@ -40,7 +40,7 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       i: Int, options: TestAkkaServiceApp.Options,
                       locationService: LocationService,
                       adminActorRef: ActorRef[LogControlMessages])
-  extends TestAkkaServiceLogger.TypedActor[ServiceMessageType](ctx) {
+  extends TestAkkaServiceLogger.MutableActor[ServiceMessageType](ctx) {
 
   import options._
 
@@ -91,7 +91,7 @@ object TestAkkaService2 {
 }
 
 
-object TestAkkaServiceLogger2 extends ComponentLogger("TestAkkaService2")
+object TestAkkaServiceLogger2 extends ServiceLogger("TestAkkaService2")
 
 /**
   * A dummy akka test service that registers with the location service
@@ -101,7 +101,7 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        i: Int, options: TestAkkaServiceApp.Options,
                        locationService: LocationService,
                        adminActorRef: ActorRef[LogControlMessages])
-  extends TestAkkaServiceLogger2.TypedActor[ServiceMessageType](ctx) {
+  extends TestAkkaServiceLogger2.MutableActor[ServiceMessageType](ctx) {
 
   import options._
 

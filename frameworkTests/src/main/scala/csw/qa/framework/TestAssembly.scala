@@ -1,13 +1,8 @@
 package csw.qa.framework
 
-import java.net.InetAddress
-
-import akka.actor.ActorSystem
 import akka.typed.ActorRef
 import akka.typed.scaladsl.ActorContext
-import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
-import csw.framework.internal.wiring.{FrameworkWiring, Standalone}
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages._
 import csw.messages.PubSub.PublisherMessage
@@ -16,9 +11,8 @@ import csw.messages.ccs.{Validation, ValidationIssue, Validations}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
 import csw.messages.params.states.CurrentState
-import csw.services.location.commons.ClusterAwareSettings
 import csw.services.location.scaladsl.LocationService
-import csw.services.logging.scaladsl.{ComponentLogger, LoggingSystemFactory}
+import csw.services.logging.scaladsl.ComponentLogger
 
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -46,6 +40,8 @@ private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
     with ComponentLogger.Simple {
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
+
+  override def componentName(): String = "TestAssembly"
 
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")

@@ -39,6 +39,8 @@ private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
+  override def componentName(): String = "TestHcd"
+
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
   }
