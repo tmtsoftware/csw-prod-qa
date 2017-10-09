@@ -67,6 +67,7 @@ object TestAssemblyClient extends App with TestAssemblyClientLogger.Simple {
     val i1 = k1.set(22, 33, 44)
     val i2 = k2.set("a", "b", "c").withUnits(degree)
     val setup = Setup("Obs001", Prefix("wfos.blue.filter")).add(i1).add(i2)
+    log.info(s"Sending setup to assembly: $setup")
     assembly ! Submit(setup, replyTo = ctx.spawnAnonymous(Actor.ignore))
   }
 }
