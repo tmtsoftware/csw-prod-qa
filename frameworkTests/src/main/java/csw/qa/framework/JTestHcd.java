@@ -2,9 +2,12 @@ package csw.qa.framework;
 
 import akka.typed.ActorRef;
 import akka.typed.javadsl.ActorContext;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import csw.apps.containercmd.ContainerCmd$;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
+import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
 import csw.messages.ccs.Validation;
 import csw.messages.ccs.ValidationIssue;
@@ -19,6 +22,7 @@ import scala.runtime.BoxedUnit;
 
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class JTestHcd {
@@ -114,12 +118,7 @@ public class JTestHcd {
   }
 
   public static void main(String[] args) throws UnknownHostException {
-    // See See DEOPSCSW-171: Starting component from command line.
-    Path path = TempUtil.createStandaloneTmpFile("JTestHcd.conf");
-    String[] defaultArgs = (args.length == 0) ?
-        new String[]{"--local", "--standalone", path.toString()}
-        : args;
-    // TODO: FIXME
-    ContainerCmd$.MODULE$.start("TestHcd", defaultArgs);
+    Config defaultConfig = ConfigFactory.load("JTestHcd.conf");
+    JContainerCmd.start("TestHcd", args, Optional.of(defaultConfig));
   }
 }

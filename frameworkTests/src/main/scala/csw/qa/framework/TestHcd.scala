@@ -2,6 +2,7 @@ package csw.qa.framework
 
 import akka.typed.ActorRef
 import akka.typed.scaladsl.ActorContext
+import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages._
@@ -74,8 +75,6 @@ private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
 }
 
 object TestHcdApp extends App {
-  // See See DEOPSCSW-171: Starting component from command line.
-  val path = TempUtil.createStandaloneTmpFile("TestHcd.conf")
-  val defaultArgs = if (args.isEmpty) Array("--local",  "--standalone", path.toString) else args
-  ContainerCmd.start("TestHcd", defaultArgs)
+  val defaultConfig = ConfigFactory.load("TestHcd.conf")
+  ContainerCmd.start("TestHcd", args, Some(defaultConfig))
 }

@@ -2,6 +2,7 @@ package csw.qa.framework
 
 import akka.typed.ActorRef
 import akka.typed.scaladsl.ActorContext
+import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages._
@@ -78,9 +79,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
 
 // Start assembly from the command line using TestAssembly.conf resource file
 object TestAssemblyApp extends App {
-  // See See DEOPSCSW-171: Starting component from command line.
-  val path = TempUtil.createStandaloneTmpFile("TestAssembly.conf")
-  val defaultArgs = if (args.isEmpty) Array("--local",  "--standalone", path.toString) else args
-  ContainerCmd.start("TestAssembly", defaultArgs)
+  val defaultConfig = ConfigFactory.load("TestAssembly.conf")
+  ContainerCmd.start("TestAssembly", args, Some(defaultConfig))
 }
 

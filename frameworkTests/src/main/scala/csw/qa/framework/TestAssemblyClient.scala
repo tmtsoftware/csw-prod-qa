@@ -7,7 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.typed.{ActorRef, Behavior}
 import akka.typed.scaladsl.{Actor, ActorContext}
 import csw.services.location.scaladsl.LocationServiceFactory
-import csw.services.logging.scaladsl.{CommonComponentLogger, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{CommonComponentLogger, ComponentLogger, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import csw.messages.CommandMessage.Submit
 import csw.messages.ComponentMessage
@@ -20,12 +20,12 @@ import csw.messages.params.models.Prefix
 import csw.messages.params.models.Units.degree
 import csw.services.location.commons.ClusterAwareSettings
 
-object TestAssemblyClientLogger extends CommonComponentLogger("TestAssemblyClient")
-
 // A client to test locating and communicating with the Test assembly
-object TestAssemblyClient extends App with TestAssemblyClientLogger.Simple {
+object TestAssemblyClient extends App with ComponentLogger.Simple {
 
-//  private val system = ActorSystemFactory.remote
+  override def componentName(): String = "TestAssemblyClient"
+
+  //  private val system = ActorSystemFactory.remote
   private val system: ActorSystem = ClusterAwareSettings.system
   implicit def actorRefFactory: ActorRefFactory = system
   private val locationService = LocationServiceFactory.withSystem(system)
