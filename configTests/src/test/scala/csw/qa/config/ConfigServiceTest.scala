@@ -127,57 +127,5 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServi
 //    assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
   }
 
-//  // Verify that a second config service can still see all the files that were checked in by the first
-//  def runTests2(cs: ConfigService, annex: Boolean): Unit = {
-//
-//    // Check that we can access each version
-//    assert(cs.getLatest(path1).await.get.toStringF.await == contents3)
-//    assert(cs.getLatest(path2).await.get.toStringF.await == contents1)
-//
-//    // test history()
-//    val historyList1 = cs.history(path1).await
-//    assert(historyList1.size == 3)
-//    assert(historyList1.head.comment == comment3)
-//    assert(historyList1(1).comment == comment2)
-//    assert(historyList1(2).comment == comment1)
-//
-//    val historyList2 = cs.history(path2).await
-//    assert(historyList2.size == 1)
-//    assert(historyList2.head.comment == comment1)
-//
-//    // test list()
-//    val list = cs.list().await
-//    for (info <- list) {
-//      info.path match {
-//        case this.path1 => assert(info.comment == this.comment3)
-//        case this.path2 => assert(info.comment == this.comment1)
-//        case _          => // other files: README, *.Active...
-//      }
-//    }
-//
-//    // Should throw exception if we try to create a file that already exists
-//    assert(Try(cs.create(path1, ConfigData.fromString(contents2), annex, comment2).await).isFailure)
-//  }
-
-//  // Does some updates and gets
-//  private def test3(cs: ConfigService): Unit = {
-//    cs.getLatest(path1).await
-//    cs.update(path1, ConfigData.fromString(s"${contents2}Added by ${cs.name}\n"), s"$comment1 - ${cs.name}").await
-//    cs.getLatest(path2).await
-//    cs.update(path2, ConfigData.fromString(s"${contents1}Added by ${cs.name}\n"), s"$comment2 - ${cs.name}").await
-//  }
-//
-//  // Tests concurrent access to a central repository (see if there are any conflicts, etc.)
-//  def concurrentTest(managers: List[ConfigService], annex: Boolean): Future[Unit] = {
-//    val result = Future.sequence {
-//      val f = for (cs <- managers) yield {
-//        Future(test3(cs))
-//      }
-//      // wait here, since we want to do the updates sequentially for each configManager
-//      f.foreach(Await.ready(_, 10.seconds))
-//      f
-//    }
-//    result.map(_ => ())
-//  }
 }
 
