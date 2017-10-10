@@ -7,7 +7,7 @@ import csw.messages.location.{ComponentId, ComponentType}
 import csw.services.location.models.AkkaRegistration
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.internal.LogControlMessages
-import csw.services.logging.scaladsl.ServiceLogger
+import csw.services.logging.scaladsl.CommonComponentLogger
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -30,7 +30,7 @@ object TestAkkaService {
 
 }
 
-object TestAkkaServiceLogger extends ServiceLogger("TestAkkaService")
+object TestAkkaServiceLogger extends CommonComponentLogger("TestAkkaService")
 
 /**
   * A dummy akka test service that registers with the location service
@@ -91,7 +91,7 @@ object TestAkkaService2 {
 }
 
 
-object TestAkkaServiceLogger2 extends ServiceLogger("TestAkkaService2")
+object TestAkkaServiceLogger2 extends CommonComponentLogger("TestAkkaService2")
 
 /**
   * A dummy akka test service that registers with the location service

@@ -6,9 +6,9 @@ import akka.typed.scaladsl.{Actor, ActorContext, TimerScheduler}
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.LocationService
-import csw.services.logging.scaladsl.ServiceLogger
+import csw.services.logging.scaladsl.CommonComponentLogger
 
-object TestServiceClientLogger extends ServiceLogger("TestServiceClient")
+object TestServiceClientLogger extends CommonComponentLogger("TestServiceClient")
 
 object TestServiceClient {
   def behavior(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer): Behavior[ServiceClientMessageType] =

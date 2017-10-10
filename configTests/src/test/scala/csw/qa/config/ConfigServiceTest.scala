@@ -12,9 +12,9 @@ import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactor
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
-import csw.services.logging.scaladsl.{ServiceLogger, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{CommonComponentLogger, LoggingSystemFactory}
 
-object ConfigServiceTestLogger extends ServiceLogger("ConfigServiceTest")
+object ConfigServiceTestLogger extends CommonComponentLogger("ConfigServiceTest")
 
 
 /**
