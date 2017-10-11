@@ -44,7 +44,7 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServi
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
 
   override def afterAll() {
-    actorSystem.terminate().await
+    clientLocationService.shutdown().await
     locationService.shutdown().await
   }
 
@@ -121,10 +121,10 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServi
     assert(!cs.exists(path1).await)
 
     // XXX TODO FIXME: The code below hangs...
-//    assert(cs.getActive(path1).await.isEmpty)
-//    assert(cs.getLatest(path1).await.isEmpty)
-//    assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
-//    assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
+    assert(cs.getActive(path1).await.isEmpty)
+    assert(cs.getLatest(path1).await.isEmpty)
+    assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
+    assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
   }
 
 }
