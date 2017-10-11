@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.typed.ActorRef
 import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
-import csw.services.logging.scaladsl.{CommonComponentLogger, LogAdminActor, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{CommonComponentLogger, LogAdminActorFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import csw.services.logging.internal.LogControlMessages
 
@@ -32,8 +32,7 @@ object TestAkkaServiceApp extends App with TestAkkaServiceAppLogger.Simple {
   private val host = InetAddress.getLocalHost.getHostName
   LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
 
-  private val adminActorRef: ActorRef[LogControlMessages] =
-    system.spawn(LogAdminActor.behavior(), "my-actor-1-admin")
+  private val adminActorRef: ActorRef[LogControlMessages] = LogAdminActorFactory.make(system)
 
   log.debug("Started TestAkkaServiceApp")
 

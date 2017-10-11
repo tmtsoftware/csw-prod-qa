@@ -15,7 +15,7 @@ import akka.typed.javadsl.Adapter;
 import csw.services.logging.internal.LogControlMessages;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JComponentLoggerActor;
-import csw.services.logging.scaladsl.LogAdminActor$;
+import csw.services.logging.scaladsl.LogAdminActorFactory;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
 
 import java.net.InetAddress;
@@ -90,7 +90,7 @@ public class JTestAkkaService extends JTestAkkaServiceLoggerActor {
         // Start the logging service
         String host = InetAddress.getLocalHost().getHostName();
         LoggingSystemFactory.start("JTestAkkaService", "0.1", host, system);
-        akka.typed.ActorRef<LogControlMessages> adminActorRef = Adapter.spawn(system, LogAdminActor$.MODULE$.behavior(), "");
+        akka.typed.ActorRef<LogControlMessages> adminActorRef = LogAdminActorFactory.make(system);
 
         for (int i = 1; i <= numServices; i++)
             system.actorOf(JTestAkkaService.props(i, locationService, adminActorRef));
