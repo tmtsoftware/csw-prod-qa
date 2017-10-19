@@ -10,7 +10,7 @@ Note that the tests and applications here require that the csw location service 
 running, `csw-prod/target/universal/stage/bin` is in your shell path,
 and the required environment variables are set. For example:
 
-* Start the location service:
+* Start the location service: For example: (Replace interface name, IP address and port with your own values):
 
 ```bash
 export interfaceName=enp0s31f6

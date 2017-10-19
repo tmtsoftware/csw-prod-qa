@@ -14,14 +14,14 @@ import csw.services.location.scaladsl.ActorSystemFactory;
 import akka.typed.javadsl.Adapter;
 import csw.services.logging.internal.LogControlMessages;
 import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JComponentLoggerActor;
+import csw.services.logging.javadsl.JCommonComponentLoggerActor;
 import csw.services.logging.scaladsl.LogAdminActorFactory;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-abstract class JTestAkkaServiceLoggerActor extends JComponentLoggerActor {
+abstract class JTestAkkaServiceLoggerActor extends JCommonComponentLoggerActor {
     @Override
     public String componentName() {
         return "JTestAkkaService";
@@ -56,7 +56,7 @@ public class JTestAkkaService extends JTestAkkaServiceLoggerActor {
             private static final long serialVersionUID = 1L;
 
             @Override
-            public JTestAkkaService create() throws Exception {
+            public JTestAkkaService create() {
                 return new JTestAkkaService(i, locationService, adminActorRef);
             }
         });

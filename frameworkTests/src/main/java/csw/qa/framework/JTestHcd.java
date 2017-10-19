@@ -4,7 +4,6 @@ import akka.typed.ActorRef;
 import akka.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import csw.apps.containercmd.ContainerCmd$;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
@@ -17,11 +16,9 @@ import csw.messages.location.TrackingEvent;
 import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JComponentLogger;
+import csw.services.logging.javadsl.JCommonComponentLogger;
 import scala.runtime.BoxedUnit;
 
-import java.net.UnknownHostException;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -50,7 +47,7 @@ public class JTestHcd {
     }
   }
 
-  static class JTestHcdHandlers extends JComponentHandlers<JTestHcdDomainMessage> implements JComponentLogger {
+  static class JTestHcdHandlers extends JComponentHandlers<JTestHcdDomainMessage> implements JCommonComponentLogger {
     // XXX Can't this be done in the interface?
     private ILogger log = getLogger();
 
@@ -117,7 +114,7 @@ public class JTestHcd {
     }
   }
 
-  public static void main(String[] args) throws UnknownHostException {
+  public static void main(String[] args) {
     Config defaultConfig = ConfigFactory.load("JTestHcd.conf");
     JContainerCmd.start("TestHcd", args, Optional.of(defaultConfig));
   }

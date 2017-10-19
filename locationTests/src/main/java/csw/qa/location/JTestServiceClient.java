@@ -15,7 +15,7 @@ import csw.services.location.javadsl.JLocationServiceFactory;
 import csw.services.location.scaladsl.ActorSystemFactory;
 import akka.typed.javadsl.Adapter;
 import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JComponentLoggerActor;
+import csw.services.logging.javadsl.JCommonComponentLoggerActor;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
 
 import java.io.Serializable;
@@ -24,7 +24,7 @@ import java.net.UnknownHostException;
 
 import static csw.services.location.javadsl.JConnectionType.AkkaType;
 
-abstract class JTestServiceClientLoggerActor extends JComponentLoggerActor {
+abstract class JTestServiceClientLoggerActor extends JCommonComponentLoggerActor {
     @Override
     public String componentName() {
         return "JTestServiceClient";
@@ -45,7 +45,7 @@ public class JTestServiceClient extends JTestServiceClientLoggerActor {
             private static final long serialVersionUID = 1L;
 
             @Override
-            public JTestServiceClient create() throws Exception {
+            public JTestServiceClient create() {
                 return new JTestServiceClient(numServices, locationService);
             }
         });

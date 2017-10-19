@@ -4,7 +4,6 @@ import akka.typed.ActorRef;
 import akka.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import csw.apps.containercmd.ContainerCmd$;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
@@ -17,11 +16,9 @@ import csw.messages.location.TrackingEvent;
 import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JComponentLogger;
+import csw.services.logging.javadsl.JCommonComponentLogger;
 import scala.runtime.BoxedUnit;
 
-import java.net.UnknownHostException;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -51,7 +48,7 @@ public class JTestAssembly {
   }
 
   static class JTestAssemblyHandlers extends JComponentHandlers<JTestAssemblyDomainMessage>
-      implements JComponentLogger {
+      implements JCommonComponentLogger {
     private ILogger log = getLogger();
 
     JTestAssemblyHandlers(ActorContext<ComponentMessage> ctx,
@@ -117,7 +114,7 @@ public class JTestAssembly {
     }
   }
 
-  public static void main(String[] args) throws UnknownHostException {
+  public static void main(String[] args) {
     Config defaultConfig = ConfigFactory.load("JTestAssembly.conf");
     JContainerCmd.start("TestAssembly", args, Optional.of(defaultConfig));
   }
