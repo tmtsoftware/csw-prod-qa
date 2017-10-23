@@ -8,6 +8,7 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages._
 import csw.messages.PubSub.PublisherMessage
 import csw.messages.RunningMessage.DomainMessage
+import csw.messages.ccs.commands.ControlCommand
 import csw.messages.ccs.{Validation, ValidationIssue, Validations}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
@@ -48,14 +49,14 @@ private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
     log.debug("Initialize called")
   }
 
-  override def onSetup(commandMessage: CommandMessage): Validation = {
-    log.debug(s"onSetup called: $commandMessage")
+  override def onSubmit(controlCommand: ControlCommand, replyTo: ActorRef[CommandResponse]): Validation = {
+    log.debug("onSubmit called")
     Validations.Valid
   }
 
-  override def onObserve(commandMessage: CommandMessage): Validation =  {
-    log.debug(s"onObserve called: $commandMessage")
-    Validations.Invalid(ValidationIssue.UnsupportedCommandIssue("Observe  not supported"))
+  override def onOneway(controlCommand: ControlCommand): Validation = {
+    log.debug("onOneway called")
+    Validations.Valid
   }
 
   override def onShutdown(): Future[Unit] = async {

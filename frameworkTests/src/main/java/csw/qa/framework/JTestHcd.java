@@ -9,8 +9,8 @@ import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
 import csw.messages.ccs.Validation;
-import csw.messages.ccs.ValidationIssue;
 import csw.messages.ccs.Validations;
+import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
 import csw.messages.params.states.CurrentState;
@@ -81,15 +81,15 @@ public class JTestHcd {
     }
 
     @Override
-    public Validation onSetup(CommandMessage commandMessage) {
-      log.debug("onSetup called: " + commandMessage);
+    public Validation onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
+      log.debug("onSubmit called: " + controlCommand);
       return Validations.JValid();
     }
 
     @Override
-    public Validation onObserve(CommandMessage commandMessage) {
-      log.debug("onObserve called: " + commandMessage);
-      return new Validations.Invalid(new ValidationIssue.UnsupportedCommandIssue("Observe not supported"));
+    public Validation onOneway(ControlCommand controlCommand) {
+      log.debug("onOneway called: " + controlCommand);
+      return Validations.JValid();
     }
 
     @Override
