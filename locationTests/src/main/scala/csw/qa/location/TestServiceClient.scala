@@ -39,7 +39,8 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
         log.debug(s"Location updated ${loc.connection.name}")
         loc match {
           case actorRef: AkkaLocation =>
-            actorRef.typedRef ! ClientMessage(ctx.self)
+            // XXX TODO: Fixme: The allowed actorref types are now restricted. Should be changed?
+//            actorRef.componentRef() ! ClientMessage(ctx.self)
           case x => log.error(s"Received unexpected location type: $x")
         }
 
