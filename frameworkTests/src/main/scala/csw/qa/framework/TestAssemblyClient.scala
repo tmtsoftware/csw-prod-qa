@@ -16,7 +16,7 @@ import csw.messages.location.ComponentType.Assembly
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location._
 import csw.messages.params.generics.KeyType
-import csw.messages.params.models.Prefix
+import csw.messages.params.models.{ObsId, Prefix}
 import csw.messages.params.models.Units.degree
 import csw.services.location.commons.ClusterAwareSettings
 
@@ -66,7 +66,7 @@ object TestAssemblyClient extends App with ComponentLogger.Simple {
     val k2 = KeyType.StringKey.make("filter")
     val i1 = k1.set(22, 33, 44)
     val i2 = k2.set("a", "b", "c").withUnits(degree)
-    val setup = Setup("Obs001", Prefix("wfos.blue.filter")).add(i1).add(i2)
+    val setup = Setup(ObsId("2023-Q22-4-33"), Prefix("wfos.blue.filter")).add(i1).add(i2)
     log.info(s"Sending setup to assembly: $setup")
     assembly ! Submit(setup, replyTo = ctx.spawnAnonymous(Actor.ignore))
   }
