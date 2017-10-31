@@ -3,12 +3,11 @@ package csw.qa.framework
 import akka.typed.ActorRef
 import akka.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
-import csw.apps.containercmd.ContainerCmd
+import csw.apps.deployment.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
-import csw.messages.ccs.commands.ControlCommand
-import csw.messages.ccs.{Validation, ValidationIssue, Validations}
+import csw.messages.ccs.commands.{CommandResponse, CommandValidationResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
 import csw.messages.params.states.CurrentState
@@ -47,14 +46,14 @@ private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
     log.debug("Initialize called")
   }
 
-  override def onSubmit(controlCommand: ControlCommand, replyTo: ActorRef[CommandResponse]): Validation = {
+  override def onSubmit(controlCommand: ControlCommand, replyTo: ActorRef[CommandResponse]): CommandValidationResponse = {
     log.debug("onSubmit called")
-    Validations.Valid
+    CommandValidationResponse.Accepted(controlCommand.runId)
   }
 
-  override def onOneway(controlCommand: ControlCommand): Validation = {
+  override def onOneway(controlCommand: ControlCommand): CommandValidationResponse = {
     log.debug("onOneway called")
-    Validations.Valid
+    CommandValidationResponse.Accepted(controlCommand.runId)
   }
 
   override def onShutdown(): Future[Unit] = async {

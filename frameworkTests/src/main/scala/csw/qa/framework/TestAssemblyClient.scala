@@ -7,7 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.typed.{ActorRef, Behavior}
 import akka.typed.scaladsl.{Actor, ActorContext}
 import csw.services.location.scaladsl.LocationServiceFactory
-import csw.services.logging.scaladsl.{CommonComponentLogger, ComponentLogger, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{ComponentLogger, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import csw.messages.CommandMessage.Submit
 import csw.messages.{ComponentMessage, SupervisorExternalMessage}

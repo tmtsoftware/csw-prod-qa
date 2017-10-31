@@ -8,8 +8,8 @@ import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
-import csw.messages.ccs.Validation;
-import csw.messages.ccs.Validations;
+import csw.messages.ccs.commands.CommandResponse;
+import csw.messages.ccs.commands.CommandValidationResponse;
 import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
@@ -76,15 +76,15 @@ public class JTestAssembly {
     }
 
     @Override
-    public Validation onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
+    public CommandValidationResponse onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
       log.debug("onSubmit called: " + controlCommand);
-      return Validations.JValid();
+      return new CommandValidationResponse.Accepted(controlCommand.runId());
     }
 
     @Override
-    public Validation onOneway(ControlCommand controlCommand) {
+    public CommandValidationResponse onOneway(ControlCommand controlCommand) {
       log.debug("onOneway called: " + controlCommand);
-      return Validations.JValid();
+      return new CommandValidationResponse.Accepted(controlCommand.runId());
     }
 
     @Override
