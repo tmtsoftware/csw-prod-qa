@@ -2,14 +2,13 @@ package csw.qa.config;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import csw.services.config.api.javadsl.IConfigClientService;
 import csw.services.config.api.javadsl.IConfigService;
 import csw.services.config.api.models.ConfigData;
 import csw.services.config.api.models.ConfigId;
 import csw.services.config.client.javadsl.JConfigClientFactory;
+import csw.services.location.commons.ActorSystemFactory;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.location.javadsl.JLocationServiceFactory;
-import csw.services.location.scaladsl.ActorSystemFactory;
 import org.junit.Test;
 
 import java.io.File;
@@ -21,14 +20,6 @@ import java.util.Objects;
 public class JConfigServiceTest {
   private Path path1 = new File("some/test1/TestConfig1").toPath();
   private Path path2 = new File("some/test2/TestConfig2").toPath();
-
-  private String contents1 = "Contents of some file...\n";
-  private String contents2 = "New contents of some file...\n";
-  private String contents3 = "Even newer contents of some file...\n";
-
-  private String comment1 = "create comment";
-  private String comment2 = "update 1 comment";
-  private String comment3 = "update 2 comment";
 
   private ILocationService clientLocationService = JLocationServiceFactory.make();
   private ActorSystem actorSystem = ActorSystemFactory.remote();
@@ -48,7 +39,14 @@ public class JConfigServiceTest {
 
   // Run tests using the given config cs instance
   private void runTests(IConfigService cs, boolean annex) throws Exception {
-    IConfigClientService csClient = cs;
+     String contents1 = "Contents of some file...\n";
+     String contents2 = "New contents of some file...\n";
+     String contents3 = "Even newer contents of some file...\n";
+
+     String comment1 = "create comment";
+     String comment2 = "update 1 comment";
+     String comment3 = "update 2 comment";
+
     System.out.println("Running tests with annex = " + annex);
 
     if (cs.exists(path1).get()) cs.delete(path1, "some comment").get();
@@ -68,7 +66,7 @@ public class JConfigServiceTest {
 
     // Check that we can access each version
     assert(Objects.equals(cs.getLatest(path1).get().get().toJStringF(mat).get(), contents3));
-    assert(Objects.equals(csClient.getActive(path1).get().get().toJStringF(mat).get(), contents1));
+    assert(Objects.equals(cs.getActive(path1).get().get().toJStringF(mat).get(), contents1));
     assert(cs.getActiveVersion(path1).get().get().equals(createId1));
     assert(Objects.equals(cs.getById(path1, createId1).get().get().toJStringF(mat).get(), contents1));
     assert(Objects.equals(cs.getById(path1, updateId1).get().get().toJStringF(mat).get(), contents2));

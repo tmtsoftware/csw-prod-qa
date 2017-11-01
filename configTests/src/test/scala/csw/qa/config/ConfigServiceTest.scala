@@ -8,10 +8,11 @@ import akka.actor.ActorSystem
 import csw.services.config.api.models.ConfigData
 import csw.services.config.api.scaladsl.{ConfigClientService, ConfigService}
 import csw.services.config.client.scaladsl.ConfigClientFactory
-import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
+import csw.services.location.scaladsl.LocationServiceFactory
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
+import csw.services.location.commons.ActorSystemFactory
 import csw.services.logging.scaladsl.{CommonComponentLogger, LoggingSystemFactory}
 
 object ConfigServiceTestLogger extends CommonComponentLogger("ConfigServiceTest")
@@ -38,7 +39,9 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServi
   implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
-  private val loggingSystem = LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, actorSystem)
+
+  LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, actorSystem)
+
   private val clientLocationService = LocationServiceFactory.make()
   implicit val mat: ActorMaterializer = ActorMaterializer()
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)

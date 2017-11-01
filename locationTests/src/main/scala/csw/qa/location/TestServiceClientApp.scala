@@ -1,12 +1,14 @@
 package csw.qa.location
 
+
 import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
+import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
+import csw.services.location.commons.ActorSystemFactory
 
 import scala.concurrent.duration._
 

@@ -5,9 +5,10 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.typed.ActorRef
-import csw.services.location.scaladsl.{ActorSystemFactory, LocationServiceFactory}
+import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl.{CommonComponentLogger, LogAdminActorFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
+import csw.services.location.commons.ActorSystemFactory
 import csw.services.logging.internal.LogControlMessages
 
 import scala.concurrent.duration._

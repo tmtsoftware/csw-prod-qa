@@ -4,8 +4,7 @@ import akka.typed.{ActorRef, Behavior}
 import akka.typed.scaladsl.{Actor, ActorContext, TimerScheduler}
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location.{ComponentId, ComponentType}
-import csw.services.location.models.AkkaRegistration
-import csw.services.location.scaladsl.LocationService
+import csw.services.location.scaladsl.{LocationService, RegistrationFactory}
 import csw.services.logging.internal.LogControlMessages
 import csw.services.logging.scaladsl.CommonComponentLogger
 
@@ -39,14 +38,16 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       timers: TimerScheduler[ServiceMessageType],
                       i: Int, options: TestAkkaServiceApp.Options,
                       locationService: LocationService,
-                      adminActorRef: ActorRef[LogControlMessages])
+                      logAdminActorRef: ActorRef[LogControlMessages])
   extends TestAkkaServiceLogger.MutableActor[ServiceMessageType](ctx) {
 
   import options._
 
+  private val registrationFactory = new RegistrationFactory(logAdminActorRef)
+
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(AkkaRegistration(TestAkkaService.connection(i), ctx.self, adminActorRef)),
+    locationService.register(registrationFactory.akkaTyped(TestAkkaService.connection(i), ctx.self)),
     30.seconds)
 
   log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
@@ -100,14 +101,16 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        timers: TimerScheduler[ServiceMessageType],
                        i: Int, options: TestAkkaServiceApp.Options,
                        locationService: LocationService,
-                       adminActorRef: ActorRef[LogControlMessages])
+                       logAdminActorRef: ActorRef[LogControlMessages])
   extends TestAkkaServiceLogger2.MutableActor[ServiceMessageType](ctx) {
 
   import options._
 
+  private val registrationFactory = new RegistrationFactory(logAdminActorRef)
+
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(AkkaRegistration(TestAkkaService2.connection(i), ctx.self, adminActorRef)),
+    locationService.register(registrationFactory.akkaTyped(TestAkkaService2.connection(i), ctx.self)),
     30.seconds)
 
   log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")

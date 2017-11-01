@@ -6,12 +6,12 @@ import akka.japi.Creator;
 import akka.typed.ActorRef;
 import csw.messages.location.ComponentId;
 import csw.messages.location.Connection;
+import csw.services.location.commons.ActorSystemFactory;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.location.javadsl.JComponentType;
 import csw.services.location.javadsl.JLocationServiceFactory;
-import csw.services.location.models.AkkaRegistration;
-import csw.services.location.scaladsl.ActorSystemFactory;
 import akka.typed.javadsl.Adapter;
+import csw.services.location.scaladsl.RegistrationFactory;
 import csw.services.logging.internal.LogControlMessages;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JCommonComponentLoggerActor;
@@ -65,9 +65,9 @@ public class JTestAkkaService extends JTestAkkaServiceLoggerActor {
 //    private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     // Constructor: registers self with the location service
-    private JTestAkkaService(int i, ILocationService locationService, ActorRef<LogControlMessages> adminActorRef) {
-        locationService.register(new AkkaRegistration(JTestAkkaService.connection(i),
-            Adapter.toTyped(self()), adminActorRef));
+    private JTestAkkaService(int i, ILocationService locationService, ActorRef<LogControlMessages> logAdminActorRef) {
+        RegistrationFactory registrationFactory = new RegistrationFactory(logAdminActorRef);
+        locationService.register(registrationFactory.akkaTyped(JTestAkkaService.connection(i), Adapter.toTyped(self())));
     }
 
     @Override
