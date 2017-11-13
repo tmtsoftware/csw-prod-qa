@@ -25,18 +25,20 @@ sealed trait TestHcdDomainMessage extends DomainMessage
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory[TestHcdDomainMessage] {
   override def handlers(ctx: ActorContext[ComponentMessage],
                         componentInfo: ComponentInfo,
+                        commandResponseManager: ActorRef[CommandResponseManagerMessage],
                         pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
                         locationService: LocationService
                        ): ComponentHandlers[TestHcdDomainMessage] =
-    new TestHcdHandlers(ctx, componentInfo, pubSubRef, locationService)
+    new TestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
 }
 
 private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
-                               componentInfo: ComponentInfo,
-                               pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
-                               locationService: LocationService)
-  extends ComponentHandlers[TestHcdDomainMessage](ctx, componentInfo, pubSubRef, locationService)
-    with ComponentLogger.Simple{
+                              componentInfo: ComponentInfo,
+                              commandResponseManager: ActorRef[CommandResponseManagerMessage],
+                              pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
+                              locationService: LocationService)
+  extends ComponentHandlers[TestHcdDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
+    with ComponentLogger.Simple {
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 

@@ -40,9 +40,10 @@ public class JTestAssembly {
     public JComponentHandlers<JTestAssemblyDomainMessage> jHandlers(
         ActorContext<ComponentMessage> ctx,
         ComponentInfo componentInfo,
+        ActorRef<CommandResponseManagerMessage> commandResponseManager,
         ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
         ILocationService locationService) {
-      return new JTestAssembly.JTestAssemblyHandlers(ctx, componentInfo, pubSubRef, locationService,
+      return new JTestAssembly.JTestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,
           JTestAssemblyDomainMessage.class);
     }
   }
@@ -52,11 +53,12 @@ public class JTestAssembly {
     private ILogger log = getLogger();
 
     JTestAssemblyHandlers(ActorContext<ComponentMessage> ctx,
-                           ComponentInfo componentInfo,
-                           ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
-                           ILocationService locationService,
-                           Class<JTestAssemblyDomainMessage> klass) {
-      super(ctx, componentInfo, pubSubRef, locationService, klass);
+                          ComponentInfo componentInfo,
+                          ActorRef<CommandResponseManagerMessage> commandResponseManager,
+                          ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
+                          ILocationService locationService,
+                          Class<JTestAssemblyDomainMessage> klass) {
+      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
       log.debug("Starting Test Assembly");
     }
 

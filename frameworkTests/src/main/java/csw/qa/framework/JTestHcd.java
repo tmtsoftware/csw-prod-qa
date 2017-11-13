@@ -41,9 +41,10 @@ public class JTestHcd {
     public JComponentHandlers<JTestHcdDomainMessage> jHandlers(
         ActorContext<ComponentMessage> ctx,
         ComponentInfo componentInfo,
+        ActorRef<CommandResponseManagerMessage> commandResponseManager,
         ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
         ILocationService locationService) {
-      return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, pubSubRef, locationService, JTestHcd.JTestHcdDomainMessage.class);
+      return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, JTestHcd.JTestHcdDomainMessage.class);
     }
   }
 
@@ -52,11 +53,12 @@ public class JTestHcd {
     private ILogger log = getLogger();
 
     JTestHcdHandlers(ActorContext<ComponentMessage> ctx,
-                      ComponentInfo componentInfo,
-                      ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
-                      ILocationService locationService,
-                      Class<JTestHcdDomainMessage> klass) {
-      super(ctx, componentInfo, pubSubRef, locationService, klass);
+                     ComponentInfo componentInfo,
+                     ActorRef<CommandResponseManagerMessage> commandResponseManager,
+                     ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
+                     ILocationService locationService,
+                     Class<JTestHcdDomainMessage> klass) {
+      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
       log.debug("Starting Test HCD");
     }
 

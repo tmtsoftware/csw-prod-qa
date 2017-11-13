@@ -24,20 +24,21 @@ sealed trait TestAssemblyDomainMessage extends DomainMessage
 // Add messages here...
 
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory[TestAssemblyDomainMessage] {
-  override def handlers(
-                ctx: ActorContext[ComponentMessage],
-                componentInfo: ComponentInfo,
-                pubSubRef: ActorRef[PublisherMessage[CurrentState]],
-                locationService: LocationService
-              ): ComponentHandlers[TestAssemblyDomainMessage] =
-    new TestAssemblyHandlers(ctx, componentInfo, pubSubRef, locationService)
+  override def handlers(ctx: ActorContext[ComponentMessage],
+                        componentInfo: ComponentInfo,
+                        commandResponseManager: ActorRef[CommandResponseManagerMessage],
+                        pubSubRef: ActorRef[PublisherMessage[CurrentState]],
+                        locationService: LocationService
+                       ): ComponentHandlers[TestAssemblyDomainMessage] =
+    new TestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
 }
 
 private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
-                                    componentInfo: ComponentInfo,
-                                    pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
-                                    locationService: LocationService)
-  extends ComponentHandlers[TestAssemblyDomainMessage](ctx, componentInfo, pubSubRef, locationService)
+                                   componentInfo: ComponentInfo,
+                                   commandResponseManager: ActorRef[CommandResponseManagerMessage],
+                                   pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
+                                   locationService: LocationService)
+  extends ComponentHandlers[TestAssemblyDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
     with ComponentLogger.Simple {
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
