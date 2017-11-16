@@ -8,7 +8,7 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages._
 import csw.messages.PubSub.PublisherMessage
 import csw.messages.RunningMessage.DomainMessage
-import csw.messages.ccs.commands.{CommandResponse, CommandValidationResponse, ControlCommand}
+import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
 import csw.messages.params.states.CurrentState
@@ -43,20 +43,26 @@ private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
-  override def componentName(): String = "TestAssembly"
+  override def componentName(): String = componentInfo.name
 
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
   }
 
-  override def onSubmit(controlCommand: ControlCommand, replyTo: ActorRef[CommandResponse]): CommandValidationResponse = {
-    log.debug("onSubmit called")
-    CommandValidationResponse.Accepted(controlCommand.runId)
+  override def validateSubmit(controlCommand: ControlCommand): CommandResponse = {
+    CommandResponse.Accepted(controlCommand.runId)
   }
 
-  override def onOneway(controlCommand: ControlCommand): CommandValidationResponse = {
+  override def validateOneway(controlCommand: ControlCommand): CommandResponse = {
+    CommandResponse.Accepted(controlCommand.runId)
+  }
+
+  override def onSubmit(controlCommand: ControlCommand, replyTo: ActorRef[CommandResponse]): Unit = {
+    log.debug("onSubmit called")
+  }
+
+  override def onOneway(controlCommand: ControlCommand): Unit = {
     log.debug("onOneway called")
-    CommandValidationResponse.Accepted(controlCommand.runId)
   }
 
   override def onShutdown(): Future[Unit] = async {

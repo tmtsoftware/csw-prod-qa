@@ -9,7 +9,6 @@ import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
 import csw.messages.ccs.commands.CommandResponse;
-import csw.messages.ccs.commands.CommandValidationResponse;
 import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
@@ -51,6 +50,7 @@ public class JTestAssembly {
   static class JTestAssemblyHandlers extends JComponentHandlers<JTestAssemblyDomainMessage>
       implements JCommonComponentLogger {
     private ILogger log = getLogger();
+    private final ComponentInfo componentInfo;
 
     JTestAssemblyHandlers(ActorContext<ComponentMessage> ctx,
                           ComponentInfo componentInfo,
@@ -59,7 +59,14 @@ public class JTestAssembly {
                           ILocationService locationService,
                           Class<JTestAssemblyDomainMessage> klass) {
       super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
+      this.componentInfo = componentInfo;
       log.debug("Starting Test Assembly");
+    }
+
+
+    @Override
+    public String componentName() {
+      return componentInfo.name();
     }
 
     private BoxedUnit doNothing() {
@@ -78,15 +85,23 @@ public class JTestAssembly {
     }
 
     @Override
-    public CommandValidationResponse onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
-      log.debug("onSubmit called: " + controlCommand);
-      return new CommandValidationResponse.Accepted(controlCommand.runId());
+    public CommandResponse validateSubmit(ControlCommand controlCommand) {
+      return new CommandResponse.Completed(controlCommand.runId());
     }
 
     @Override
-    public CommandValidationResponse onOneway(ControlCommand controlCommand) {
+    public void onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
+      log.debug("onSubmit called: " + controlCommand);
+    }
+
+    @Override
+    public CommandResponse validateOneway(ControlCommand controlCommand) {
+      return null;
+    }
+
+    @Override
+    public void onOneway(ControlCommand controlCommand) {
       log.debug("onOneway called: " + controlCommand);
-      return new CommandValidationResponse.Accepted(controlCommand.runId());
     }
 
     @Override
@@ -108,11 +123,6 @@ public class JTestAssembly {
     @Override
     public void onLocationTrackingEvent(TrackingEvent trackingEvent) {
       log.debug("onLocationTrackingEvent called: " + trackingEvent);
-    }
-
-    @Override
-    public String componentName() {
-      return "TestAssembly";
     }
   }
 

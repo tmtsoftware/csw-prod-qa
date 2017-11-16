@@ -9,7 +9,6 @@ import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
 import csw.messages.ccs.commands.CommandResponse;
-import csw.messages.ccs.commands.CommandValidationResponse;
 import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
@@ -49,8 +48,8 @@ public class JTestHcd {
   }
 
   static class JTestHcdHandlers extends JComponentHandlers<JTestHcdDomainMessage> implements JCommonComponentLogger {
-    // XXX Can't this be done in the interface?
     private ILogger log = getLogger();
+    private final ComponentInfo componentInfo;
 
     JTestHcdHandlers(ActorContext<ComponentMessage> ctx,
                      ComponentInfo componentInfo,
@@ -59,7 +58,13 @@ public class JTestHcd {
                      ILocationService locationService,
                      Class<JTestHcdDomainMessage> klass) {
       super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
+      this.componentInfo = componentInfo;
       log.debug("Starting Test HCD");
+    }
+
+    @Override
+    public String componentName() {
+      return componentInfo.name();
     }
 
     private BoxedUnit doNothing() {
@@ -83,15 +88,23 @@ public class JTestHcd {
     }
 
     @Override
-    public CommandValidationResponse onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
-      log.debug("onSubmit called: " + controlCommand);
-      return new CommandValidationResponse.Accepted(controlCommand.runId());
+    public CommandResponse validateSubmit(ControlCommand controlCommand) {
+      return new CommandResponse.Accepted(controlCommand.runId());
     }
 
     @Override
-    public CommandValidationResponse onOneway(ControlCommand controlCommand) {
+    public void onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
+      log.debug("onSubmit called: " + controlCommand);
+    }
+
+    @Override
+    public CommandResponse validateOneway(ControlCommand controlCommand) {
+      return new CommandResponse.Accepted(controlCommand.runId());
+    }
+
+    @Override
+    public void onOneway(ControlCommand controlCommand) {
       log.debug("onOneway called: " + controlCommand);
-      return new CommandValidationResponse.Accepted(controlCommand.runId());
     }
 
     @Override
@@ -108,11 +121,6 @@ public class JTestHcd {
     @Override
     public void onGoOnline() {
       log.debug("onGoOnline called");
-    }
-
-    @Override
-    public String componentName() {
-      return "TestAssembly";
     }
   }
 
