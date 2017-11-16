@@ -12,7 +12,7 @@ import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
 import csw.messages.params.states.CurrentState
 import csw.services.location.scaladsl.LocationService
-import csw.services.logging.scaladsl.ComponentLogger
+import csw.services.logging.scaladsl.CommonComponentLogger
 
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -32,17 +32,17 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory[TestHcdDom
     new TestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
 }
 
+object TestHcdLogger extends CommonComponentLogger("TestHcd")
+
 private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
                               componentInfo: ComponentInfo,
                               commandResponseManager: ActorRef[CommandResponseManagerMessage],
                               pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
                               locationService: LocationService)
   extends ComponentHandlers[TestHcdDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
-    with ComponentLogger.Simple {
+    with TestHcdLogger.Simple {
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
-
-  override def componentName(): String = "TestHcd"
 
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
