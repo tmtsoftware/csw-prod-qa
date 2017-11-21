@@ -6,11 +6,11 @@ import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages._
-import csw.messages.PubSub.PublisherMessage
 import csw.messages.RunningMessage.DomainMessage
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
+import csw.messages.models.PubSub.PublisherMessage
 import csw.messages.params.states.CurrentState
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.scaladsl.CommonComponentLogger
@@ -38,7 +38,7 @@ object TestAssemblyLogger extends CommonComponentLogger("TestAssembly")
 private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
                                    componentInfo: ComponentInfo,
                                    commandResponseManager: ActorRef[CommandResponseManagerMessage],
-                                   pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
+                                   pubSubRef: ActorRef[PublisherMessage[CurrentState]],
                                    locationService: LocationService)
   extends ComponentHandlers[TestAssemblyDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
     with TestAssemblyLogger.Simple {
@@ -49,11 +49,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
     log.debug("Initialize called")
   }
 
-  override def validateSubmit(controlCommand: ControlCommand): CommandResponse = {
-    CommandResponse.Accepted(controlCommand.runId)
-  }
-
-  override def validateOneway(controlCommand: ControlCommand): CommandResponse = {
+  override def validateCommand(controlCommand: ControlCommand): CommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
   }
 

@@ -10,6 +10,7 @@ import csw.messages.RunningMessage.DomainMessage
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
+import csw.messages.models.PubSub.PublisherMessage
 import csw.messages.params.states.CurrentState
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.scaladsl.CommonComponentLogger
@@ -26,7 +27,7 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory[TestHcdDom
   override def handlers(ctx: ActorContext[ComponentMessage],
                         componentInfo: ComponentInfo,
                         commandResponseManager: ActorRef[CommandResponseManagerMessage],
-                        pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
+                        pubSubRef: ActorRef[PublisherMessage[CurrentState]],
                         locationService: LocationService
                        ): ComponentHandlers[TestHcdDomainMessage] =
     new TestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
@@ -37,7 +38,7 @@ object TestHcdLogger extends CommonComponentLogger("TestHcd")
 private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
                               componentInfo: ComponentInfo,
                               commandResponseManager: ActorRef[CommandResponseManagerMessage],
-                              pubSubRef: ActorRef[PubSub.PublisherMessage[CurrentState]],
+                              pubSubRef: ActorRef[PublisherMessage[CurrentState]],
                               locationService: LocationService)
   extends ComponentHandlers[TestHcdDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
     with TestHcdLogger.Simple {
@@ -48,11 +49,7 @@ private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
     log.debug("Initialize called")
   }
 
-  override def validateSubmit(controlCommand: ControlCommand): CommandResponse = {
-    CommandResponse.Accepted(controlCommand.runId)
-  }
-
-  override def validateOneway(controlCommand: ControlCommand): CommandResponse = {
+  override def validateCommand(controlCommand: ControlCommand): CommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
   }
 

@@ -12,6 +12,7 @@ import csw.messages.ccs.commands.CommandResponse;
 import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
+import csw.messages.models.PubSub;
 import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
@@ -88,18 +89,13 @@ public class JTestHcd {
     }
 
     @Override
-    public CommandResponse validateSubmit(ControlCommand controlCommand) {
+    public CommandResponse validateCommand(ControlCommand controlCommand) {
       return new CommandResponse.Accepted(controlCommand.runId());
     }
 
     @Override
     public void onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
       log.debug("onSubmit called: " + controlCommand);
-    }
-
-    @Override
-    public CommandResponse validateOneway(ControlCommand controlCommand) {
-      return new CommandResponse.Accepted(controlCommand.runId());
     }
 
     @Override
