@@ -6,14 +6,14 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.typed.ActorRef
 import csw.services.location.scaladsl.LocationServiceFactory
-import csw.services.logging.scaladsl.{CommonComponentLogger, LogAdminActorFactory, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{LibraryLogger, LogAdminActorFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import csw.services.location.commons.ActorSystemFactory
 import csw.services.logging.internal.LogControlMessages
 
 import scala.concurrent.duration._
 
-object TestAkkaServiceAppLogger extends CommonComponentLogger("TestAkkaService")
+object TestAkkaServiceAppLogger extends LibraryLogger("TestAkkaService")
 
 /**
   * Starts one or more akka services in order to test the location service.

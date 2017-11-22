@@ -6,9 +6,9 @@ import akka.typed.scaladsl.{Actor, ActorContext, TimerScheduler}
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.LocationService
-import csw.services.logging.scaladsl.CommonComponentLogger
+import csw.services.logging.scaladsl.LibraryLogger
 
-object TestServiceClientLogger extends CommonComponentLogger("TestServiceClient")
+object TestServiceClientLogger extends LibraryLogger("TestServiceClient")
 
 object TestServiceClient {
   def behavior(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer): Behavior[ServiceClientMessageType] =
@@ -38,9 +38,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
       case TrackingEventMessage(LocationUpdated(loc)) =>
         log.debug(s"Location updated ${loc.connection.name}")
         loc match {
-          case actorRef: AkkaLocation =>
-            // XXX TODO: Fixme: The allowed actorref types are now restricted. Should be changed?
-//            actorRef.componentRef() ! ClientMessage(ctx.self)
+          case loc: AkkaLocation => log.info(s"Received Akka Location: $loc")
           case x => log.error(s"Received unexpected location type: $x")
         }
 

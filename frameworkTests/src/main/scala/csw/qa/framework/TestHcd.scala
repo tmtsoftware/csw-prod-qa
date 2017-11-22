@@ -13,7 +13,7 @@ import csw.messages.location.TrackingEvent
 import csw.messages.models.PubSub.PublisherMessage
 import csw.messages.params.states.CurrentState
 import csw.services.location.scaladsl.LocationService
-import csw.services.logging.scaladsl.CommonComponentLogger
+import csw.services.logging.scaladsl.LibraryLogger
 
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -33,7 +33,7 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory[TestHcdDom
     new TestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
 }
 
-object TestHcdLogger extends CommonComponentLogger("TestHcd")
+object TestHcdLogger extends LibraryLogger("TestHcd")
 
 private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
                               componentInfo: ComponentInfo,
@@ -75,8 +75,6 @@ private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit =
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
-
-  override protected def maybeComponentName(): Option[String] = Some("TestHcd")
 }
 
 object TestHcdApp extends App {
