@@ -13,10 +13,7 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
 import csw.services.location.commons.ActorSystemFactory
-import csw.services.logging.scaladsl.{CommonComponentLogger, LoggingSystemFactory}
-
-object ConfigServiceTestLogger extends CommonComponentLogger("ConfigServiceTest")
-
+import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 /**
   * Some tests for the config service.
@@ -24,7 +21,8 @@ object ConfigServiceTestLogger extends CommonComponentLogger("ConfigServiceTest"
   * Note: This test assumes that the location and config services are running and that the necessary
   * csw cluster environment variables or system properties are defined.
   */
-class ConfigServiceTest extends FunSuite with BeforeAndAfterAll with ConfigServiceTestLogger.Simple {
+class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
+  private val log = GenericLoggerFactory.getLogger
   private val path1 = new File(s"some/test1/TestConfig1").toPath
   private val path2 = new File(s"some/test2/TestConfig2").toPath
 

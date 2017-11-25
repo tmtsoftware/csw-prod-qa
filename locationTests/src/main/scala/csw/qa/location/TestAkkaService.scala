@@ -6,7 +6,7 @@ import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location.{ComponentId, ComponentType}
 import csw.services.location.scaladsl.{LocationService, RegistrationFactory}
 import csw.services.logging.internal.LogControlMessages
-import csw.services.logging.scaladsl.LibraryLogger
+import csw.services.logging.scaladsl.GenericLoggerFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -29,8 +29,6 @@ object TestAkkaService {
 
 }
 
-object TestAkkaServiceLogger extends LibraryLogger("TestAkkaService")
-
 /**
   * A dummy akka test service that registers with the location service
   */
@@ -39,10 +37,11 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       i: Int, options: TestAkkaServiceApp.Options,
                       locationService: LocationService,
                       logAdminActorRef: ActorRef[LogControlMessages])
-  extends TestAkkaServiceLogger.MutableActor[ServiceMessageType](ctx) {
+  extends Actor.MutableBehavior[ServiceMessageType] {
 
   import options._
 
+  private val log = GenericLoggerFactory.getLogger(ctx)
   private val registrationFactory = new RegistrationFactory(logAdminActorRef)
 
   // Register with the location service
@@ -92,8 +91,6 @@ object TestAkkaService2 {
 }
 
 
-object TestAkkaServiceLogger2 extends LibraryLogger("TestAkkaService2")
-
 /**
   * A dummy akka test service that registers with the location service
   */
@@ -102,10 +99,11 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        i: Int, options: TestAkkaServiceApp.Options,
                        locationService: LocationService,
                        logAdminActorRef: ActorRef[LogControlMessages])
-  extends TestAkkaServiceLogger2.MutableActor[ServiceMessageType](ctx) {
+  extends Actor.MutableBehavior[ServiceMessageType] {
 
   import options._
 
+  private val log = GenericLoggerFactory.getLogger(ctx)
   private val registrationFactory = new RegistrationFactory(logAdminActorRef)
 
   // Register with the location service

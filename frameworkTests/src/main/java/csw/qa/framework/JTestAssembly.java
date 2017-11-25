@@ -16,7 +16,7 @@ import csw.messages.models.PubSub;
 import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JCommonComponentLogger;
+import csw.services.logging.javadsl.JLoggerFactory;
 import scala.runtime.BoxedUnit;
 
 import java.util.Optional;
@@ -48,10 +48,8 @@ public class JTestAssembly {
     }
   }
 
-  static class JTestAssemblyHandlers extends JComponentHandlers<JTestAssemblyDomainMessage>
-      implements JCommonComponentLogger {
-    private ILogger log = getLogger();
-    private final ComponentInfo componentInfo;
+  static class JTestAssemblyHandlers extends JComponentHandlers<JTestAssemblyDomainMessage> {
+    private ILogger log;
 
     JTestAssemblyHandlers(ActorContext<ComponentMessage> ctx,
                           ComponentInfo componentInfo,
@@ -60,15 +58,10 @@ public class JTestAssembly {
                           ILocationService locationService,
                           Class<JTestAssemblyDomainMessage> klass) {
       super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
-      this.componentInfo = componentInfo;
+      this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       log.debug("Starting Test Assembly");
     }
 
-
-    @Override
-    public String componentName() {
-      return componentInfo.name();
-    }
 
     private BoxedUnit doNothing() {
       return null;

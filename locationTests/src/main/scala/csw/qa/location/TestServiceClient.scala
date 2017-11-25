@@ -6,9 +6,7 @@ import akka.typed.scaladsl.{Actor, ActorContext, TimerScheduler}
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.LocationService
-import csw.services.logging.scaladsl.LibraryLogger
-
-object TestServiceClientLogger extends LibraryLogger("TestServiceClient")
+import csw.services.logging.scaladsl.GenericLoggerFactory
 
 object TestServiceClient {
   def behavior(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer): Behavior[ServiceClientMessageType] =
@@ -22,10 +20,11 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
                         timers: TimerScheduler[ServiceClientMessageType],
                         options: TestServiceClientApp.Options,
                         locationService: LocationService)(implicit mat: Materializer)
-  extends TestServiceClientLogger.MutableActor[ServiceClientMessageType](ctx) {
+  extends Actor.MutableBehavior[ServiceClientMessageType] {
 
   import options._
 
+  private val log = GenericLoggerFactory.getLogger
   private val connections: Set[AkkaConnection] = (firstService until firstService + numServices).
     toList.map(i => TestAkkaService.connection(i)).toSet
 

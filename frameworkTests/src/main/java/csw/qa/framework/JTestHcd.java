@@ -16,7 +16,7 @@ import csw.messages.models.PubSub;
 import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JCommonComponentLogger;
+import csw.services.logging.javadsl.JLoggerFactory;
 import scala.runtime.BoxedUnit;
 
 import java.util.Optional;
@@ -48,9 +48,8 @@ public class JTestHcd {
     }
   }
 
-  static class JTestHcdHandlers extends JComponentHandlers<JTestHcdDomainMessage> implements JCommonComponentLogger {
-    private ILogger log = getLogger();
-    private final ComponentInfo componentInfo;
+  static class JTestHcdHandlers extends JComponentHandlers<JTestHcdDomainMessage> {
+    private ILogger log;
 
     JTestHcdHandlers(ActorContext<ComponentMessage> ctx,
                      ComponentInfo componentInfo,
@@ -59,13 +58,8 @@ public class JTestHcd {
                      ILocationService locationService,
                      Class<JTestHcdDomainMessage> klass) {
       super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
-      this.componentInfo = componentInfo;
+      this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       log.debug("Starting Test HCD");
-    }
-
-    @Override
-    public String componentName() {
-      return componentInfo.name();
     }
 
     private BoxedUnit doNothing() {

@@ -6,7 +6,7 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import csw.services.location.scaladsl.LocationServiceFactory
-import csw.services.logging.scaladsl.{GenericLogger, LoggingSystemFactory}
+import csw.services.logging.scaladsl._
 import akka.typed.scaladsl.adapter._
 import csw.services.location.commons.ActorSystemFactory
 
@@ -20,12 +20,13 @@ import scala.concurrent.duration._
   *
   * The client and service applications can be run on the same or different hosts.
   */
-object TestServiceClientApp extends App with GenericLogger.Simple {
+object TestServiceClientApp extends App {
   private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
   implicit val system: ActorSystem = ActorSystemFactory.remote
   LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
   implicit val mat: ActorMaterializer = ActorMaterializer()
+  private val log = GenericLoggerFactory.getLogger
   log.info(s"TestServiceClientApp is running on $host")
 
   case class Options(numServices: Int = 1, firstService: Int = 1, autoshutdown: Int = 0)

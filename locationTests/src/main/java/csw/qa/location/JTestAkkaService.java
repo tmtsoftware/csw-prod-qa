@@ -1,5 +1,6 @@
 package csw.qa.location;
 
+import akka.actor.AbstractActor;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.Creator;
@@ -14,19 +15,12 @@ import akka.typed.javadsl.Adapter;
 import csw.services.location.scaladsl.RegistrationFactory;
 import csw.services.logging.internal.LogControlMessages;
 import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JCommonComponentLoggerActor;
+import csw.services.logging.javadsl.JGenericLoggerFactory;
 import csw.services.logging.scaladsl.LogAdminActorFactory;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
-abstract class JTestAkkaServiceLoggerActor extends JCommonComponentLoggerActor {
-    @Override
-    public String componentName() {
-        return "JTestAkkaService";
-    }
-}
 
 /**
  * Starts one or more akka services in order to test the location service.
@@ -36,9 +30,9 @@ abstract class JTestAkkaServiceLoggerActor extends JCommonComponentLoggerActor {
  * will try to find all the services.
  * The client and service applications can be run on the same or different hosts.
  */
-public class JTestAkkaService extends JTestAkkaServiceLoggerActor {
+public class JTestAkkaService extends AbstractActor {
 
-    private ILogger log = getLogger();
+  private ILogger log = JGenericLoggerFactory.getLogger(context(), getClass());
 
     // Component id for the ith service
     static ComponentId componentId(int i) {

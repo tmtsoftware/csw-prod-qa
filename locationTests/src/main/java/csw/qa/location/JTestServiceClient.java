@@ -1,8 +1,6 @@
 package csw.qa.location;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
+import akka.actor.*;
 import akka.japi.Creator;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
@@ -15,7 +13,7 @@ import csw.services.location.javadsl.ILocationService;
 import csw.services.location.javadsl.JLocationServiceFactory;
 import akka.typed.javadsl.Adapter;
 import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JCommonComponentLoggerActor;
+import csw.services.logging.javadsl.JGenericLoggerFactory;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
 
 import java.io.Serializable;
@@ -24,20 +22,13 @@ import java.net.UnknownHostException;
 
 import static csw.services.location.javadsl.JConnectionType.AkkaType;
 
-abstract class JTestServiceClientLoggerActor extends JCommonComponentLoggerActor {
-    @Override
-    public String componentName() {
-        return "JTestServiceClient";
-    }
-}
-
 /**
  * A location service test client application that attempts to resolve one or more sets of
  * akka services.
  */
-public class JTestServiceClient extends JTestServiceClientLoggerActor {
+public class JTestServiceClient extends AbstractActor {
 
-    private ILogger log = getLogger();
+    private ILogger log = JGenericLoggerFactory.getLogger(context(), getClass());
 
     // Used to create the ith JTestServiceClient actor
     private static Props props(int numServices, ILocationService locationService) {

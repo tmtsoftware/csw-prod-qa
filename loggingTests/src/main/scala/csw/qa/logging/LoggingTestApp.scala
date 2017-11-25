@@ -4,19 +4,18 @@ import java.net.InetAddress
 
 import akka.actor._
 import akka.stream.ActorMaterializer
-import csw.services.logging.scaladsl.{LibraryLogger, LoggingSystemFactory}
+import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 import scala.concurrent.duration._
-
-object LoggingTestAppLogger extends LibraryLogger("LoggingTest")
 
 /**
   * An test application that uses the logging service
   */
-object LoggingTestApp extends App with LoggingTestAppLogger.Simple {
+object LoggingTestApp extends App {
   implicit val system: ActorSystem = ActorSystem("LoggingTest")
   private val host = InetAddress.getLocalHost.getHostName
   LoggingSystemFactory.start("LoggingTestApp", "0.1", host, system)
+  private val log = GenericLoggerFactory.getLogger
 
   log.debug("Started LoggingTestApp")
 
@@ -98,17 +97,15 @@ object LoggingTest {
 
 }
 
-object LoggingTestLogger extends LibraryLogger("LoggingTest")
-
 /**
   * A dummy akka test actor
   */
-class LoggingTest(i: Int, options: LoggingTestApp.Options)
-  extends LoggingTestLogger.Actor {
+class LoggingTest(i: Int, options: LoggingTestApp.Options) extends Actor {
 
   import context.dispatcher
   import options._
 
+  private val log = GenericLoggerFactory.getLogger
   log.debug(s"In test actor $i")
 
   if (autostop != 0)
