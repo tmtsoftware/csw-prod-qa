@@ -78,6 +78,8 @@ object TestAssemblyClient extends App {
     assembly.submit(setup).onComplete {
       case Success(resp) =>
         log.info(s"Assembly responded with $resp")
+        // XXX TODO FIXME: This will only get the current response status?
+        assembly.getCommandResponse(resp.runId).onComplete(r => log.info(s"Command Response: $r"))
       case Failure(ex) =>
         log.error("Failed to send command to TestAssembly", ex = ex)
     }
