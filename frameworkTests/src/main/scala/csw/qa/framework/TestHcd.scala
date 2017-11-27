@@ -5,8 +5,10 @@ import akka.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
+import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
+import csw.messages.ccs.commands.CommandResponse.{Completed, CompletedWithResult}
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
@@ -52,6 +54,7 @@ private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
 
   override def onSubmit(controlCommand: ControlCommand, replyTo: ActorRef[CommandResponse]): Unit = {
     log.debug("onSubmit called")
+    commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Completed(controlCommand.runId))
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {

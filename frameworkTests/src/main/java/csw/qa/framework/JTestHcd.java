@@ -50,6 +50,7 @@ public class JTestHcd {
 
   static class JTestHcdHandlers extends JComponentHandlers<JTestHcdDomainMessage> {
     private ILogger log;
+    private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
 
     JTestHcdHandlers(ActorContext<ComponentMessage> ctx,
                      ComponentInfo componentInfo,
@@ -59,6 +60,7 @@ public class JTestHcd {
                      Class<JTestHcdDomainMessage> klass) {
       super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
+      this.commandResponseManager = commandResponseManager;
       log.debug("Starting Test HCD");
     }
 
@@ -90,6 +92,7 @@ public class JTestHcd {
     @Override
     public void onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
       log.debug("onSubmit called: " + controlCommand);
+      commandResponseManager.tell(new CommandResponseManagerMessage.AddOrUpdateCommand(controlCommand.runId(), new CommandResponse.Completed(controlCommand.runId())));
     }
 
     @Override

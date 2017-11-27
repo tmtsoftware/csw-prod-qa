@@ -2,15 +2,21 @@ package csw.qa.framework;
 
 import akka.typed.ActorRef;
 import akka.typed.javadsl.ActorContext;
+import akka.typed.javadsl.AskPattern;
+import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
+import csw.messages.CommandMessage.Submit;
 import csw.messages.ccs.commands.CommandResponse;
+import csw.messages.ccs.commands.CommandResponse.Accepted;
 import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
+import csw.messages.location.AkkaLocation;
+import csw.messages.location.LocationUpdated;
 import csw.messages.location.TrackingEvent;
 import csw.messages.models.PubSub;
 import csw.messages.params.states.CurrentState;
@@ -21,6 +27,11 @@ import scala.runtime.BoxedUnit;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand;
+import csw.messages.ccs.commands.CommandResponse.Completed;
 
 public class JTestAssembly {
 
@@ -49,7 +60,11 @@ public class JTestAssembly {
   }
 
   static class JTestAssemblyHandlers extends JComponentHandlers<JTestAssemblyDomainMessage> {
-    private ILogger log;
+    private final ILogger log;
+    private final ActorContext<ComponentMessage> ctx;
+    private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
+    // Set when the location is received from the location service (below)
+    private Optional<ActorRef<SupervisorExternalMessage>> testHcd = Optional.empty();
 
     JTestAssemblyHandlers(ActorContext<ComponentMessage> ctx,
                           ComponentInfo componentInfo,
@@ -59,6 +74,8 @@ public class JTestAssembly {
                           Class<JTestAssemblyDomainMessage> klass) {
       super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
+      this.ctx = ctx;
+      this.commandResponseManager = commandResponseManager;
       log.debug("Starting Test Assembly");
     }
 
@@ -86,7 +103,32 @@ public class JTestAssembly {
     @Override
     public void onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
       log.debug("onSubmit called: " + controlCommand);
+      commandResponseManager.tell(new AddOrUpdateCommand(controlCommand.runId(), new Completed(controlCommand.runId())));
     }
+
+    // For testing, forward command to HCD and complete this command when it completes
+    private void forwardCommandToHcd(ControlCommand controlCommand) {
+//      testHcd.ifPresent( hcd ->
+//          hcd.tell(new Submit(controlCommand, ctx.getSelf()))
+//      );
+
+//      if (testHcd.isPresent()) {
+//        final CompletionStage<SupervisorExternalMessage> reply =
+//            AskPattern.ask(testHcd.get(),
+//                (ActorRef<CommandResponse> replyTo) -> new Submit(controlCommand, replyTo),
+//                new Timeout(3, TimeUnit.SECONDS), ctx.getSystem().scheduler());
+//
+//        reply.thenAccept(resp -> {
+//          log.info("TestHcd responded with " + resp);
+//          if (resp instanceof Accepted) {
+//            Accepted a = (Accepted) resp;
+//            assert (a.runId().equals(controlCommand.runId()));
+//            commandResponseManager.tell(new AddOrUpdateCommand(a.runId(), new Completed(a.runId())));
+//          }
+//        });
+//      }
+    }
+
 
     @Override
     public void onOneway(ControlCommand controlCommand) {
@@ -112,6 +154,10 @@ public class JTestAssembly {
     @Override
     public void onLocationTrackingEvent(TrackingEvent trackingEvent) {
       log.debug("onLocationTrackingEvent called: " + trackingEvent);
+      if (trackingEvent instanceof LocationUpdated) {
+        AkkaLocation location = (AkkaLocation) ((LocationUpdated) trackingEvent).location();
+        testHcd = Optional.of(location.componentRef());
+      } else testHcd = Optional.empty();
     }
   }
 

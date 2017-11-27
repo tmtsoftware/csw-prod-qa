@@ -2,14 +2,14 @@ package csw.qa.framework
 
 import java.net.InetAddress
 
-import akka.actor.{ActorRefFactory, ActorSystem}
+import akka.actor.{ActorRefFactory, ActorSystem, Scheduler}
 import akka.stream.ActorMaterializer
 import akka.typed.{ActorRef, Behavior}
 import akka.typed.scaladsl.{Actor, ActorContext}
 import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
-import csw.messages.CommandMessage.Submit
+import akka.util.Timeout
 import csw.messages.SupervisorExternalMessage
 import csw.messages.ccs.commands.Setup
 import csw.messages.location.ComponentType.Assembly
@@ -19,6 +19,11 @@ import csw.messages.params.generics.KeyType
 import csw.messages.params.models.{ObsId, Prefix}
 import csw.messages.params.models.Units.degree
 import csw.services.location.commons.ClusterAwareSettings
+
+import scala.concurrent.duration._
+
+import scala.util.{Failure, Success}
+import csw.services.ccs.common.ActorRefExts.RichComponentActor
 
 // A client to test locating and communicating with the Test assembly
 object TestAssemblyClient extends App {
@@ -67,7 +72,15 @@ object TestAssemblyClient extends App {
     val i2 = k2.set("a", "b", "c").withUnits(degree)
     val setup = Setup(ObsId("2023-Q22-4-33"), Prefix("wfos.blue.filter")).add(i1).add(i2)
     log.info(s"Sending setup to assembly: $setup")
-    assembly ! Submit(setup, replyTo = ctx.spawnAnonymous(Actor.ignore))
+    implicit val timeout: Timeout = Timeout(3.seconds)
+    implicit val scheduler: Scheduler = ctx.system.scheduler
+    import ctx.executionContext
+    assembly.submit(setup).onComplete {
+      case Success(resp) =>
+        log.info(s"Assembly responded with $resp")
+      case Failure(ex) =>
+        log.error("Failed to send command to TestAssembly", ex = ex)
+    }
   }
 }
 
