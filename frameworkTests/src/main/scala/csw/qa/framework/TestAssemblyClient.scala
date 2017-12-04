@@ -70,7 +70,7 @@ object TestAssemblyClient extends App {
     val k2 = KeyType.StringKey.make("filter")
     val i1 = k1.set(22, 33, 44)
     val i2 = k2.set("a", "b", "c").withUnits(degree)
-    val setup = Setup(ObsId("2023-Q22-4-33"), Prefix("wfos.blue.filter")).add(i1).add(i2)
+    val setup = Setup(Prefix("wfos.blue.filter"), Some(ObsId("2023-Q22-4-33"))).add(i1).add(i2)
     log.info(s"Sending setup to assembly: $setup")
     implicit val timeout: Timeout = Timeout(3.seconds)
     implicit val scheduler: Scheduler = ctx.system.scheduler

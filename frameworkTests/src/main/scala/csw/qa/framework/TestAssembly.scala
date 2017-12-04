@@ -7,7 +7,6 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.messages.CommandMessage.Submit
 import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
@@ -25,6 +24,7 @@ import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 import csw.services.ccs.common.ActorRefExts.RichComponentActor
+import csw.services.logging.scaladsl.LoggerFactory
 
 // Base trait for Test Assembly domain messages
 sealed trait TestAssemblyDomainMessage extends DomainMessage
@@ -36,17 +36,20 @@ private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory[TestA
                         componentInfo: ComponentInfo,
                         commandResponseManager: ActorRef[CommandResponseManagerMessage],
                         pubSubRef: ActorRef[PublisherMessage[CurrentState]],
-                        locationService: LocationService
+                        locationService: LocationService,
+                        loggerFactory: LoggerFactory
                        ): ComponentHandlers[TestAssemblyDomainMessage] =
-    new TestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
+    new TestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory)
 }
 
 private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
                                    componentInfo: ComponentInfo,
                                    commandResponseManager: ActorRef[CommandResponseManagerMessage],
                                    pubSubRef: ActorRef[PublisherMessage[CurrentState]],
-                                   locationService: LocationService)
-  extends ComponentHandlers[TestAssemblyDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef, locationService) {
+                                   locationService: LocationService,
+                                   loggerFactory: LoggerFactory)
+  extends ComponentHandlers[TestAssemblyDomainMessage](ctx, componentInfo, commandResponseManager,
+    pubSubRef, locationService, loggerFactory) {
 
   private val log = loggerFactory.getLogger
   // Set when the location is received from the location service (below)
@@ -61,7 +64,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
     CommandResponse.Accepted(controlCommand.runId)
   }
 
-  override def onSubmit(controlCommand: ControlCommand, replyTo: ActorRef[CommandResponse]): Unit = {
+  override def onSubmit(controlCommand: ControlCommand): Unit = {
     implicit val timeout: Timeout = Timeout(3.seconds)
     log.debug("onSubmit called")
     forwardCommandToHcd(controlCommand)
@@ -69,11 +72,9 @@ private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
 
   // For testing, forward command to HCD and complete this command when it completes
   private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
-    import akka.typed.scaladsl.AskPattern._
     implicit val scheduler: Scheduler = ctx.system.scheduler
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.foreach { hcd =>
-//       val f: Future[CommandResponse] = hcd ? (x => Submit(controlCommand, x))
       hcd.submit(controlCommand).onComplete {
         case Success(resp) =>
           log.info(s"TestHcd responded with $resp")

@@ -8,13 +8,14 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
-import csw.messages.ccs.commands.CommandResponse.{Completed, CompletedWithResult}
+import csw.messages.ccs.commands.CommandResponse.Completed
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
 import csw.messages.models.PubSub.PublisherMessage
 import csw.messages.params.states.CurrentState
 import csw.services.location.scaladsl.LocationService
+import csw.services.logging.scaladsl.LoggerFactory
 
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -29,17 +30,20 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory[TestHcdDom
                         componentInfo: ComponentInfo,
                         commandResponseManager: ActorRef[CommandResponseManagerMessage],
                         pubSubRef: ActorRef[PublisherMessage[CurrentState]],
-                        locationService: LocationService
+                        locationService: LocationService,
+                        loggerFactory: LoggerFactory
                        ): ComponentHandlers[TestHcdDomainMessage] =
-    new TestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService)
+    new TestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory)
 }
 
 private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
                               componentInfo: ComponentInfo,
                               commandResponseManager: ActorRef[CommandResponseManagerMessage],
                               pubSubRef: ActorRef[PublisherMessage[CurrentState]],
-                              locationService: LocationService)
-  extends ComponentHandlers[TestHcdDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef, locationService) {
+                              locationService: LocationService,
+                              loggerFactory: LoggerFactory)
+  extends ComponentHandlers[TestHcdDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef,
+    locationService, loggerFactory) {
 
   private val log = loggerFactory.getLogger
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
@@ -52,7 +56,7 @@ private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
     CommandResponse.Accepted(controlCommand.runId)
   }
 
-  override def onSubmit(controlCommand: ControlCommand, replyTo: ActorRef[CommandResponse]): Unit = {
+  override def onSubmit(controlCommand: ControlCommand): Unit = {
     log.debug("onSubmit called")
     commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Completed(controlCommand.runId))
   }

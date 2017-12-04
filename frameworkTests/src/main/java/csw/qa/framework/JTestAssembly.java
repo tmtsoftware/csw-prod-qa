@@ -23,6 +23,7 @@ import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
+import csw.services.logging.scaladsl.LoggerFactory;
 import scala.runtime.BoxedUnit;
 
 import java.util.Optional;
@@ -53,9 +54,10 @@ public class JTestAssembly {
         ComponentInfo componentInfo,
         ActorRef<CommandResponseManagerMessage> commandResponseManager,
         ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
-        ILocationService locationService) {
+        ILocationService locationService,
+        JLoggerFactory loggerFactory) {
       return new JTestAssembly.JTestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,
-          JTestAssemblyDomainMessage.class);
+          loggerFactory, JTestAssemblyDomainMessage.class);
     }
   }
 
@@ -71,8 +73,9 @@ public class JTestAssembly {
                           ActorRef<CommandResponseManagerMessage> commandResponseManager,
                           ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
                           ILocationService locationService,
+                          JLoggerFactory loggerFactory,
                           Class<JTestAssemblyDomainMessage> klass) {
-      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
+      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory, klass);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.ctx = ctx;
       this.commandResponseManager = commandResponseManager;
@@ -101,7 +104,7 @@ public class JTestAssembly {
     }
 
     @Override
-    public void onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
+    public void onSubmit(ControlCommand controlCommand) {
       log.debug("onSubmit called: " + controlCommand);
       commandResponseManager.tell(new AddOrUpdateCommand(controlCommand.runId(), new Completed(controlCommand.runId())));
     }

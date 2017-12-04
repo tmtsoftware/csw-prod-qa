@@ -43,8 +43,10 @@ public class JTestHcd {
         ComponentInfo componentInfo,
         ActorRef<CommandResponseManagerMessage> commandResponseManager,
         ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
-        ILocationService locationService) {
-      return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, JTestHcd.JTestHcdDomainMessage.class);
+        ILocationService locationService,
+        JLoggerFactory loggerFactory) {
+      return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,
+          loggerFactory, JTestHcd.JTestHcdDomainMessage.class);
     }
   }
 
@@ -57,8 +59,9 @@ public class JTestHcd {
                      ActorRef<CommandResponseManagerMessage> commandResponseManager,
                      ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
                      ILocationService locationService,
+                     JLoggerFactory loggerFactory,
                      Class<JTestHcdDomainMessage> klass) {
-      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, klass);
+      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,loggerFactory, klass);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.commandResponseManager = commandResponseManager;
       log.debug("Starting Test HCD");
@@ -90,7 +93,7 @@ public class JTestHcd {
     }
 
     @Override
-    public void onSubmit(ControlCommand controlCommand, ActorRef<CommandResponse> replyTo) {
+    public void onSubmit(ControlCommand controlCommand) {
       log.debug("onSubmit called: " + controlCommand);
       commandResponseManager.tell(new CommandResponseManagerMessage.AddOrUpdateCommand(controlCommand.runId(), new CommandResponse.Completed(controlCommand.runId())));
     }
