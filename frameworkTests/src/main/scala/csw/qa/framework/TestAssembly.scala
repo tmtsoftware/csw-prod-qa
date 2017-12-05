@@ -10,7 +10,7 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
-import csw.messages.ccs.commands.CommandResponse.{Accepted, Completed}
+import csw.messages.ccs.commands.CommandResponse.{Accepted, Error}
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
@@ -76,17 +76,24 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.foreach { hcd =>
       hcd.submit(controlCommand).onComplete {
-        case Success(resp) =>
-          log.info(s"TestHcd responded with $resp")
-          resp match {
+        case Success(initialResponse) =>
+          log.info(s"TestHcd responded with $initialResponse")
+          initialResponse match {
             case Accepted(runId) =>
               assert(runId == controlCommand.runId)
-              commandResponseManager ! AddOrUpdateCommand(runId, Completed(runId))
+              hcd.getCommandResponse(runId).onComplete {
+                case Success(finalResponse) =>
+                  commandResponseManager ! AddOrUpdateCommand(runId, finalResponse)
+                case Failure(ex) =>
+                  log.error("Failed to get command response from TestHcd", ex = ex)
+                  commandResponseManager ! AddOrUpdateCommand(runId, Error(runId, ex.toString))
+              }
             case x =>
               log.error(s"Unexpected response from TestHcd: $x")
           }
         case Failure(ex) =>
-          log.error("Failed to send command to TestHcd", ex = ex)
+          log.error("Failed to get validation response from TestHcd", ex = ex)
+          commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Error(controlCommand.runId, ex.toString))
       }
     }
 
