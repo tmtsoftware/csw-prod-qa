@@ -7,11 +7,11 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand
+import csw.messages.CommandResponseManagerMessage.{AddOrUpdateCommand, AddSubCommand, UpdateSubCommand}
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
 import csw.messages.ccs.commands.CommandResponse.{Accepted, Error}
-import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
+import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
 import csw.messages.models.PubSub.PublisherMessage
@@ -70,33 +70,89 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     forwardCommandToHcd(controlCommand)
   }
 
+//  // For testing, forward command to HCD and complete this command when it completes
+//  private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
+//    implicit val scheduler: Scheduler = ctx.system.scheduler
+//    implicit val timeout: Timeout = Timeout(3.seconds)
+//    testHcd.foreach { hcd =>
+//      val setup = Setup(controlCommand.prefix, controlCommand.maybeObsId, controlCommand.paramSet)
+//      hcd.submit(setup).onComplete {
+//        case Success(initialResponse) =>
+//          assert(initialResponse.runId == setup.runId)
+//          log.info(s"TestHcd responded with $initialResponse")
+//          initialResponse match {
+//            case Accepted(runId) =>
+//              hcd.getCommandResponse(runId).onComplete {
+//                case Success(finalResponse) =>
+//                  commandResponseManager ! AddOrUpdateCommand(runId, finalResponse)
+//                case Failure(ex) =>
+//                  log.error("Failed to get command response from TestHcd", ex = ex)
+//                  commandResponseManager ! AddOrUpdateCommand(runId, Error(runId, ex.toString))
+//              }
+//            case x =>
+//              log.error(s"Unexpected response from TestHcd: $x")
+//          }
+//        case Failure(ex) =>
+//          log.error("Failed to get validation response from TestHcd", ex = ex)
+//          commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Error(controlCommand.runId, ex.toString))
+//      }
+//    }
+//  }
+
+//  // For testing, forward command to HCD and complete this command when it completes
+//  private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
+//    implicit val scheduler: Scheduler = ctx.system.scheduler
+//    implicit val timeout: Timeout = Timeout(3.seconds)
+//    testHcd.foreach { hcd =>
+//      val setup = Setup(controlCommand.prefix, controlCommand.maybeObsId, controlCommand.paramSet)
+//      commandResponseManager ! AddSubCommand(controlCommand.runId, setup.runId)
+//      hcd.submit(setup).onComplete {
+//        case Success(initialResponse) =>
+//          assert(initialResponse.runId == setup.runId)
+//          log.info(s"TestHcd responded with $initialResponse")
+//          initialResponse match {
+//            case Accepted(runId) =>
+//              hcd.getCommandResponse(runId).onComplete {
+//                case Success(finalResponse) =>
+//                  log.info(s"Received response from TestHcd: $finalResponse")
+//                  commandResponseManager ! UpdateSubCommand(runId, finalResponse)
+//                case Failure(ex) =>
+//                  log.error("Failed to get command response from TestHcd", ex = ex)
+//                  commandResponseManager ! UpdateSubCommand(runId, Error(runId, ex.toString))
+//              }
+//            case x =>
+//              val s = s"Unexpected response from TestHcd: $x"
+//              log.error(s)
+//              commandResponseManager ! UpdateSubCommand(setup.runId, Error(setup.runId, s))
+//          }
+//        case Failure(ex) =>
+//          val s = "Failed to get validation response from TestHcd"
+//          log.error(s, ex = ex)
+//          commandResponseManager ! UpdateSubCommand(setup.runId, Error(controlCommand.runId, s))
+//      }
+//    }
+//  }
+
   // For testing, forward command to HCD and complete this command when it completes
   private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
     implicit val scheduler: Scheduler = ctx.system.scheduler
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.foreach { hcd =>
-      hcd.submit(controlCommand).onComplete {
-        case Success(initialResponse) =>
-          log.info(s"TestHcd responded with $initialResponse")
-          initialResponse match {
-            case Accepted(runId) =>
-              assert(runId == controlCommand.runId)
-              hcd.getCommandResponse(runId).onComplete {
-                case Success(finalResponse) =>
-                  commandResponseManager ! AddOrUpdateCommand(runId, finalResponse)
-                case Failure(ex) =>
-                  log.error("Failed to get command response from TestHcd", ex = ex)
-                  commandResponseManager ! AddOrUpdateCommand(runId, Error(runId, ex.toString))
-              }
-            case x =>
-              log.error(s"Unexpected response from TestHcd: $x")
-          }
-        case Failure(ex) =>
-          log.error("Failed to get validation response from TestHcd", ex = ex)
-          commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Error(controlCommand.runId, ex.toString))
+      val setup = Setup(controlCommand.prefix, controlCommand.maybeObsId, controlCommand.paramSet)
+      commandResponseManager ! AddSubCommand(controlCommand.runId, setup.runId)
+
+      val f = for {
+        initialResponse <- hcd.submit(setup)
+        finalResponse <- hcd.getCommandResponse(setup.runId)
+      } yield {
+        log.info(s"initialResponse = $initialResponse, finalResponse = $finalResponse")
+        commandResponseManager ! UpdateSubCommand(setup.runId, finalResponse)
+      }
+      f.recover {
+        case ex =>
+          commandResponseManager ! UpdateSubCommand(setup.runId, Error(setup.runId, ex.toString))
       }
     }
-
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {

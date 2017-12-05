@@ -8,7 +8,8 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
-import csw.messages.ccs.commands.CommandResponse.Completed
+import csw.messages.ccs.CommandIssue.MissingKeyIssue
+import csw.messages.ccs.commands.CommandResponse.{Completed, Error}
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
@@ -54,11 +55,13 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   override def validateCommand(controlCommand: ControlCommand): CommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
+//    CommandResponse.Invalid(controlCommand.runId, MissingKeyIssue("XXX"))
   }
 
   override def onSubmit(controlCommand: ControlCommand): Unit = {
     log.debug("onSubmit called")
     commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Completed(controlCommand.runId))
+//    commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Error(controlCommand.runId, "XXX"))
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {
