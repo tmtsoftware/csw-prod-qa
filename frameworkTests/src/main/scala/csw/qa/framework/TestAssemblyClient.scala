@@ -10,7 +10,7 @@ import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import akka.util.Timeout
-import csw.messages.SupervisorExternalMessage
+import csw.messages.ComponentMessage
 import csw.messages.ccs.commands.Setup
 import csw.messages.location.ComponentType.Assembly
 import csw.messages.location.Connection.AkkaConnection
@@ -65,7 +65,7 @@ object TestAssemblyClient extends App {
     }
   }
 
-  private def interact(ctx: ActorContext[TrackingEvent], assembly: ActorRef[SupervisorExternalMessage]): Unit = {
+  private def interact(ctx: ActorContext[TrackingEvent], assembly: ActorRef[ComponentMessage]): Unit = {
     val k1 = KeyType.IntKey.make("encoder")
     val k2 = KeyType.StringKey.make("filter")
     val i1 = k1.set(22, 33, 44)

@@ -32,7 +32,7 @@ sealed trait TestAssemblyDomainMessage extends DomainMessage
 // Add messages here...
 
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory[TestAssemblyDomainMessage] {
-  override def handlers(ctx: ActorContext[ComponentMessage],
+  override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,
                         commandResponseManager: ActorRef[CommandResponseManagerMessage],
                         pubSubRef: ActorRef[PublisherMessage[CurrentState]],
@@ -42,7 +42,7 @@ private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory[TestA
     new TestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory)
 }
 
-private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
+private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
                                    componentInfo: ComponentInfo,
                                    commandResponseManager: ActorRef[CommandResponseManagerMessage],
                                    pubSubRef: ActorRef[PublisherMessage[CurrentState]],
@@ -53,7 +53,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[ComponentMessage],
 
   private val log = loggerFactory.getLogger
   // Set when the location is received from the location service (below)
-  private var testHcd: Option[ActorRef[SupervisorExternalMessage]] = None
+  private var testHcd: Option[ActorRef[ComponentMessage]] = None
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
   override def initialize(): Future[Unit] = async {

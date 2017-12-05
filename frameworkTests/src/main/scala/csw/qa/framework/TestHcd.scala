@@ -26,7 +26,7 @@ sealed trait TestHcdDomainMessage extends DomainMessage
 // Add messages here...
 
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory[TestHcdDomainMessage] {
-  override def handlers(ctx: ActorContext[ComponentMessage],
+  override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,
                         commandResponseManager: ActorRef[CommandResponseManagerMessage],
                         pubSubRef: ActorRef[PublisherMessage[CurrentState]],
@@ -36,7 +36,7 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory[TestHcdDom
     new TestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory)
 }
 
-private class TestHcdHandlers(ctx: ActorContext[ComponentMessage],
+private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
                               componentInfo: ComponentInfo,
                               commandResponseManager: ActorRef[CommandResponseManagerMessage],
                               pubSubRef: ActorRef[PublisherMessage[CurrentState]],

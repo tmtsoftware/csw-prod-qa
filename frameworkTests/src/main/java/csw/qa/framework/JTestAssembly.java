@@ -50,7 +50,7 @@ public class JTestAssembly {
 
     @Override
     public JComponentHandlers<JTestAssemblyDomainMessage> jHandlers(
-        ActorContext<ComponentMessage> ctx,
+        ActorContext<TopLevelActorMessage> ctx,
         ComponentInfo componentInfo,
         ActorRef<CommandResponseManagerMessage> commandResponseManager,
         ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
@@ -63,12 +63,12 @@ public class JTestAssembly {
 
   static class JTestAssemblyHandlers extends JComponentHandlers<JTestAssemblyDomainMessage> {
     private final ILogger log;
-    private final ActorContext<ComponentMessage> ctx;
+    private final ActorContext<TopLevelActorMessage> ctx;
     private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
     // Set when the location is received from the location service (below)
-    private Optional<ActorRef<SupervisorExternalMessage>> testHcd = Optional.empty();
+    private Optional<ActorRef<ComponentMessage>> testHcd = Optional.empty();
 
-    JTestAssemblyHandlers(ActorContext<ComponentMessage> ctx,
+    JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
                           ComponentInfo componentInfo,
                           ActorRef<CommandResponseManagerMessage> commandResponseManager,
                           ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
@@ -116,7 +116,7 @@ public class JTestAssembly {
 //      );
 
 //      if (testHcd.isPresent()) {
-//        final CompletionStage<SupervisorExternalMessage> reply =
+//        final CompletionStage<TopLevelActorMessage> reply =
 //            AskPattern.ask(testHcd.get(),
 //                (ActorRef<CommandResponse> replyTo) -> new Submit(controlCommand, replyTo),
 //                new Timeout(3, TimeUnit.SECONDS), ctx.getSystem().scheduler());

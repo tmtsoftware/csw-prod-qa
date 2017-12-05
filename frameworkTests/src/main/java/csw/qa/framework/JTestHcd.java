@@ -39,7 +39,7 @@ public class JTestHcd {
 
     @Override
     public JComponentHandlers<JTestHcdDomainMessage> jHandlers(
-        ActorContext<ComponentMessage> ctx,
+        ActorContext<TopLevelActorMessage> ctx,
         ComponentInfo componentInfo,
         ActorRef<CommandResponseManagerMessage> commandResponseManager,
         ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
@@ -54,7 +54,7 @@ public class JTestHcd {
     private ILogger log;
     private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
 
-    JTestHcdHandlers(ActorContext<ComponentMessage> ctx,
+    JTestHcdHandlers(ActorContext<TopLevelActorMessage> ctx,
                      ComponentInfo componentInfo,
                      ActorRef<CommandResponseManagerMessage> commandResponseManager,
                      ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
