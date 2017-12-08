@@ -138,7 +138,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     implicit val scheduler: Scheduler = ctx.system.scheduler
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.foreach { hcd =>
-      val setup = Setup(controlCommand.prefix, controlCommand.maybeObsId, controlCommand.paramSet)
+      val setup = Setup(controlCommand.originationPrefix, controlCommand.prefix, controlCommand.maybeObsId, controlCommand.paramSet)
       commandResponseManager ! AddSubCommand(controlCommand.runId, setup.runId)
 
       val f = for {
