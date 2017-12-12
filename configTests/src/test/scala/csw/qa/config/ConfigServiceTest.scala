@@ -11,6 +11,7 @@ import csw.services.config.client.scaladsl.ConfigClientFactory
 import csw.services.location.scaladsl.LocationServiceFactory
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
+import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
 import csw.services.location.commons.ActorSystemFactory
 import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
@@ -45,8 +46,8 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
   private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
 
   override def afterAll() {
-    clientLocationService.shutdown().await
-    locationService.shutdown().await
+    clientLocationService.shutdown(UnknownReason).await
+    locationService.shutdown(UnknownReason).await
   }
 
   test("Run Tests") {

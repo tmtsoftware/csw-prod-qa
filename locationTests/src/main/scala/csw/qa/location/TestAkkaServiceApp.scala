@@ -3,6 +3,7 @@ package csw.qa.location
 import java.net.InetAddress
 
 import akka.actor.ActorSystem
+import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
 import akka.typed.ActorRef
 import csw.services.location.scaladsl.LocationServiceFactory
@@ -113,7 +114,7 @@ object TestAkkaServiceApp extends App {
       system.scheduler.scheduleOnce(autoshutdown.seconds) {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         for {
-          _ <- locationService.shutdown()
+          _ <- locationService.shutdown(UnknownReason)
           _ <- system.terminate()
         } {
           println("Shutdown complete")

@@ -11,7 +11,7 @@ import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory
 import akka.typed.scaladsl.adapter._
 import akka.util.Timeout
 import csw.messages.ComponentMessage
-import csw.messages.ccs.commands.Setup
+import csw.messages.ccs.commands.{CommandName, Setup}
 import csw.messages.location.ComponentType.Assembly
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location._
@@ -21,7 +21,6 @@ import csw.messages.params.models.Units.degree
 import csw.services.location.commons.ClusterAwareSettings
 
 import scala.concurrent.duration._
-
 import scala.util.{Failure, Success}
 import csw.services.ccs.common.ActorRefExts.RichComponentActor
 
@@ -70,7 +69,7 @@ object TestAssemblyClient extends App {
     val k2 = KeyType.StringKey.make("filter")
     val i1 = k1.set(22, 33, 44)
     val i2 = k2.set("a", "b", "c").withUnits(degree)
-    val setup = Setup(Prefix("wfos.blue.filter"), Prefix("wfos.blue.filter"), Some(ObsId("2023-Q22-4-33"))).add(i1).add(i2)
+    val setup = Setup(Prefix("wfos.blue.filter"), CommandName("filter"), Some(ObsId("2023-Q22-4-33"))).add(i1).add(i2)
     log.info(s"Sending setup to assembly: $setup")
     implicit val timeout: Timeout = Timeout(3.seconds)
     implicit val scheduler: Scheduler = ctx.system.scheduler
