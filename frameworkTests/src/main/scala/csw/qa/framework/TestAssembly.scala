@@ -7,10 +7,10 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.messages.CommandResponseManagerMessage.{AddOrUpdateCommand, AddSubCommand, UpdateSubCommand}
+import csw.messages.CommandResponseManagerMessage.{AddSubCommand, UpdateSubCommand}
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
-import csw.messages.ccs.commands.CommandResponse.{Accepted, Error}
+import csw.messages.ccs.commands.CommandResponse.Error
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
@@ -22,9 +22,8 @@ import csw.services.location.scaladsl.LocationService
 
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.{Failure, Success}
-import csw.services.ccs.common.ActorRefExts.RichComponentActor
 import csw.services.logging.scaladsl.LoggerFactory
+import csw.messages.ccs.commands.ActorRefExts.RichComponentActor
 
 // Base trait for Test Assembly domain messages
 sealed trait TestAssemblyDomainMessage extends DomainMessage

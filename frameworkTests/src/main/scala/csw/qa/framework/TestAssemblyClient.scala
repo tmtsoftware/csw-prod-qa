@@ -22,7 +22,7 @@ import csw.services.location.commons.ClusterAwareSettings
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-import csw.services.ccs.common.ActorRefExts.RichComponentActor
+import csw.messages.ccs.commands.ActorRefExts.RichComponentActor
 
 // A client to test locating and communicating with the Test assembly
 object TestAssemblyClient extends App {
