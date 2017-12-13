@@ -11,7 +11,7 @@ import csw.messages.CommandResponseManagerMessage.{AddSubCommand, UpdateSubComma
 import csw.messages._
 import csw.messages.RunningMessage.DomainMessage
 import csw.messages.ccs.commands.CommandResponse.Error
-import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup}
+import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup, WrappedComponent}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
 import csw.messages.models.PubSub.PublisherMessage
@@ -23,7 +23,6 @@ import csw.services.location.scaladsl.LocationService
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import csw.services.logging.scaladsl.LoggerFactory
-import csw.messages.ccs.commands.ActorRefExts.RichComponentActor
 
 // Base trait for Test Assembly domain messages
 sealed trait TestAssemblyDomainMessage extends DomainMessage
@@ -52,7 +51,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   private val log = loggerFactory.getLogger
   // Set when the location is received from the location service (below)
-  private var testHcd: Option[ActorRef[ComponentMessage]] = None
+  private var testHcd: Option[WrappedComponent] = None
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
   override def initialize(): Future[Unit] = async {
@@ -174,7 +173,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
     trackingEvent match {
       case LocationUpdated(location) =>
-        testHcd = Some(location.asInstanceOf[AkkaLocation].componentRef())
+        testHcd = Some(location.asInstanceOf[AkkaLocation].component())
       case LocationRemoved(_) =>
         testHcd = None
     }

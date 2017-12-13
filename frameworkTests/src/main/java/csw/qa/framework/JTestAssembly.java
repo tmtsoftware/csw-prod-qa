@@ -10,9 +10,9 @@ import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
-import csw.messages.ccs.commands.CommandExecutionService;
 import csw.messages.ccs.commands.CommandResponse;
 import csw.messages.ccs.commands.ControlCommand;
+import csw.messages.ccs.commands.JWrappedComponent;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.AkkaLocation;
 import csw.messages.location.LocationUpdated;
@@ -63,7 +63,7 @@ public class JTestAssembly {
     private final ActorContext<TopLevelActorMessage> ctx;
     private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
     // Set when the location is received from the location service (below)
-    private Optional<ActorRef<ComponentMessage>> testHcd = Optional.empty();
+    private Optional<JWrappedComponent> testHcd = Optional.empty();
 
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
                           ComponentInfo componentInfo,
@@ -112,12 +112,12 @@ public class JTestAssembly {
       testHcd.ifPresent(hcd -> {
         Scheduler scheduler = ctx.getSystem().scheduler();
         Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
-        CommandExecutionService.submit(hcd, controlCommand, timeout, scheduler)
+        hcd.submit(controlCommand, timeout, scheduler)
             .thenAccept(commandResponse -> {
               RunId runId = commandResponse.runId();
               assert (runId.equals(controlCommand.runId()));
               if (commandResponse instanceof CommandResponse.Accepted) {
-                CommandExecutionService.getCommandResponse(hcd, runId, timeout, scheduler)
+                hcd.getCommandResponse(runId, timeout, scheduler)
                     .thenAccept(finalResponse -> commandResponseManager.tell(new AddOrUpdateCommand(runId, finalResponse)))
                     .exceptionally(ex -> {
                       log.error("Failed to get command response from TestHcd", ex);
@@ -164,7 +164,7 @@ public class JTestAssembly {
       log.debug("onLocationTrackingEvent called: " + trackingEvent);
       if (trackingEvent instanceof LocationUpdated) {
         AkkaLocation location = (AkkaLocation) ((LocationUpdated) trackingEvent).location();
-        testHcd = Optional.of(location.componentRef());
+        testHcd = Optional.of(location.jComponent());
       } else testHcd = Optional.empty();
     }
   }

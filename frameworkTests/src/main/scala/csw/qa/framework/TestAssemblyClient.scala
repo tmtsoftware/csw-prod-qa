@@ -4,14 +4,13 @@ import java.net.InetAddress
 
 import akka.actor.{ActorRefFactory, ActorSystem, Scheduler}
 import akka.stream.ActorMaterializer
-import akka.typed.{ActorRef, Behavior}
+import akka.typed.Behavior
 import akka.typed.scaladsl.{Actor, ActorContext}
 import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import akka.util.Timeout
-import csw.messages.ComponentMessage
-import csw.messages.ccs.commands.{CommandName, Setup}
+import csw.messages.ccs.commands.{CommandName, Setup, WrappedComponent}
 import csw.messages.location.ComponentType.Assembly
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location._
@@ -22,7 +21,6 @@ import csw.services.location.commons.ClusterAwareSettings
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-import csw.messages.ccs.commands.ActorRefExts.RichComponentActor
 
 // A client to test locating and communicating with the Test assembly
 object TestAssemblyClient extends App {
@@ -52,7 +50,7 @@ object TestAssemblyClient extends App {
       msg match {
         case LocationUpdated(loc) =>
           log.info(s"LocationUpdated: $loc")
-          interact(ctx, loc.asInstanceOf[AkkaLocation].componentRef())
+          interact(ctx, loc.asInstanceOf[AkkaLocation].component())
         case LocationRemoved(loc) =>
           log.info(s"LocationRemoved: $loc")
       }
@@ -64,7 +62,7 @@ object TestAssemblyClient extends App {
     }
   }
 
-  private def interact(ctx: ActorContext[TrackingEvent], assembly: ActorRef[ComponentMessage]): Unit = {
+  private def interact(ctx: ActorContext[TrackingEvent], assembly: WrappedComponent): Unit = {
     val k1 = KeyType.IntKey.make("encoder")
     val k2 = KeyType.StringKey.make("filter")
     val i1 = k1.set(22, 33, 44)
