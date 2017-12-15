@@ -12,7 +12,7 @@ import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
 import csw.messages.ccs.commands.CommandResponse;
 import csw.messages.ccs.commands.ControlCommand;
-import csw.messages.ccs.commands.JWrappedComponent;
+import csw.messages.ccs.commands.JComponentRef;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.AkkaLocation;
 import csw.messages.location.LocationUpdated;
@@ -63,7 +63,7 @@ public class JTestAssembly {
     private final ActorContext<TopLevelActorMessage> ctx;
     private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
     // Set when the location is received from the location service (below)
-    private Optional<JWrappedComponent> testHcd = Optional.empty();
+    private Optional<JComponentRef> testHcd = Optional.empty();
 
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
                           ComponentInfo componentInfo,

@@ -10,7 +10,7 @@ import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import akka.util.Timeout
-import csw.messages.ccs.commands.{CommandName, Setup, WrappedComponent}
+import csw.messages.ccs.commands.{CommandName, Setup, ComponentRef}
 import csw.messages.location.ComponentType.Assembly
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location._
@@ -50,7 +50,7 @@ object TestAssemblyClient extends App {
       msg match {
         case LocationUpdated(loc) =>
           log.info(s"LocationUpdated: $loc")
-          interact(ctx, loc.asInstanceOf[AkkaLocation].component())
+          interact(ctx, loc.asInstanceOf[AkkaLocation].component)
         case LocationRemoved(loc) =>
           log.info(s"LocationRemoved: $loc")
       }
@@ -62,7 +62,7 @@ object TestAssemblyClient extends App {
     }
   }
 
-  private def interact(ctx: ActorContext[TrackingEvent], assembly: WrappedComponent): Unit = {
+  private def interact(ctx: ActorContext[TrackingEvent], assembly: ComponentRef): Unit = {
     val k1 = KeyType.IntKey.make("encoder")
     val k2 = KeyType.StringKey.make("filter")
     val i1 = k1.set(22, 33, 44)
@@ -72,11 +72,9 @@ object TestAssemblyClient extends App {
     implicit val timeout: Timeout = Timeout(3.seconds)
     implicit val scheduler: Scheduler = ctx.system.scheduler
     import ctx.executionContext
-    assembly.submit(setup).onComplete {
+    assembly.submitAndSubscribe(setup).onComplete {
       case Success(resp) =>
         log.info(s"Assembly responded with $resp")
-        // XXX TODO FIXME: This will only get the current response status?
-        assembly.getCommandResponse(resp.runId).onComplete(r => log.info(s"Command Response: $r"))
       case Failure(ex) =>
         log.error("Failed to send command to TestAssembly", ex = ex)
     }
