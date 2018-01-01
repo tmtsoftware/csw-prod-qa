@@ -13,12 +13,12 @@ import csw.messages.*;
 import csw.messages.ccs.commands.CommandResponse;
 import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.ccs.commands.JComponentRef;
+import csw.messages.ccs.commands.Setup;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.AkkaLocation;
 import csw.messages.location.LocationUpdated;
 import csw.messages.location.TrackingEvent;
 import csw.messages.models.PubSub;
-import csw.messages.params.models.RunId;
 import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
@@ -28,8 +28,6 @@ import scala.runtime.BoxedUnit;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
-import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand;
 
 public class JTestAssembly {
 
@@ -106,35 +104,46 @@ public class JTestAssembly {
       forwardCommandToHcd(controlCommand);
     }
 
-
     // For testing, forward command to HCD and complete this command when it completes
     private void forwardCommandToHcd(ControlCommand controlCommand) {
       testHcd.ifPresent(hcd -> {
         Scheduler scheduler = ctx.getSystem().scheduler();
         Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
-        hcd.submit(controlCommand, timeout, scheduler)
-            .thenAccept(commandResponse -> {
-              RunId runId = commandResponse.runId();
-              assert (runId.equals(controlCommand.runId()));
-              if (commandResponse instanceof CommandResponse.Accepted) {
-                hcd.getCommandResponse(runId, timeout, scheduler)
-                    .thenAccept(finalResponse -> commandResponseManager.tell(new AddOrUpdateCommand(runId, finalResponse)))
-                    .exceptionally(ex -> {
-                      log.error("Failed to get command response from TestHcd", ex);
-                      commandResponseManager.tell(new AddOrUpdateCommand(runId, new CommandResponse.Error(runId, ex.toString())));
-                      return null;
-                    });
-              } else {
-                log.error("Unexpected response from TestHcd: " + commandResponse);
-              }
-            })
-            .exceptionally(ex -> {
-              log.error("Failed to get validation response from TestHcd", ex);
-              commandResponseManager.tell(new AddOrUpdateCommand(controlCommand.runId(),
-                  new CommandResponse.Error(controlCommand.runId(), ex.toString())));
-              return null;
-            });
+        Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
+        commandResponseManager.tell(new CommandResponseManagerMessage.AddSubCommand(controlCommand.runId(), setup.runId()));
+        try {
+          CommandResponse response = hcd.submitAndSubscribe(setup, timeout, scheduler, ctx.getExecutionContext()).get();
+          log.info("response = " + response);
+          commandResponseManager.tell(new CommandResponseManagerMessage.UpdateSubCommand(setup.runId(), response));
+        } catch (Exception ex) {
+          commandResponseManager.tell(new CommandResponseManagerMessage.UpdateSubCommand(setup.runId(), new CommandResponse.Error(setup.runId(), ex.toString())));
+        }
       });
+
+
+//        hcd.submit(controlCommand, timeout, scheduler)
+//            .thenAccept(commandResponse -> {
+//              RunId runId = commandResponse.runId();
+//              assert (runId.equals(controlCommand.runId()));
+//              if (commandResponse instanceof CommandResponse.Accepted) {
+//                hcd.getCommandResponse(runId, timeout, scheduler)
+//                    .thenAccept(finalResponse -> commandResponseManager.tell(new AddOrUpdateCommand(runId, finalResponse)))
+//                    .exceptionally(ex -> {
+//                      log.error("Failed to get command response from TestHcd", ex);
+//                      commandResponseManager.tell(new AddOrUpdateCommand(runId, new CommandResponse.Error(runId, ex.toString())));
+//                      return null;
+//                    });
+//              } else {
+//                log.error("Unexpected response from TestHcd: " + commandResponse);
+//              }
+//            })
+//            .exceptionally(ex -> {
+//              log.error("Failed to get validation response from TestHcd", ex);
+//              commandResponseManager.tell(new AddOrUpdateCommand(controlCommand.runId(),
+//                  new CommandResponse.Error(controlCommand.runId(), ex.toString())));
+//              return null;
+//            });
+//      });
     }
 
 
