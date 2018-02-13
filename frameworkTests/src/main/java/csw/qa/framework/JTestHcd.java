@@ -24,21 +24,14 @@ import java.util.concurrent.CompletableFuture;
 
 public class JTestHcd {
 
-  // Base trait for Test HCD domain messages
-  interface JTestHcdDomainMessage extends RunningMessage.DomainMessage {
-  }
-  // Add messages here...
-
-
   @SuppressWarnings("unused")
-  public static class JTestHcdBehaviorFactory extends JComponentBehaviorFactory<JTestHcdDomainMessage> {
+  public static class JTestHcdBehaviorFactory extends JComponentBehaviorFactory {
 
     public JTestHcdBehaviorFactory() {
-      super(JTestHcd.JTestHcdDomainMessage.class);
     }
 
     @Override
-    public JComponentHandlers<JTestHcdDomainMessage> jHandlers(
+    public JComponentHandlers jHandlers(
         ActorContext<TopLevelActorMessage> ctx,
         ComponentInfo componentInfo,
         ActorRef<CommandResponseManagerMessage> commandResponseManager,
@@ -46,11 +39,11 @@ public class JTestHcd {
         ILocationService locationService,
         JLoggerFactory loggerFactory) {
       return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,
-          loggerFactory, JTestHcd.JTestHcdDomainMessage.class);
+          loggerFactory);
     }
   }
 
-  static class JTestHcdHandlers extends JComponentHandlers<JTestHcdDomainMessage> {
+  static class JTestHcdHandlers extends JComponentHandlers {
     private ILogger log;
     private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
 
@@ -59,9 +52,8 @@ public class JTestHcd {
                      ActorRef<CommandResponseManagerMessage> commandResponseManager,
                      ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
                      ILocationService locationService,
-                     JLoggerFactory loggerFactory,
-                     Class<JTestHcdDomainMessage> klass) {
-      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,loggerFactory, klass);
+                     JLoggerFactory loggerFactory) {
+      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,loggerFactory);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.commandResponseManager = commandResponseManager;
       log.debug("Starting Test HCD");
@@ -80,11 +72,6 @@ public class JTestHcd {
     @Override
     public void onLocationTrackingEvent(TrackingEvent trackingEvent) {
       log.debug("onLocationTrackingEvent called: " + trackingEvent);
-    }
-
-    @Override
-    public void onDomainMsg(JTestHcdDomainMessage testHcdDomainMessage) {
-      log.debug("onDomainMessage called: " + testHcdDomainMessage);
     }
 
     @Override

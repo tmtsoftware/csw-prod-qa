@@ -31,20 +31,14 @@ import java.util.concurrent.TimeUnit;
 
 public class JTestAssembly {
 
-  // Base trait for Test Assembly domain messages
-  interface JTestAssemblyDomainMessage extends RunningMessage.DomainMessage {
-  }
-  // Add messages here...
-
   @SuppressWarnings("unused")
-  public static class JTestAssemblyBehaviorFactory extends JComponentBehaviorFactory<JTestAssemblyDomainMessage> {
+  public static class JTestAssemblyBehaviorFactory extends JComponentBehaviorFactory {
 
     public JTestAssemblyBehaviorFactory() {
-      super(JTestAssembly.JTestAssemblyDomainMessage.class);
     }
 
     @Override
-    public JComponentHandlers<JTestAssemblyDomainMessage> jHandlers(
+    public JComponentHandlers jHandlers(
         ActorContext<TopLevelActorMessage> ctx,
         ComponentInfo componentInfo,
         ActorRef<CommandResponseManagerMessage> commandResponseManager,
@@ -52,11 +46,11 @@ public class JTestAssembly {
         ILocationService locationService,
         JLoggerFactory loggerFactory) {
       return new JTestAssembly.JTestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,
-          loggerFactory, JTestAssemblyDomainMessage.class);
+          loggerFactory);
     }
   }
 
-  static class JTestAssemblyHandlers extends JComponentHandlers<JTestAssemblyDomainMessage> {
+  static class JTestAssemblyHandlers extends JComponentHandlers {
     private final ILogger log;
     private final ActorContext<TopLevelActorMessage> ctx;
     private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
@@ -68,9 +62,8 @@ public class JTestAssembly {
                           ActorRef<CommandResponseManagerMessage> commandResponseManager,
                           ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
                           ILocationService locationService,
-                          JLoggerFactory loggerFactory,
-                          Class<JTestAssemblyDomainMessage> klass) {
-      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory, klass);
+                          JLoggerFactory loggerFactory) {
+      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.ctx = ctx;
       this.commandResponseManager = commandResponseManager;
@@ -86,11 +79,6 @@ public class JTestAssembly {
     public CompletableFuture<BoxedUnit> jInitialize() {
       log.debug("jInitialize called");
       return CompletableFuture.supplyAsync(this::doNothing);
-    }
-
-    @Override
-    public void onDomainMsg(JTestAssemblyDomainMessage testAssemblyDomainMessage) {
-      log.debug("onDomainMessage called: " + testAssemblyDomainMessage);
     }
 
     @Override
@@ -112,7 +100,7 @@ public class JTestAssembly {
         Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
         commandResponseManager.tell(new CommandResponseManagerMessage.AddSubCommand(controlCommand.runId(), setup.runId()));
         try {
-          CommandResponse response = hcd.submitAndSubscribe(setup, timeout, scheduler, ctx.getExecutionContext()).get();
+          CommandResponse response = hcd.submitAndSubscribe(setup, timeout).get();
           log.info("response = " + response);
           commandResponseManager.tell(new CommandResponseManagerMessage.UpdateSubCommand(setup.runId(), response));
         } catch (Exception ex) {
@@ -173,7 +161,7 @@ public class JTestAssembly {
       log.debug("onLocationTrackingEvent called: " + trackingEvent);
       if (trackingEvent instanceof LocationUpdated) {
         AkkaLocation location = (AkkaLocation) ((LocationUpdated) trackingEvent).location();
-        testHcd = Optional.of(location.jComponent());
+        testHcd = Optional.of(new JComponentRef(location, ctx.getSystem()));
       } else testHcd = Optional.empty();
     }
   }

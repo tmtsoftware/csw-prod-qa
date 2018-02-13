@@ -4,13 +4,14 @@ import java.net.InetAddress
 
 import akka.actor.{ActorRefFactory, ActorSystem, Scheduler}
 import akka.stream.ActorMaterializer
+import akka.typed
 import akka.typed.Behavior
 import akka.typed.scaladsl.{Actor, ActorContext}
 import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import akka.util.Timeout
-import csw.messages.ccs.commands.{CommandName, Setup, ComponentRef}
+import csw.messages.ccs.commands.{CommandName, ComponentRef, Setup}
 import csw.messages.location.ComponentType.Assembly
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location._
@@ -26,8 +27,10 @@ import scala.util.{Failure, Success}
 object TestAssemblyClient extends App {
 
   //  private val system = ActorSystemFactory.remote
-  private val system: ActorSystem = ClusterAwareSettings.system
+  val system: ActorSystem = ClusterAwareSettings.system
+
   implicit def actorRefFactory: ActorRefFactory = system
+
   private val locationService = LocationServiceFactory.withSystem(system)
   private val host = InetAddress.getLocalHost.getHostName
   LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
@@ -50,7 +53,8 @@ object TestAssemblyClient extends App {
       msg match {
         case LocationUpdated(loc) =>
           log.info(s"LocationUpdated: $loc")
-          interact(ctx, loc.asInstanceOf[AkkaLocation].component)
+          implicit val sys: typed.ActorSystem[Nothing] = ctx.system
+          interact(ctx, new ComponentRef(loc.asInstanceOf[AkkaLocation]))
         case LocationRemoved(loc) =>
           log.info(s"LocationRemoved: $loc")
       }

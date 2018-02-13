@@ -7,7 +7,6 @@ import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand
 import csw.messages._
-import csw.messages.RunningMessage.DomainMessage
 import csw.messages.ccs.commands.CommandResponse.Completed
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
@@ -21,18 +20,17 @@ import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
 // Base trait for Test HCD domain messages
-sealed trait TestHcdDomainMessage extends DomainMessage
 
 // Add messages here...
 
-private class TestHcdBehaviorFactory extends ComponentBehaviorFactory[TestHcdDomainMessage] {
+private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,
                         commandResponseManager: ActorRef[CommandResponseManagerMessage],
                         pubSubRef: ActorRef[PublisherMessage[CurrentState]],
                         locationService: LocationService,
                         loggerFactory: LoggerFactory
-                       ): ComponentHandlers[TestHcdDomainMessage] =
+                       ): ComponentHandlers =
     new TestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory)
 }
 
@@ -42,7 +40,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
                               pubSubRef: ActorRef[PublisherMessage[CurrentState]],
                               locationService: LocationService,
                               loggerFactory: LoggerFactory)
-  extends ComponentHandlers[TestHcdDomainMessage](ctx, componentInfo, commandResponseManager, pubSubRef,
+  extends ComponentHandlers(ctx, componentInfo, commandResponseManager, pubSubRef,
     locationService, loggerFactory) {
 
   private val log = loggerFactory.getLogger
@@ -74,10 +72,6 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onGoOffline(): Unit = log.debug("onGoOffline called")
 
   override def onGoOnline(): Unit = log.debug("onGoOnline called")
-
-  override def onDomainMsg(testMsg: TestHcdDomainMessage): Unit = testMsg match {
-    case x => log.debug(s"onDomainMessage called: $x")
-  }
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit =
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")

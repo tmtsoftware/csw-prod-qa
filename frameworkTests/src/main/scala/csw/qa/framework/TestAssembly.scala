@@ -1,7 +1,7 @@
 package csw.qa.framework
 
 import akka.actor.Scheduler
-import akka.typed.ActorRef
+import akka.typed.{ActorRef, ActorSystem}
 import akka.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -9,9 +9,8 @@ import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.CommandResponseManagerMessage.{AddSubCommand, UpdateSubCommand}
 import csw.messages._
-import csw.messages.RunningMessage.DomainMessage
 import csw.messages.ccs.commands.CommandResponse.Error
-import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup, ComponentRef}
+import csw.messages.ccs.commands.{CommandResponse, ComponentRef, ControlCommand, Setup}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
 import csw.messages.models.PubSub.PublisherMessage
@@ -24,19 +23,16 @@ import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import csw.services.logging.scaladsl.LoggerFactory
 
-// Base trait for Test Assembly domain messages
-sealed trait TestAssemblyDomainMessage extends DomainMessage
-
 // Add messages here...
 
-private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory[TestAssemblyDomainMessage] {
+private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,
                         commandResponseManager: ActorRef[CommandResponseManagerMessage],
                         pubSubRef: ActorRef[PublisherMessage[CurrentState]],
                         locationService: LocationService,
                         loggerFactory: LoggerFactory
-                       ): ComponentHandlers[TestAssemblyDomainMessage] =
+                       ): ComponentHandlers =
     new TestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory)
 }
 
@@ -46,7 +42,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
                                    pubSubRef: ActorRef[PublisherMessage[CurrentState]],
                                    locationService: LocationService,
                                    loggerFactory: LoggerFactory)
-  extends ComponentHandlers[TestAssemblyDomainMessage](ctx, componentInfo, commandResponseManager,
+  extends ComponentHandlers(ctx, componentInfo, commandResponseManager,
     pubSubRef, locationService, loggerFactory) {
 
   private val log = loggerFactory.getLogger
@@ -87,7 +83,9 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
         case ex =>
           commandResponseManager ! UpdateSubCommand(setup.runId, Error(setup.runId, ex.toString))
       }
-    }
+
+
+           }
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {
@@ -102,15 +100,11 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   override def onGoOnline(): Unit = log.debug("onGoOnline called")
 
-  override def onDomainMsg(testMessage: TestAssemblyDomainMessage): Unit = testMessage match {
-    case x => log.debug(s"onDomainMsg called: $x")
-  }
-
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit = {
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
     trackingEvent match {
       case LocationUpdated(location) =>
-        testHcd = Some(location.asInstanceOf[AkkaLocation].component)
+        testHcd = Some(new ComponentRef(location.asInstanceOf[AkkaLocation])(ctx.system))
       case LocationRemoved(_) =>
         testHcd = None
     }
