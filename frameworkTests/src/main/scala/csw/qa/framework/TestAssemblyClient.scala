@@ -11,13 +11,14 @@ import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.typed.scaladsl.adapter._
 import akka.util.Timeout
-import csw.messages.ccs.commands.{CommandName, ComponentRef, Setup}
+import csw.messages.ccs.commands.{CommandName, Setup}
 import csw.messages.location.ComponentType.Assembly
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location._
 import csw.messages.params.generics.KeyType
 import csw.messages.params.models.{ObsId, Prefix}
 import csw.messages.params.models.Units.degree
+import csw.services.ccs.scaladsl.CommandService
 import csw.services.location.commons.ClusterAwareSettings
 
 import scala.concurrent.duration._
@@ -54,7 +55,7 @@ object TestAssemblyClient extends App {
         case LocationUpdated(loc) =>
           log.info(s"LocationUpdated: $loc")
           implicit val sys: typed.ActorSystem[Nothing] = ctx.system
-          interact(ctx, new ComponentRef(loc.asInstanceOf[AkkaLocation]))
+          interact(ctx, new CommandService(loc.asInstanceOf[AkkaLocation]))
         case LocationRemoved(loc) =>
           log.info(s"LocationRemoved: $loc")
       }
@@ -66,7 +67,7 @@ object TestAssemblyClient extends App {
     }
   }
 
-  private def interact(ctx: ActorContext[TrackingEvent], assembly: ComponentRef): Unit = {
+  private def interact(ctx: ActorContext[TrackingEvent], assembly: CommandService): Unit = {
     val k1 = KeyType.IntKey.make("encoder")
     val k2 = KeyType.StringKey.make("filter")
     val i1 = k1.set(22, 33, 44)

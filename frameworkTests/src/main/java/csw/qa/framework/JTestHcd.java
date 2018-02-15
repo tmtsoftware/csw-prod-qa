@@ -17,7 +17,6 @@ import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
-import scala.runtime.BoxedUnit;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -59,14 +58,18 @@ public class JTestHcd {
       log.debug("Starting Test HCD");
     }
 
-    private BoxedUnit doNothing() {
-      return BoxedUnit.UNIT;
+    @Override
+    public CompletableFuture<Void> jInitialize() {
+      log.debug("jInitialize called");
+      return CompletableFuture.runAsync(() -> {
+      });
     }
 
     @Override
-    public CompletableFuture<BoxedUnit> jInitialize() {
-      log.debug("jInitialize called");
-      return CompletableFuture.supplyAsync(this::doNothing);
+    public CompletableFuture<Void> jOnShutdown() {
+      log.debug("onShutdown called");
+      return CompletableFuture.runAsync(() -> {
+      });
     }
 
     @Override
@@ -88,12 +91,6 @@ public class JTestHcd {
     @Override
     public void onOneway(ControlCommand controlCommand) {
       log.debug("onOneway called: " + controlCommand);
-    }
-
-    @Override
-    public CompletableFuture<BoxedUnit> jOnShutdown() {
-      log.debug("onShutdown called");
-      return CompletableFuture.supplyAsync(this::doNothing);
     }
 
     @Override

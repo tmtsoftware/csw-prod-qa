@@ -10,11 +10,12 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.CommandResponseManagerMessage.{AddSubCommand, UpdateSubCommand}
 import csw.messages._
 import csw.messages.ccs.commands.CommandResponse.Error
-import csw.messages.ccs.commands.{CommandResponse, ComponentRef, ControlCommand, Setup}
+import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
 import csw.messages.models.PubSub.PublisherMessage
 import csw.messages.params.states.CurrentState
+import csw.services.ccs.scaladsl.CommandService
 
 import scala.concurrent.duration._
 import csw.services.location.scaladsl.LocationService
@@ -47,7 +48,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   private val log = loggerFactory.getLogger
   // Set when the location is received from the location service (below)
-  private var testHcd: Option[ComponentRef] = None
+  private var testHcd: Option[CommandService] = None
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
   override def initialize(): Future[Unit] = async {
@@ -104,7 +105,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
     trackingEvent match {
       case LocationUpdated(location) =>
-        testHcd = Some(new ComponentRef(location.asInstanceOf[AkkaLocation])(ctx.system))
+        testHcd = Some(new CommandService(location.asInstanceOf[AkkaLocation])(ctx.system))
       case LocationRemoved(_) =>
         testHcd = None
     }

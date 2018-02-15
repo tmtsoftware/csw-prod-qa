@@ -1,6 +1,5 @@
 package csw.qa.framework;
 
-import akka.actor.Scheduler;
 import akka.typed.ActorRef;
 import akka.typed.javadsl.ActorContext;
 import akka.util.Timeout;
@@ -12,7 +11,6 @@ import csw.framework.javadsl.JContainerCmd;
 import csw.messages.*;
 import csw.messages.ccs.commands.CommandResponse;
 import csw.messages.ccs.commands.ControlCommand;
-import csw.messages.ccs.commands.JComponentRef;
 import csw.messages.ccs.commands.Setup;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.AkkaLocation;
@@ -20,10 +18,10 @@ import csw.messages.location.LocationUpdated;
 import csw.messages.location.TrackingEvent;
 import csw.messages.models.PubSub;
 import csw.messages.params.states.CurrentState;
+import csw.services.ccs.javadsl.JCommandService;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
-import scala.runtime.BoxedUnit;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -55,7 +53,7 @@ public class JTestAssembly {
     private final ActorContext<TopLevelActorMessage> ctx;
     private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
     // Set when the location is received from the location service (below)
-    private Optional<JComponentRef> testHcd = Optional.empty();
+    private Optional<JCommandService> testHcd = Optional.empty();
 
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
                           ComponentInfo componentInfo,
@@ -70,15 +68,18 @@ public class JTestAssembly {
       log.debug("Starting Test Assembly");
     }
 
-
-    private BoxedUnit doNothing() {
-      return null;
+    @Override
+    public CompletableFuture<Void> jInitialize() {
+      log.debug("jInitialize called");
+      return CompletableFuture.runAsync(() -> {
+      });
     }
 
     @Override
-    public CompletableFuture<BoxedUnit> jInitialize() {
-      log.debug("jInitialize called");
-      return CompletableFuture.supplyAsync(this::doNothing);
+    public CompletableFuture<Void> jOnShutdown() {
+      log.debug("onShutdown called");
+      return CompletableFuture.runAsync(() -> {
+      });
     }
 
     @Override
@@ -95,7 +96,6 @@ public class JTestAssembly {
     // For testing, forward command to HCD and complete this command when it completes
     private void forwardCommandToHcd(ControlCommand controlCommand) {
       testHcd.ifPresent(hcd -> {
-        Scheduler scheduler = ctx.getSystem().scheduler();
         Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
         Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
         commandResponseManager.tell(new CommandResponseManagerMessage.AddSubCommand(controlCommand.runId(), setup.runId()));
@@ -141,12 +141,6 @@ public class JTestAssembly {
     }
 
     @Override
-    public CompletableFuture<BoxedUnit> jOnShutdown() {
-      log.debug("onShutdown called");
-      return CompletableFuture.supplyAsync(this::doNothing);
-    }
-
-    @Override
     public void onGoOffline() {
       log.debug("onGoOffline called");
     }
@@ -161,7 +155,7 @@ public class JTestAssembly {
       log.debug("onLocationTrackingEvent called: " + trackingEvent);
       if (trackingEvent instanceof LocationUpdated) {
         AkkaLocation location = (AkkaLocation) ((LocationUpdated) trackingEvent).location();
-        testHcd = Optional.of(new JComponentRef(location, ctx.getSystem()));
+        testHcd = Optional.of(new JCommandService(location, ctx.getSystem()));
       } else testHcd = Optional.empty();
     }
   }
