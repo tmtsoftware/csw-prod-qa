@@ -1,20 +1,18 @@
 package csw.qa.framework
 
 import akka.actor.Scheduler
-import akka.typed.{ActorRef, ActorSystem}
+import akka.typed.ActorRef
 import akka.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
-import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
+import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers, CurrentStatePublisher}
 import csw.messages.CommandResponseManagerMessage.{AddSubCommand, UpdateSubCommand}
 import csw.messages._
 import csw.messages.ccs.commands.CommandResponse.Error
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
-import csw.messages.models.PubSub.PublisherMessage
-import csw.messages.params.states.CurrentState
 import csw.services.ccs.scaladsl.CommandService
 
 import scala.concurrent.duration._
@@ -30,21 +28,21 @@ private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,
                         commandResponseManager: ActorRef[CommandResponseManagerMessage],
-                        pubSubRef: ActorRef[PublisherMessage[CurrentState]],
+                        currentStatePublisher: CurrentStatePublisher,
                         locationService: LocationService,
                         loggerFactory: LoggerFactory
                        ): ComponentHandlers =
-    new TestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory)
+    new TestAssemblyHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, loggerFactory)
 }
 
 private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
                                    componentInfo: ComponentInfo,
                                    commandResponseManager: ActorRef[CommandResponseManagerMessage],
-                                   pubSubRef: ActorRef[PublisherMessage[CurrentState]],
+                                   currentStatePublisher: CurrentStatePublisher,
                                    locationService: LocationService,
                                    loggerFactory: LoggerFactory)
   extends ComponentHandlers(ctx, componentInfo, commandResponseManager,
-    pubSubRef, locationService, loggerFactory) {
+    currentStatePublisher, locationService, loggerFactory) {
 
   private val log = loggerFactory.getLogger
   // Set when the location is received from the location service (below)

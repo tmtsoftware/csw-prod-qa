@@ -7,13 +7,12 @@ import com.typesafe.config.ConfigFactory;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
+import csw.framework.scaladsl.CurrentStatePublisher;
 import csw.messages.*;
 import csw.messages.ccs.commands.CommandResponse;
 import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
-import csw.messages.models.PubSub;
-import csw.messages.params.states.CurrentState;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
@@ -34,10 +33,10 @@ public class JTestHcd {
         ActorContext<TopLevelActorMessage> ctx,
         ComponentInfo componentInfo,
         ActorRef<CommandResponseManagerMessage> commandResponseManager,
-        ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
+        CurrentStatePublisher currentStatePublisher,
         ILocationService locationService,
         JLoggerFactory loggerFactory) {
-      return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,
+      return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService,
           loggerFactory);
     }
   }
@@ -49,10 +48,10 @@ public class JTestHcd {
     JTestHcdHandlers(ActorContext<TopLevelActorMessage> ctx,
                      ComponentInfo componentInfo,
                      ActorRef<CommandResponseManagerMessage> commandResponseManager,
-                     ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
+                     CurrentStatePublisher currentStatePublisher,
                      ILocationService locationService,
                      JLoggerFactory loggerFactory) {
-      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,loggerFactory);
+      super(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService,loggerFactory);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.commandResponseManager = commandResponseManager;
       log.debug("Starting Test HCD");

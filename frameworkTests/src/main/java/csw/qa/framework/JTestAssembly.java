@@ -8,6 +8,7 @@ import com.typesafe.config.ConfigFactory;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
+import csw.framework.scaladsl.CurrentStatePublisher;
 import csw.messages.*;
 import csw.messages.ccs.commands.CommandResponse;
 import csw.messages.ccs.commands.ControlCommand;
@@ -16,8 +17,6 @@ import csw.messages.framework.ComponentInfo;
 import csw.messages.location.AkkaLocation;
 import csw.messages.location.LocationUpdated;
 import csw.messages.location.TrackingEvent;
-import csw.messages.models.PubSub;
-import csw.messages.params.states.CurrentState;
 import csw.services.ccs.javadsl.JCommandService;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
@@ -40,10 +39,10 @@ public class JTestAssembly {
         ActorContext<TopLevelActorMessage> ctx,
         ComponentInfo componentInfo,
         ActorRef<CommandResponseManagerMessage> commandResponseManager,
-        ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
+        CurrentStatePublisher currentStatePublisher,
         ILocationService locationService,
         JLoggerFactory loggerFactory) {
-      return new JTestAssembly.JTestAssemblyHandlers(ctx, componentInfo, commandResponseManager, pubSubRef, locationService,
+      return new JTestAssembly.JTestAssemblyHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService,
           loggerFactory);
     }
   }
@@ -58,10 +57,10 @@ public class JTestAssembly {
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
                           ComponentInfo componentInfo,
                           ActorRef<CommandResponseManagerMessage> commandResponseManager,
-                          ActorRef<PubSub.PublisherMessage<CurrentState>> pubSubRef,
+                          CurrentStatePublisher currentStatePublisher,
                           ILocationService locationService,
                           JLoggerFactory loggerFactory) {
-      super(ctx, componentInfo, commandResponseManager, pubSubRef, locationService, loggerFactory);
+      super(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, loggerFactory);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.ctx = ctx;
       this.commandResponseManager = commandResponseManager;
