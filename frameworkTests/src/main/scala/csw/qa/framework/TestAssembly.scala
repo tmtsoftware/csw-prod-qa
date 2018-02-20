@@ -1,19 +1,17 @@
 package csw.qa.framework
 
 import akka.actor.Scheduler
-import akka.typed.ActorRef
 import akka.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers, CurrentStatePublisher}
-import csw.messages.CommandResponseManagerMessage.{AddSubCommand, UpdateSubCommand}
 import csw.messages._
 import csw.messages.ccs.commands.CommandResponse.Error
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
-import csw.services.ccs.scaladsl.CommandService
+import csw.services.ccs.scaladsl.{CommandResponseManager, CommandService}
 
 import scala.concurrent.duration._
 import csw.services.location.scaladsl.LocationService
@@ -27,7 +25,7 @@ import csw.services.logging.scaladsl.LoggerFactory
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,
-                        commandResponseManager: ActorRef[CommandResponseManagerMessage],
+                        commandResponseManager: CommandResponseManager,
                         currentStatePublisher: CurrentStatePublisher,
                         locationService: LocationService,
                         loggerFactory: LoggerFactory
@@ -37,7 +35,7 @@ private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
 
 private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
                                    componentInfo: ComponentInfo,
-                                   commandResponseManager: ActorRef[CommandResponseManagerMessage],
+                                   commandResponseManager: CommandResponseManager,
                                    currentStatePublisher: CurrentStatePublisher,
                                    locationService: LocationService,
                                    loggerFactory: LoggerFactory)
@@ -70,17 +68,17 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.foreach { hcd =>
       val setup = Setup(controlCommand.source, controlCommand.commandName, controlCommand.maybeObsId, controlCommand.paramSet)
-      commandResponseManager ! AddSubCommand(controlCommand.runId, setup.runId)
+      commandResponseManager.addSubCommand(controlCommand.runId, setup.runId)
 
       val f = for {
         response <- hcd.submitAndSubscribe(setup)
       } yield {
         log.info(s"response = $response")
-        commandResponseManager ! UpdateSubCommand(setup.runId, response)
+        commandResponseManager.updateSubCommand(setup.runId, response)
       }
       f.recover {
         case ex =>
-          commandResponseManager ! UpdateSubCommand(setup.runId, Error(setup.runId, ex.toString))
+          commandResponseManager.updateSubCommand(setup.runId, Error(setup.runId, ex.toString))
       }
 
 

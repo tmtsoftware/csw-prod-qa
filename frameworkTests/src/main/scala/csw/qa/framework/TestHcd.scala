@@ -1,16 +1,15 @@
 package csw.qa.framework
 
-import akka.typed.ActorRef
 import akka.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
 import csw.apps.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers, CurrentStatePublisher}
-import csw.messages.CommandResponseManagerMessage.AddOrUpdateCommand
 import csw.messages._
 import csw.messages.ccs.commands.CommandResponse.Completed
 import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
+import csw.services.ccs.scaladsl.CommandResponseManager
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.scaladsl.LoggerFactory
 
@@ -24,7 +23,7 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,
-                        commandResponseManager: ActorRef[CommandResponseManagerMessage],
+                        commandResponseManager: CommandResponseManager,
                         currentStatePublisher: CurrentStatePublisher,
                         locationService: LocationService,
                         loggerFactory: LoggerFactory
@@ -34,7 +33,7 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
 
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
                               componentInfo: ComponentInfo,
-                              commandResponseManager: ActorRef[CommandResponseManagerMessage],
+                              commandResponseManager: CommandResponseManager,
                               currentStatePublisher: CurrentStatePublisher,
                               locationService: LocationService,
                               loggerFactory: LoggerFactory)
@@ -50,13 +49,11 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   override def validateCommand(controlCommand: ControlCommand): CommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
-//    CommandResponse.Invalid(controlCommand.runId, MissingKeyIssue("XXX"))
   }
 
   override def onSubmit(controlCommand: ControlCommand): Unit = {
     log.debug("onSubmit called")
-    commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Completed(controlCommand.runId))
-//    commandResponseManager ! AddOrUpdateCommand(controlCommand.runId, Error(controlCommand.runId, "XXX"))
+    commandResponseManager.addOrUpdateCommand(controlCommand.runId, Completed(controlCommand.runId))
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {

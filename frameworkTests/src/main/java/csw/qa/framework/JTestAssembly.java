@@ -1,6 +1,5 @@
 package csw.qa.framework;
 
-import akka.typed.ActorRef;
 import akka.typed.javadsl.ActorContext;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
@@ -18,6 +17,7 @@ import csw.messages.location.AkkaLocation;
 import csw.messages.location.LocationUpdated;
 import csw.messages.location.TrackingEvent;
 import csw.services.ccs.javadsl.JCommandService;
+import csw.services.ccs.scaladsl.CommandResponseManager;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
@@ -38,7 +38,7 @@ public class JTestAssembly {
     public JComponentHandlers jHandlers(
         ActorContext<TopLevelActorMessage> ctx,
         ComponentInfo componentInfo,
-        ActorRef<CommandResponseManagerMessage> commandResponseManager,
+        CommandResponseManager commandResponseManager,
         CurrentStatePublisher currentStatePublisher,
         ILocationService locationService,
         JLoggerFactory loggerFactory) {
@@ -50,13 +50,13 @@ public class JTestAssembly {
   static class JTestAssemblyHandlers extends JComponentHandlers {
     private final ILogger log;
     private final ActorContext<TopLevelActorMessage> ctx;
-    private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
+    private final CommandResponseManager commandResponseManager;
     // Set when the location is received from the location service (below)
     private Optional<JCommandService> testHcd = Optional.empty();
 
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
                           ComponentInfo componentInfo,
-                          ActorRef<CommandResponseManagerMessage> commandResponseManager,
+                          CommandResponseManager commandResponseManager,
                           CurrentStatePublisher currentStatePublisher,
                           ILocationService locationService,
                           JLoggerFactory loggerFactory) {
@@ -97,13 +97,13 @@ public class JTestAssembly {
       testHcd.ifPresent(hcd -> {
         Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
         Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
-        commandResponseManager.tell(new CommandResponseManagerMessage.AddSubCommand(controlCommand.runId(), setup.runId()));
+        commandResponseManager.addSubCommand(controlCommand.runId(), setup.runId());
         try {
           CommandResponse response = hcd.submitAndSubscribe(setup, timeout).get();
           log.info("response = " + response);
-          commandResponseManager.tell(new CommandResponseManagerMessage.UpdateSubCommand(setup.runId(), response));
+          commandResponseManager.updateSubCommand(setup.runId(), response);
         } catch (Exception ex) {
-          commandResponseManager.tell(new CommandResponseManagerMessage.UpdateSubCommand(setup.runId(), new CommandResponse.Error(setup.runId(), ex.toString())));
+          commandResponseManager.updateSubCommand(setup.runId(), new CommandResponse.Error(setup.runId(), ex.toString()));
         }
       });
 

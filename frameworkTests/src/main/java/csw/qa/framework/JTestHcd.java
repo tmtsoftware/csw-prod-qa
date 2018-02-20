@@ -1,6 +1,5 @@
 package csw.qa.framework;
 
-import akka.typed.ActorRef;
 import akka.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -13,6 +12,7 @@ import csw.messages.ccs.commands.CommandResponse;
 import csw.messages.ccs.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
+import csw.services.ccs.scaladsl.CommandResponseManager;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
@@ -32,7 +32,7 @@ public class JTestHcd {
     public JComponentHandlers jHandlers(
         ActorContext<TopLevelActorMessage> ctx,
         ComponentInfo componentInfo,
-        ActorRef<CommandResponseManagerMessage> commandResponseManager,
+        CommandResponseManager commandResponseManager,
         CurrentStatePublisher currentStatePublisher,
         ILocationService locationService,
         JLoggerFactory loggerFactory) {
@@ -43,11 +43,11 @@ public class JTestHcd {
 
   static class JTestHcdHandlers extends JComponentHandlers {
     private ILogger log;
-    private final ActorRef<CommandResponseManagerMessage> commandResponseManager;
+    private final CommandResponseManager commandResponseManager;
 
     JTestHcdHandlers(ActorContext<TopLevelActorMessage> ctx,
                      ComponentInfo componentInfo,
-                     ActorRef<CommandResponseManagerMessage> commandResponseManager,
+                     CommandResponseManager commandResponseManager,
                      CurrentStatePublisher currentStatePublisher,
                      ILocationService locationService,
                      JLoggerFactory loggerFactory) {
@@ -84,7 +84,7 @@ public class JTestHcd {
     @Override
     public void onSubmit(ControlCommand controlCommand) {
       log.debug("onSubmit called: " + controlCommand);
-      commandResponseManager.tell(new CommandResponseManagerMessage.AddOrUpdateCommand(controlCommand.runId(), new CommandResponse.Completed(controlCommand.runId())));
+      commandResponseManager.addOrUpdateCommand(controlCommand.runId(), new CommandResponse.Completed(controlCommand.runId()));
     }
 
     @Override
