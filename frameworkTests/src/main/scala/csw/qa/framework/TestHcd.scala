@@ -2,14 +2,14 @@ package csw.qa.framework
 
 import akka.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
-import csw.apps.containercmd.ContainerCmd
+import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers, CurrentStatePublisher}
 import csw.messages._
-import csw.messages.ccs.commands.CommandResponse.Completed
-import csw.messages.ccs.commands.{CommandResponse, ControlCommand}
+import csw.messages.commands.CommandResponse.Completed
+import csw.messages.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
-import csw.services.ccs.scaladsl.CommandResponseManager
+import csw.services.command.scaladsl.CommandResponseManager
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.scaladsl.LoggerFactory
 

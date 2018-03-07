@@ -4,14 +4,14 @@ import akka.actor.Scheduler
 import akka.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import csw.apps.containercmd.ContainerCmd
+import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers, CurrentStatePublisher}
 import csw.messages._
-import csw.messages.ccs.commands.CommandResponse.Error
-import csw.messages.ccs.commands.{CommandResponse, ControlCommand, Setup}
+import csw.messages.commands.CommandResponse.Error
+import csw.messages.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
-import csw.services.ccs.scaladsl.{CommandResponseManager, CommandService}
+import csw.services.command.scaladsl.{CommandResponseManager, CommandService}
 
 import scala.concurrent.duration._
 import csw.services.location.scaladsl.LocationService
