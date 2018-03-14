@@ -1,8 +1,8 @@
 package csw.qa.location
 
 import akka.stream.Materializer
-import akka.typed.Behavior
-import akka.typed.scaladsl.{Actor, ActorContext, TimerScheduler}
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.services.location.scaladsl.LocationService
@@ -10,7 +10,7 @@ import csw.services.logging.scaladsl.GenericLoggerFactory
 
 object TestServiceClient {
   def behavior(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer): Behavior[ServiceClientMessageType] =
-    Actor.withTimers(timers => Actor.mutable[ServiceClientMessageType](ctx ⇒ new TestServiceClient(ctx, timers, options, locationService)).narrow)
+    Behaviors.withTimers(timers => Behaviors.mutable[ServiceClientMessageType](ctx ⇒ new TestServiceClient(ctx, timers, options, locationService)).narrow)
 }
 
 /**
@@ -20,7 +20,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
                         timers: TimerScheduler[ServiceClientMessageType],
                         options: TestServiceClientApp.Options,
                         locationService: LocationService)(implicit mat: Materializer)
-  extends Actor.MutableBehavior[ServiceClientMessageType] {
+  extends Behaviors.MutableBehavior[ServiceClientMessageType] {
 
   import options._
 

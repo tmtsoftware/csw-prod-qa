@@ -1,6 +1,6 @@
 package csw.qa.framework
 
-import akka.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers, CurrentStatePublisher}

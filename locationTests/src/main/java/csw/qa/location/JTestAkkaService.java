@@ -4,14 +4,14 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.Creator;
-import akka.typed.ActorRef;
+import akka.actor.typed.ActorRef;
 import csw.messages.location.ComponentId;
 import csw.messages.location.Connection;
 import csw.services.location.commons.ActorSystemFactory;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.location.javadsl.JComponentType;
 import csw.services.location.javadsl.JLocationServiceFactory;
-import akka.typed.javadsl.Adapter;
+import akka.actor.typed.javadsl.Adapter;
 import csw.services.location.scaladsl.RegistrationFactory;
 import csw.services.logging.commons.LogAdminActorFactory;
 import csw.services.logging.internal.LogControlMessages;
@@ -84,7 +84,7 @@ public class JTestAkkaService extends AbstractActor {
         // Start the logging service
         String host = InetAddress.getLocalHost().getHostName();
         LoggingSystemFactory.start("JTestAkkaService", "0.1", host, system);
-        akka.typed.ActorRef<LogControlMessages> adminActorRef = LogAdminActorFactory.make(system);
+        akka.actor.typed.ActorRef<LogControlMessages> adminActorRef = LogAdminActorFactory.make(system);
 
         for (int i = 1; i <= numServices; i++)
             system.actorOf(JTestAkkaService.props(i, locationService, adminActorRef));

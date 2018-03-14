@@ -1,6 +1,6 @@
 package csw.qa.framework;
 
-import akka.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import csw.framework.javadsl.JComponentBehaviorFactory;

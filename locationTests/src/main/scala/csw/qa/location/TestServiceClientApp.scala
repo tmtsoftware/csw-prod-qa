@@ -8,7 +8,7 @@ import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
 import csw.services.location.scaladsl.LocationServiceFactory
 import csw.services.logging.scaladsl._
-import akka.typed.scaladsl.adapter._
+import akka.actor.typed.scaladsl.adapter._
 import csw.services.location.commons.ActorSystemFactory
 
 import scala.concurrent.duration._

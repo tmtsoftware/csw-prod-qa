@@ -11,7 +11,7 @@ import csw.messages.location.LocationUpdated;
 import csw.services.location.commons.ActorSystemFactory;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.location.javadsl.JLocationServiceFactory;
-import akka.typed.javadsl.Adapter;
+import akka.actor.typed.javadsl.Adapter;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JGenericLoggerFactory;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
