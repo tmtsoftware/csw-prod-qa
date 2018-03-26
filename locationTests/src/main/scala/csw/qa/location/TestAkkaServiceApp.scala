@@ -11,7 +11,7 @@ import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory
 import akka.actor.typed.scaladsl.adapter._
 import csw.services.location.commons.ActorSystemFactory
 import csw.services.logging.commons.LogAdminActorFactory
-import csw.services.logging.internal.LogControlMessages
+import csw.services.logging.messages.LogControlMessages
 
 import scala.concurrent.duration._
 

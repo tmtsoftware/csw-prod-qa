@@ -14,9 +14,9 @@ import csw.services.location.javadsl.JLocationServiceFactory;
 import akka.actor.typed.javadsl.Adapter;
 import csw.services.location.scaladsl.RegistrationFactory;
 import csw.services.logging.commons.LogAdminActorFactory;
-import csw.services.logging.internal.LogControlMessages;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JGenericLoggerFactory;
+import csw.services.logging.messages.LogControlMessages;
 import csw.services.logging.scaladsl.LoggingSystemFactory;
 
 import java.net.InetAddress;
