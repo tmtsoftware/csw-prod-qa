@@ -16,10 +16,6 @@ import csw.services.logging.scaladsl.LoggerFactory
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
-// Base trait for Test HCD domain messages
-
-// Add messages here...
-
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,

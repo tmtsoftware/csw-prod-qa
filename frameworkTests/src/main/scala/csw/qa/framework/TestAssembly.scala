@@ -20,8 +20,6 @@ import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import csw.services.logging.scaladsl.LoggerFactory
 
-// Add messages here...
-
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
                         componentInfo: ComponentInfo,

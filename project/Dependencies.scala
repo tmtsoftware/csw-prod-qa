@@ -4,6 +4,7 @@ import sbt._
 object Dependencies {
 
   val Version = "0.1-SNAPSHOT"
+//  val Version = "0.4.0-RC1"
   val ScalaVersion = "2.12.4"
 
   val `csw-logging` = "org.tmt" %% "csw-logging" % Version

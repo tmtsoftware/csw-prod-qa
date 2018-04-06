@@ -14,6 +14,7 @@ object Settings {
     scalaVersion := Dependencies.ScalaVersion,
     crossPaths := true,
     parallelExecution in Test := false,
+    resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
     fork := true
   )
 
