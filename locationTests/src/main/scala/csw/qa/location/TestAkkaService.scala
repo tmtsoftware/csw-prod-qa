@@ -1,7 +1,7 @@
 package csw.qa.location
 
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior, TimerScheduler}
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location.{ComponentId, ComponentType}
 import csw.services.location.scaladsl.{LocationService, RegistrationFactory}
@@ -16,7 +16,7 @@ object TestAkkaService {
   def behavior(i: Int, options: TestAkkaServiceApp.Options,
                locationService: LocationService,
                adminActorRef: ActorRef[LogControlMessages]): Behavior[ServiceMessageType] =
-    Behaviors.withTimers(timers => Behaviors.mutable[ServiceMessageType](ctx ⇒
+    Behaviors.withTimers(timers => Behaviors.setup[ServiceMessageType](ctx ⇒
       new TestAkkaService(ctx, timers, i, options, locationService, adminActorRef)))
 
   // Component ID of the ith service
@@ -37,7 +37,7 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       i: Int, options: TestAkkaServiceApp.Options,
                       locationService: LocationService,
                       logAdminActorRef: ActorRef[LogControlMessages])
-  extends Behaviors.MutableBehavior[ServiceMessageType] {
+  extends MutableBehavior[ServiceMessageType] {
 
   import options._
 
@@ -78,7 +78,7 @@ object TestAkkaService2 {
   def behavior(i: Int, options: TestAkkaServiceApp.Options,
                locationService: LocationService,
                adminActorRef: ActorRef[LogControlMessages]): Behavior[ServiceMessageType] =
-    Behaviors.withTimers(timers => Behaviors.mutable[ServiceMessageType]( ctx ⇒
+    Behaviors.withTimers(timers => Behaviors.setup[ServiceMessageType]( ctx ⇒
       new TestAkkaService2(ctx, timers, i, options, locationService, adminActorRef)))
 
   // Component ID of the ith service
@@ -99,7 +99,7 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        i: Int, options: TestAkkaServiceApp.Options,
                        locationService: LocationService,
                        logAdminActorRef: ActorRef[LogControlMessages])
-  extends Behaviors.MutableBehavior[ServiceMessageType] {
+  extends MutableBehavior[ServiceMessageType] {
 
   import options._
 

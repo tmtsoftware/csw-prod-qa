@@ -50,7 +50,7 @@ object TestAssemblyClient extends App {
     }
 
   def subscriberBehavior: Behavior[TrackingEvent] = {
-    Behaviors.immutable[TrackingEvent] { (ctx, msg) =>
+    Behaviors.receive[TrackingEvent] { (ctx, msg) =>
       msg match {
         case LocationUpdated(loc) =>
           log.info(s"LocationUpdated: $loc")
@@ -60,7 +60,7 @@ object TestAssemblyClient extends App {
           log.info(s"LocationRemoved: $loc")
       }
       Behaviors.same
-    } onSignal {
+    } receiveSignal {
       case (ctx, x) =>
         log.info(s"${ctx.self} received signal $x")
         Behaviors.stopped
