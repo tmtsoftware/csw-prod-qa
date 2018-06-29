@@ -4,6 +4,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior, TimerScheduler}
 import csw.messages.location.Connection.AkkaConnection
 import csw.messages.location.{ComponentId, ComponentType}
+import csw.messages.params.models.Prefix
 import csw.services.location.scaladsl.{LocationService, RegistrationFactory}
 import csw.services.logging.messages.LogControlMessages
 import csw.services.logging.scaladsl.GenericLoggerFactory
@@ -46,7 +47,7 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
 
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(registrationFactory.akkaTyped(TestAkkaService.connection(i), ctx.self)),
+    locationService.register(registrationFactory.akkaTyped(TestAkkaService.connection(i), Prefix("test.prefix"), ctx.self)),
     30.seconds)
 
   log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
@@ -108,7 +109,7 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
 
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(registrationFactory.akkaTyped(TestAkkaService2.connection(i), ctx.self)),
+    locationService.register(registrationFactory.akkaTyped(TestAkkaService2.connection(i), Prefix("test.prefix"), ctx.self)),
     30.seconds)
 
   log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")

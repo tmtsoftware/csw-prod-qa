@@ -2,14 +2,16 @@ package csw.qa.framework
 
 import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
+import csw.framework.CurrentStatePublisher
 import csw.framework.deploy.containercmd.ContainerCmd
-import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers, CurrentStatePublisher}
+import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
+import csw.messages.TopLevelActorMessage
 import csw.messages.commands.CommandResponse.Completed
 import csw.messages.commands.{CommandResponse, ControlCommand}
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
-import csw.messages.scaladsl.TopLevelActorMessage
-import csw.services.command.scaladsl.CommandResponseManager
+import csw.services.command.CommandResponseManager
+import csw.services.event.scaladsl.EventService
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.scaladsl.LoggerFactory
 
@@ -22,9 +24,10 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
                         commandResponseManager: CommandResponseManager,
                         currentStatePublisher: CurrentStatePublisher,
                         locationService: LocationService,
+                        eventService: EventService,
                         loggerFactory: LoggerFactory
                        ): ComponentHandlers =
-    new TestHcdHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, loggerFactory)
+    new TestHcdHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, eventService, loggerFactory)
 }
 
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
@@ -32,9 +35,9 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
                               commandResponseManager: CommandResponseManager,
                               currentStatePublisher: CurrentStatePublisher,
                               locationService: LocationService,
+                              eventService: EventService,
                               loggerFactory: LoggerFactory)
-  extends ComponentHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher,
-    locationService, loggerFactory) {
+  extends ComponentHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, eventService, loggerFactory) {
 
   private val log = loggerFactory.getLogger
   implicit val ec: ExecutionContextExecutor = ctx.executionContext

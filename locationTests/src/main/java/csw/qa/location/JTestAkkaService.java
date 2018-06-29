@@ -7,6 +7,7 @@ import akka.japi.Creator;
 import akka.actor.typed.ActorRef;
 import csw.messages.location.ComponentId;
 import csw.messages.location.Connection;
+import csw.messages.params.models.Prefix;
 import csw.services.location.commons.ActorSystemFactory;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.location.javadsl.JComponentType;
@@ -61,7 +62,7 @@ public class JTestAkkaService extends AbstractActor {
     // Constructor: registers self with the location service
     private JTestAkkaService(int i, ILocationService locationService, ActorRef<LogControlMessages> logAdminActorRef) {
         RegistrationFactory registrationFactory = new RegistrationFactory(logAdminActorRef);
-        locationService.register(registrationFactory.akkaTyped(JTestAkkaService.connection(i), Adapter.toTyped(self())));
+        locationService.register(registrationFactory.akkaTyped(JTestAkkaService.connection(i), new Prefix("test.prefix"), Adapter.toTyped(self())));
     }
 
     @Override
