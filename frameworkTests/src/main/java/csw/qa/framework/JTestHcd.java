@@ -13,7 +13,7 @@ import csw.messages.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
 import csw.services.command.CommandResponseManager;
-import csw.services.event.javadsl.IEventService;
+import csw.services.event.api.javadsl.IEventService;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
