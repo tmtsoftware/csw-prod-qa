@@ -34,7 +34,6 @@ lazy val frameworkTests = project
   .settings(appSettings: _*)
   .settings(libraryDependencies ++= Seq(
     `csw-framework`,
-    `csw-event-client`,
     `junit-interface` % Test,
     scalaTest % Test
   ))

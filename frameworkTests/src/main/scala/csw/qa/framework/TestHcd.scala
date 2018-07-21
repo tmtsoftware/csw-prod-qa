@@ -1,5 +1,6 @@
 package csw.qa.framework
 
+import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
 import csw.framework.CurrentStatePublisher
@@ -8,15 +9,21 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.TopLevelActorMessage
 import csw.messages.commands.CommandResponse.Completed
 import csw.messages.commands.{CommandResponse, ControlCommand}
+import csw.messages.events._
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
+import csw.messages.params.generics.{Key, KeyType}
+import csw.messages.params.models.Id
 import csw.services.command.CommandResponseManager
+import csw.services.event.api.exceptions.PublishFailure
 import csw.services.event.api.scaladsl.EventService
 import csw.services.location.scaladsl.LocationService
 import csw.services.logging.scaladsl.LoggerFactory
 
+import scala.concurrent.duration._
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.util.Random
 
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
@@ -42,8 +49,14 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private val log = loggerFactory.getLogger
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
+  // Dummy key for publishing events
+  private val eventKey: Key[Int]    = KeyType.IntKey.make("eventValue")
+  private val eventName = EventName("myEvent")
+  private val eventValues = Random
+
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
+    startPublishingEvents()
   }
 
   override def validateCommand(controlCommand: ControlCommand): CommandResponse = {
@@ -69,6 +82,27 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit =
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
+
+  private def startPublishingEvents(): Future[Cancellable] = async {
+    log.debug("start publishing events (1)")
+    val publisher = await(eventService.defaultPublisher)
+    val baseEvent = SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(eventValues.nextInt))
+    log.debug("start publishing events (2)")
+    publisher.publish(eventGenerator(baseEvent), 1.second, onError)
+  }
+
+  // this holds the logic for event generation, could be based on some computation or current state of HCD
+  private def eventGenerator(baseEvent: Event): Event = baseEvent match {
+    case e: SystemEvent  ⇒
+      val event = e.copy(eventId = Id(), eventTime = EventTime()).add(eventKey.set(eventValues.nextInt))
+      log.debug(s"Publishing event: $event")
+      event
+    case _ => throw new RuntimeException("Expected SystemEvent")
+  }
+
+  private def onError(publishFailure: PublishFailure): Unit =
+    log.error(s"Publish failed for event: [${publishFailure.event}]", ex = publishFailure.cause)
+
 }
 
 object TestHcdApp extends App {
