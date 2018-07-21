@@ -11,14 +11,14 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.TopLevelActorMessage
 import csw.messages.commands.CommandResponse.Error
 import csw.messages.commands.{CommandResponse, ControlCommand, Setup}
-import csw.messages.events.{Event, EventKey, EventName, SystemEvent}
+import csw.messages.events._
 import csw.messages.framework.ComponentInfo
 import csw.messages.location._
 import csw.messages.params.generics.{Key, KeyType}
-import csw.messages.params.models.Prefix
+import csw.messages.params.models.{Id, Prefix}
 import csw.services.command.CommandResponseManager
 import csw.services.command.scaladsl.CommandService
-import csw.services.event.api.scaladsl.EventService
+import csw.services.event.api.scaladsl.{EventPublisher, EventService}
 
 import scala.concurrent.duration._
 import csw.services.location.scaladsl.LocationService
@@ -45,25 +45,36 @@ private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
 }
 
 object TestAssemblyHandlers {
-  // Key for HCD event value
-  private val hcdEventKey: Key[Int]    = KeyType.IntKey.make("eventValue")
-  private val hcdEventName = EventName("myEvent")
+  // Key for HCD events
+  private val hcdEventValueKey: Key[Int]    = KeyType.IntKey.make("hcdEventValue")
+  private val hcdEventName = EventName("myHcdEvent")
   private val hcdPrefix = Prefix("test.hcd")
+
+  // Dummy key for publishing events from assembly
+  private val eventKey: Key[Int]    = KeyType.IntKey.make("assemblyEventValue")
+  private val eventName = EventName("myAssemblyEvent")
+
 
   // Actor to receive HCD events
   object EventHandler {
-    def make(log: Logger): Behavior[Event] = {
+    def make(log: Logger, publisher: EventPublisher, baseEvent: SystemEvent): Behavior[Event] = {
       log.info("Starting event handler")
-      Behaviors.setup(ctx ⇒ new EventHandler(ctx, log))
+      Behaviors.setup(ctx ⇒ new EventHandler(ctx, log, publisher, baseEvent))
     }
   }
 
-  class EventHandler(ctx: ActorContext[Event], log: Logger) extends MutableBehavior[Event] {
+  class EventHandler(ctx: ActorContext[Event], log: Logger, publisher: EventPublisher, baseEvent: SystemEvent) extends MutableBehavior[Event] {
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
         case e: SystemEvent =>
-          e.get(hcdEventKey)
-            .foreach(p => log.info(s"Received event with value: ${p.head}"))
+          e.get(hcdEventValueKey)
+            .foreach { p =>
+              val eventValue = p.head
+              log.info(s"Received event with value: $eventValue")
+              // fire a new event from the assembly based on the one from the HCD
+              val e = baseEvent.copy(eventId = Id(), eventTime = EventTime()).add(eventKey.set(eventValue))
+              publisher.publish(e)
+            }
           Behaviors.same
         case _ => throw new RuntimeException("Expected SystemEvent")
       }
@@ -98,7 +109,6 @@ private class TestAssemblyHandlers(
 
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val hcdEventKey = EventKey(hcdPrefix, hcdEventName)
-  private val eventHandler = ctx.spawnAnonymous(EventHandler.make(log))
 
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
@@ -166,6 +176,9 @@ private class TestAssemblyHandlers(
 
   private def startSubscribingToEvents() = async {
     val subscriber = await(eventService.defaultSubscriber)
+    val publisher = await(eventService.defaultPublisher)
+    val baseEvent = SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(0))
+    val eventHandler = ctx.spawnAnonymous(EventHandler.make(log, publisher, baseEvent))
     subscriber.subscribeActorRef(Set(hcdEventKey), eventHandler)
   }
 

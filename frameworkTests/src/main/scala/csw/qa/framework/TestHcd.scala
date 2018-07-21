@@ -50,8 +50,8 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
   // Dummy key for publishing events
-  private val eventKey: Key[Int]    = KeyType.IntKey.make("eventValue")
-  private val eventName = EventName("myEvent")
+  private val eventValueKey: Key[Int]    = KeyType.IntKey.make("hcdEventValue")
+  private val eventName = EventName("myHcdEvent")
   private val eventValues = Random
 
   override def initialize(): Future[Unit] = async {
@@ -86,7 +86,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private def startPublishingEvents(): Future[Cancellable] = async {
     log.debug("start publishing events (1)")
     val publisher = await(eventService.defaultPublisher)
-    val baseEvent = SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(eventValues.nextInt))
+    val baseEvent = SystemEvent(componentInfo.prefix, eventName).add(eventValueKey.set(eventValues.nextInt))
     log.debug("start publishing events (2)")
     publisher.publish(eventGenerator(baseEvent), 1.second, onError)
   }
@@ -94,7 +94,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   // this holds the logic for event generation, could be based on some computation or current state of HCD
   private def eventGenerator(baseEvent: Event): Event = baseEvent match {
     case e: SystemEvent  ⇒
-      val event = e.copy(eventId = Id(), eventTime = EventTime()).add(eventKey.set(eventValues.nextInt))
+      val event = e.copy(eventId = Id(), eventTime = EventTime()).add(eventValueKey.set(eventValues.nextInt))
       log.debug(s"Publishing event: $event")
       event
     case _ => throw new RuntimeException("Expected SystemEvent")
