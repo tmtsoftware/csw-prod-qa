@@ -8,13 +8,11 @@ import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior}
 import csw.services.location.scaladsl.LocationServiceFactory
-import csw.services.logging.scaladsl.{
-  GenericLoggerFactory,
-  LoggingSystemFactory
-}
+import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.actor.typed.scaladsl.adapter._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.Timeout
+import csw.messages.commands.CommandResultType.Negative
 import csw.messages.commands.{CommandName, CommandResponse, Setup}
 import csw.messages.events._
 import csw.messages.location.ComponentType.Assembly
@@ -138,7 +136,7 @@ object TestAssemblyClient extends App {
     val setups = (1 to 10).toList.map(i => makeSetup(i, s"filter$i"))
     submitAll(setups, assembly).onComplete {
       case Success(responses) => println(s"Test Passed: Responses = $responses")
-      case Failure(ex)        => println("Test Failed: $ex")
+      case Failure(ex)        => println(s"Test Failed: $ex")
     }
   }
 
@@ -153,7 +151,13 @@ object TestAssemblyClient extends App {
       assembly: CommandService): Future[List[CommandResponse]] = {
     Source(setups)
       .mapAsync(1)(assembly.submitAndSubscribe)
-      .toMat(Sink.seq)(Keep.right)
+      .map { response =>
+        if (response.resultType == Negative)
+          throw new RuntimeException(s"Command failed: $response")
+        else
+          println(s"Command response: $response")
+        response
+      }.toMat(Sink.seq)(Keep.right)
       .run()
       .map(_.toList)
   }

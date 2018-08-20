@@ -7,8 +7,8 @@ import csw.framework.CurrentStatePublisher
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.TopLevelActorMessage
-import csw.messages.commands.CommandResponse.Completed
-import csw.messages.commands.{CommandResponse, ControlCommand}
+import csw.messages.commands.CommandResponse.{Completed, Error}
+import csw.messages.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.events._
 import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
@@ -80,11 +80,27 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     CommandResponse.Accepted(controlCommand.runId)
   }
 
+  var submitCount = 0
+
   override def onSubmit(controlCommand: ControlCommand): Unit = {
     log.debug(s"onSubmit called: $controlCommand")
     Thread.sleep(1000) // simulate some work
-    commandResponseManager.addOrUpdateCommand(controlCommand.runId,
-                                              Completed(controlCommand.runId))
+    submitCount = submitCount + 1
+
+    controlCommand match {
+      case setup: Setup =>
+        if (submitCount != 3)
+        commandResponseManager.addOrUpdateCommand(controlCommand.runId,
+          Completed(controlCommand.runId))
+        else
+          commandResponseManager.addOrUpdateCommand(controlCommand.runId,
+            Error(controlCommand.runId, "Command failed"))
+
+      case x =>
+        commandResponseManager.addOrUpdateCommand(controlCommand.runId,
+          Error(controlCommand.runId, s"Unsupported command type: $x"))
+
+    }
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {
