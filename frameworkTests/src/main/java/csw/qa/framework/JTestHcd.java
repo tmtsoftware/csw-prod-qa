@@ -12,6 +12,7 @@ import csw.messages.commands.CommandResponse;
 import csw.messages.commands.ControlCommand;
 import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
+import csw.services.alarm.api.javadsl.IAlarmService;
 import csw.services.command.CommandResponseManager;
 import csw.services.event.api.javadsl.IEventService;
 import csw.services.location.javadsl.ILocationService;
@@ -37,9 +38,10 @@ public class JTestHcd {
         CurrentStatePublisher currentStatePublisher,
         ILocationService locationService,
         IEventService eventService,
+        IAlarmService alarmService,
         JLoggerFactory loggerFactory) {
       return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService,
-          eventService, loggerFactory);
+          eventService, alarmService, loggerFactory);
     }
   }
 
@@ -53,8 +55,9 @@ public class JTestHcd {
                      CurrentStatePublisher currentStatePublisher,
                      ILocationService locationService,
                      IEventService eventService,
+                     IAlarmService alarmService,
                      JLoggerFactory loggerFactory) {
-      super(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, eventService, loggerFactory);
+      super(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, eventService, alarmService, loggerFactory);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.commandResponseManager = commandResponseManager;
       log.debug("Starting Test HCD");

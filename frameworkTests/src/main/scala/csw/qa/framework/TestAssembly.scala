@@ -16,6 +16,7 @@ import csw.messages.framework.ComponentInfo
 import csw.messages.location._
 import csw.messages.params.generics.{Key, KeyType}
 import csw.messages.params.models.{Id, Prefix}
+import csw.services.alarm.api.scaladsl.AlarmService
 import csw.services.command.CommandResponseManager
 import csw.services.command.scaladsl.CommandService
 import csw.services.event.api.scaladsl.{EventPublisher, EventService}
@@ -34,6 +35,7 @@ private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
                         currentStatePublisher: CurrentStatePublisher,
                         locationService: LocationService,
                         eventService: EventService,
+                        alarmService: AlarmService,
                         loggerFactory: LoggerFactory): ComponentHandlers =
     new TestAssemblyHandlers(ctx,
                              componentInfo,
@@ -41,29 +43,35 @@ private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
                              currentStatePublisher,
                              locationService,
                              eventService,
+                             alarmService,
                              loggerFactory)
 }
 
 object TestAssemblyHandlers {
   // Key for HCD events
-  private val hcdEventValueKey: Key[Int]    = KeyType.IntKey.make("hcdEventValue")
+  private val hcdEventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val hcdEventName = EventName("myHcdEvent")
   private val hcdPrefix = Prefix("test.hcd")
 
   // Dummy key for publishing events from assembly
-  private val eventKey: Key[Int]    = KeyType.IntKey.make("assemblyEventValue")
+  private val eventKey: Key[Int] = KeyType.IntKey.make("assemblyEventValue")
   private val eventName = EventName("myAssemblyEvent")
-
 
   // Actor to receive HCD events
   object EventHandler {
-    def make(log: Logger, publisher: EventPublisher, baseEvent: SystemEvent): Behavior[Event] = {
+    def make(log: Logger,
+             publisher: EventPublisher,
+             baseEvent: SystemEvent): Behavior[Event] = {
       log.info("Starting event handler")
       Behaviors.setup(ctx ⇒ new EventHandler(ctx, log, publisher, baseEvent))
     }
   }
 
-  class EventHandler(ctx: ActorContext[Event], log: Logger, publisher: EventPublisher, baseEvent: SystemEvent) extends MutableBehavior[Event] {
+  class EventHandler(ctx: ActorContext[Event],
+                     log: Logger,
+                     publisher: EventPublisher,
+                     baseEvent: SystemEvent)
+      extends MutableBehavior[Event] {
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
         case e: SystemEvent =>
@@ -72,7 +80,9 @@ object TestAssemblyHandlers {
               val eventValue = p.head
               log.info(s"Received event with value: $eventValue")
               // fire a new event from the assembly based on the one from the HCD
-              val e = baseEvent.copy(eventId = Id(), eventTime = EventTime()).add(eventKey.set(eventValue))
+              val e = baseEvent
+                .copy(eventId = Id(), eventTime = EventTime())
+                .add(eventKey.set(eventValue))
               publisher.publish(e)
             }
           Behaviors.same
@@ -90,6 +100,7 @@ private class TestAssemblyHandlers(
     currentStatePublisher: CurrentStatePublisher,
     locationService: LocationService,
     eventService: EventService,
+    alarmService: AlarmService,
     loggerFactory: LoggerFactory)
     extends ComponentHandlers(ctx,
                               componentInfo,
@@ -97,6 +108,7 @@ private class TestAssemblyHandlers(
                               currentStatePublisher,
                               locationService,
                               eventService,
+                              alarmService,
                               loggerFactory) {
 
   import TestAssemblyHandlers._
@@ -122,7 +134,7 @@ private class TestAssemblyHandlers(
 
   override def onSubmit(controlCommand: ControlCommand): Unit = {
     implicit val timeout: Timeout = Timeout(3.seconds)
-    log.debug("onSubmit called")
+    log.debug(s"onSubmit called: $controlCommand")
     forwardCommandToHcd(controlCommand)
   }
 
@@ -177,8 +189,10 @@ private class TestAssemblyHandlers(
   private def startSubscribingToEvents() = async {
     val subscriber = await(eventService.defaultSubscriber)
     val publisher = await(eventService.defaultPublisher)
-    val baseEvent = SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(0))
-    val eventHandler = ctx.spawnAnonymous(EventHandler.make(log, publisher, baseEvent))
+    val baseEvent =
+      SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(0))
+    val eventHandler =
+      ctx.spawnAnonymous(EventHandler.make(log, publisher, baseEvent))
     subscriber.subscribeActorRef(Set(hcdEventKey), eventHandler)
   }
 

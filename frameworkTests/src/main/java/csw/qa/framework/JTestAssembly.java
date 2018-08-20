@@ -16,6 +16,7 @@ import csw.messages.framework.ComponentInfo;
 import csw.messages.location.AkkaLocation;
 import csw.messages.location.LocationUpdated;
 import csw.messages.location.TrackingEvent;
+import csw.services.alarm.api.javadsl.IAlarmService;
 import csw.services.command.CommandResponseManager;
 import csw.services.command.javadsl.JCommandService;
 import csw.services.event.api.javadsl.IEventService;
@@ -43,9 +44,10 @@ public class JTestAssembly {
         CurrentStatePublisher currentStatePublisher,
         ILocationService locationService,
         IEventService eventService,
+        IAlarmService alarmService,
         JLoggerFactory loggerFactory) {
       return new JTestAssembly.JTestAssemblyHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService,
-          eventService, loggerFactory);
+          eventService, alarmService, loggerFactory);
     }
   }
 
@@ -56,14 +58,16 @@ public class JTestAssembly {
     // Set when the location is received from the location service (below)
     private Optional<JCommandService> testHcd = Optional.empty();
 
+
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
                           ComponentInfo componentInfo,
                           CommandResponseManager commandResponseManager,
                           CurrentStatePublisher currentStatePublisher,
                           ILocationService locationService,
                           IEventService eventService,
+                          IAlarmService alarmService,
                           JLoggerFactory loggerFactory) {
-      super(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, eventService, loggerFactory);
+      super(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, eventService, alarmService, loggerFactory);
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.ctx = ctx;
       this.commandResponseManager = commandResponseManager;
