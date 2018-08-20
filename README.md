@@ -24,14 +24,9 @@ setenv interfaceName enp0s31f6
 setenv clusterSeeds 192.168.178.77:7777
 ```
 
-* Start the location service: 
+* Start the csw services (location, alarm, event, config services): 
 
 ```bash
-csw-cluster-seed --clusterPort 7777
+csw-services.sh start
 ```
 
-* Start the config service:
-
-```bash
-csw-config-server --initRepo
-```
