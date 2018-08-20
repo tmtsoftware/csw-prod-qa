@@ -85,6 +85,8 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onSubmit(controlCommand: ControlCommand): Unit = {
     log.debug(s"onSubmit called: $controlCommand")
     Thread.sleep(1000) // simulate some work
+
+    // Temp: Used to test what happens when a submit fails
     submitCount = submitCount + 1
 
     controlCommand match {
