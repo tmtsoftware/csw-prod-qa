@@ -27,6 +27,11 @@ setenv clusterSeeds 192.168.178.77:7777
 csw-cluster-seed --clusterPort 7777
 ```
 
+Alternatively, start all of the csw services with:
+```
+csw-services.sh start
+```
+
 The commands described below can be found under `csw-prod/target/universal/stage/bin`.
 After setting the above environment variables, you can run them in different terminals, on the same or different hosts.
 
