@@ -69,10 +69,12 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private val eventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val eventName = EventName("myHcdEvent")
   private val eventValues = Random
+  private val baseEvent = SystemEvent(componentInfo.prefix, eventName)
+    .add(eventValueKey.set(eventValues.nextInt))
 
-  override def initialize(): Future[Unit] = async {
+  override def initialize(): Future[Unit] = {
     log.debug("Initialize called")
-    startPublishingEvents()
+    startPublishingEvents().map(_ => ())
   }
 
   override def validateCommand(
@@ -92,14 +94,17 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     controlCommand match {
       case setup: Setup =>
         if (submitCount != 3)
-        commandResponseManager.addOrUpdateCommand(controlCommand.runId,
-          Completed(controlCommand.runId))
+          commandResponseManager.addOrUpdateCommand(
+            controlCommand.runId,
+            Completed(controlCommand.runId))
         else
-          commandResponseManager.addOrUpdateCommand(controlCommand.runId,
+          commandResponseManager.addOrUpdateCommand(
+            controlCommand.runId,
             Error(controlCommand.runId, "Command failed"))
 
       case x =>
-        commandResponseManager.addOrUpdateCommand(controlCommand.runId,
+        commandResponseManager.addOrUpdateCommand(
+          controlCommand.runId,
           Error(controlCommand.runId, s"Unsupported command type: $x"))
 
     }
@@ -123,21 +128,17 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private def startPublishingEvents(): Future[Cancellable] = async {
     log.debug("start publishing events (1)")
     val publisher = await(eventService.defaultPublisher)
-    val baseEvent = SystemEvent(componentInfo.prefix, eventName)
-      .add(eventValueKey.set(eventValues.nextInt))
     log.debug("start publishing events (2)")
-    publisher.publish(eventGenerator(baseEvent), 5.seconds, onError)
+    publisher.publish(eventGenerator(), 5.seconds, onError)
   }
 
   // this holds the logic for event generation, could be based on some computation or current state of HCD
-  private def eventGenerator(baseEvent: Event): Event = baseEvent match {
-    case e: SystemEvent ⇒
-      val event = e
-        .copy(eventId = Id(), eventTime = EventTime())
-        .add(eventValueKey.set(eventValues.nextInt))
-      log.debug(s"Publishing event: $event")
-      event
-    case _ => throw new RuntimeException("Expected SystemEvent")
+  private def eventGenerator(): Event = {
+    val event = baseEvent
+      .copy(eventId = Id(), eventTime = EventTime())
+      .add(eventValueKey.set(eventValues.nextInt))
+    log.debug(s"Publishing event: $event")
+    event
   }
 
   private def onError(publishFailure: PublishFailure): Unit =
