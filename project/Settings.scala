@@ -15,7 +15,8 @@ object Settings {
     crossPaths := true,
     parallelExecution in Test := false,
     resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
-    fork := true
+    fork := true,
+    updateOptions := updateOptions.value.withLatestSnapshots(false)
   )
 
   lazy val defaultSettings = buildSettings ++ Seq(
