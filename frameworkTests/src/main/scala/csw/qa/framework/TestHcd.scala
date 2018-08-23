@@ -72,9 +72,9 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private val baseEvent = SystemEvent(componentInfo.prefix, eventName)
     .add(eventValueKey.set(eventValues.nextInt))
 
-  override def initialize(): Future[Unit] = {
+  override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
-    startPublishingEvents().map(_ => ())
+    startPublishingEvents()
   }
 
   override def validateCommand(
@@ -89,10 +89,10 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     Thread.sleep(1000) // simulate some work
 
     // Temp: Used to test what happens when a submit fails
-    submitCount = submitCount + 1
+//    submitCount = submitCount + 1
 
     controlCommand match {
-      case setup: Setup =>
+      case _: Setup =>
         if (submitCount != 3)
           commandResponseManager.addOrUpdateCommand(
             controlCommand.runId,
@@ -125,9 +125,9 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit =
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
 
-  private def startPublishingEvents(): Future[Cancellable] = async {
+  private def startPublishingEvents(): Cancellable = {
     log.debug("start publishing events (1)")
-    val publisher = await(eventService.defaultPublisher)
+    val publisher = eventService.defaultPublisher
     log.debug("start publishing events (2)")
     publisher.publish(eventGenerator(), 5.seconds, onError)
   }

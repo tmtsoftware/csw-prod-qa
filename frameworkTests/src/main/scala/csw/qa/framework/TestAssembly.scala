@@ -187,8 +187,8 @@ private class TestAssemblyHandlers(
   }
 
   private def startSubscribingToEvents() = async {
-    val subscriber = await(eventService.defaultSubscriber)
-    val publisher = await(eventService.defaultPublisher)
+    val subscriber = eventService.defaultSubscriber
+    val publisher = eventService.defaultPublisher
     val baseEvent =
       SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(0))
     val eventHandler =

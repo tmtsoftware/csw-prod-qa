@@ -1,6 +1,5 @@
 package csw.qa.framework;
 
-import akka.actor.Cancellable;
 import akka.actor.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -20,6 +19,7 @@ import csw.messages.params.generics.JKeyTypes;
 import csw.messages.params.generics.Key;
 import csw.services.alarm.api.javadsl.IAlarmService;
 import csw.services.command.CommandResponseManager;
+import csw.services.event.api.javadsl.IEventPublisher;
 import csw.services.event.api.javadsl.IEventService;
 import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
@@ -63,7 +63,6 @@ public class JTestHcd {
     private final ILogger log;
     private final CommandResponseManager commandResponseManager;
     private final IEventService eventService;
-    private final ComponentInfo componentInfo;
     private final SystemEvent baseEvent;
 
 
@@ -79,7 +78,6 @@ public class JTestHcd {
       this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
       this.commandResponseManager = commandResponseManager;
       this.eventService = eventService;
-      this.componentInfo = componentInfo;
       this.baseEvent = (new SystemEvent(componentInfo.prefix(), eventName)).add(eventValueKey.set(eventValues.nextInt()));
       log.debug("Starting Test HCD");
     }
@@ -87,7 +85,8 @@ public class JTestHcd {
     @Override
     public CompletableFuture<Void> jInitialize() {
       log.debug("jInitialize called");
-      return startPublishingEvents().thenAccept(c -> {
+      startPublishingEvents();
+      return CompletableFuture.runAsync(() -> {
       });
     }
 
@@ -129,13 +128,10 @@ public class JTestHcd {
       log.debug("onGoOnline called");
     }
 
-    private CompletableFuture<Cancellable> startPublishingEvents() {
-      log.debug("start publishing events (1)");
-      return eventService.defaultPublisher().thenApply(publisher -> {
-        log.debug("start publishing events (2)");
-        return publisher.publish(() -> eventGenerator(), Duration.ofMillis(5000),
-            failure -> log.error("Publishing failed: " + failure));
-      });
+    private void startPublishingEvents() {
+      log.debug("start publishing events");
+      IEventPublisher publisher = eventService.defaultPublisher();
+      publisher.publish(this::eventGenerator, Duration.ofMillis(5000));
     }
 
     // this holds the logic for event generation, could be based on some computation or current state of HCD

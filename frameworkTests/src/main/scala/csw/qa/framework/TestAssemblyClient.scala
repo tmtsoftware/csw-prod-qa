@@ -25,7 +25,6 @@ import csw.services.event.EventServiceFactory
 import csw.services.event.api.scaladsl.EventService
 import csw.services.location.commons.ClusterAwareSettings
 
-import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -87,8 +86,8 @@ object TestAssemblyClient extends App {
     }
   }
 
-  def startSubscribingToEvents(ctx: ActorContext[TrackingEvent]) = async {
-    val subscriber = await(eventService.defaultSubscriber)
+  def startSubscribingToEvents(ctx: ActorContext[TrackingEvent]) = {
+    val subscriber = eventService.defaultSubscriber
     val eventHandler = ctx.spawnAnonymous(EventHandler.make())
     subscriber.subscribeActorRef(Set(assemblyEventKey), eventHandler)
   }
