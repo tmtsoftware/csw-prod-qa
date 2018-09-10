@@ -3,23 +3,17 @@ package csw.qa.framework
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
-import csw.framework.CurrentStatePublisher
 import csw.framework.deploy.containercmd.ContainerCmd
+import csw.framework.models.CswServices
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.TopLevelActorMessage
 import csw.messages.commands.CommandResponse.{Completed, Error}
 import csw.messages.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.events._
-import csw.messages.framework.ComponentInfo
 import csw.messages.location.TrackingEvent
 import csw.messages.params.generics.{Key, KeyType}
 import csw.messages.params.models.Id
-import csw.services.alarm.api.scaladsl.AlarmService
-import csw.services.command.CommandResponseManager
 import csw.services.event.api.exceptions.PublishFailure
-import csw.services.event.api.scaladsl.EventService
-import csw.services.location.scaladsl.LocationService
-import csw.services.logging.scaladsl.LoggerFactory
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -28,39 +22,15 @@ import scala.util.Random
 
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
-                        componentInfo: ComponentInfo,
-                        commandResponseManager: CommandResponseManager,
-                        currentStatePublisher: CurrentStatePublisher,
-                        locationService: LocationService,
-                        eventService: EventService,
-                        alarmService: AlarmService,
-                        loggerFactory: LoggerFactory): ComponentHandlers =
-    new TestHcdHandlers(ctx,
-                        componentInfo,
-                        commandResponseManager,
-                        currentStatePublisher,
-                        locationService,
-                        eventService,
-                        alarmService,
-                        loggerFactory)
+                        cswServices: CswServices): ComponentHandlers =
+    new TestHcdHandlers(ctx, cswServices)
 }
 
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
-                              componentInfo: ComponentInfo,
-                              commandResponseManager: CommandResponseManager,
-                              currentStatePublisher: CurrentStatePublisher,
-                              locationService: LocationService,
-                              eventService: EventService,
-                              alarmService: AlarmService,
-                              loggerFactory: LoggerFactory)
-    extends ComponentHandlers(ctx,
-                              componentInfo,
-                              commandResponseManager,
-                              currentStatePublisher,
-                              locationService,
-                              eventService,
-                              alarmService,
-                              loggerFactory) {
+                              cswServices: CswServices)
+    extends ComponentHandlers(ctx, cswServices) {
+
+  import cswServices._
 
   private val log = loggerFactory.getLogger
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
@@ -89,7 +59,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     Thread.sleep(1000) // simulate some work
 
     // Temp: Used to test what happens when a submit fails
-//    submitCount = submitCount + 1
+    //    submitCount = submitCount + 1
 
     controlCommand match {
       case _: Setup =>

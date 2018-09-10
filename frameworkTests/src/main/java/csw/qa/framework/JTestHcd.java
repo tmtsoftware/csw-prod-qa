@@ -3,25 +3,22 @@ package csw.qa.framework;
 import akka.actor.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import csw.framework.CurrentStatePublisher;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
+import csw.framework.models.JCswServices;
 import csw.messages.TopLevelActorMessage;
 import csw.messages.commands.CommandResponse;
 import csw.messages.commands.ControlCommand;
 import csw.messages.events.Event;
 import csw.messages.events.EventName;
 import csw.messages.events.SystemEvent;
-import csw.messages.framework.ComponentInfo;
 import csw.messages.location.TrackingEvent;
-import csw.messages.params.generics.JKeyTypes;
+import csw.messages.params.generics.JKeyType;
 import csw.messages.params.generics.Key;
-import csw.services.alarm.api.javadsl.IAlarmService;
 import csw.services.command.CommandResponseManager;
 import csw.services.event.api.javadsl.IEventPublisher;
 import csw.services.event.api.javadsl.IEventService;
-import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
 
@@ -33,7 +30,7 @@ import java.util.concurrent.CompletableFuture;
 public class JTestHcd {
 
   // Dummy key for publishing events
-  private static Key<Integer> eventValueKey = JKeyTypes.IntKey().make("hcdEventValue");
+  private static Key<Integer> eventValueKey = JKeyType.IntKey().make("hcdEventValue");
   private static EventName eventName = new EventName("myHcdEvent");
   private static Random eventValues = new Random();
 
@@ -47,15 +44,8 @@ public class JTestHcd {
     @Override
     public JComponentHandlers jHandlers(
         ActorContext<TopLevelActorMessage> ctx,
-        ComponentInfo componentInfo,
-        CommandResponseManager commandResponseManager,
-        CurrentStatePublisher currentStatePublisher,
-        ILocationService locationService,
-        IEventService eventService,
-        IAlarmService alarmService,
-        JLoggerFactory loggerFactory) {
-      return new JTestHcd.JTestHcdHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService,
-          eventService, alarmService, loggerFactory);
+        JCswServices cswServices) {
+      return new JTestHcd.JTestHcdHandlers(ctx, cswServices);
     }
   }
 
@@ -67,18 +57,12 @@ public class JTestHcd {
 
 
     JTestHcdHandlers(ActorContext<TopLevelActorMessage> ctx,
-                     ComponentInfo componentInfo,
-                     CommandResponseManager commandResponseManager,
-                     CurrentStatePublisher currentStatePublisher,
-                     ILocationService locationService,
-                     IEventService eventService,
-                     IAlarmService alarmService,
-                     JLoggerFactory loggerFactory) {
-      super(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, eventService, alarmService, loggerFactory);
-      this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
-      this.commandResponseManager = commandResponseManager;
-      this.eventService = eventService;
-      this.baseEvent = (new SystemEvent(componentInfo.prefix(), eventName)).add(eventValueKey.set(eventValues.nextInt()));
+                     JCswServices cswServices) {
+      super(ctx, cswServices);
+      this.log = new JLoggerFactory(cswServices.componentInfo().name()).getLogger(getClass());
+      this.commandResponseManager = cswServices.commandResponseManager();
+      this.eventService = cswServices.eventService();
+      this.baseEvent = (new SystemEvent(cswServices.componentInfo().prefix(), eventName)).add(eventValueKey.set(eventValues.nextInt()));
       log.debug("Starting Test HCD");
     }
 

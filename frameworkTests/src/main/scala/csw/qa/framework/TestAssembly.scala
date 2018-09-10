@@ -5,46 +5,29 @@ import akka.actor.Scheduler
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import csw.framework.CurrentStatePublisher
 import csw.framework.deploy.containercmd.ContainerCmd
+import csw.framework.models.CswServices
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.messages.TopLevelActorMessage
 import csw.messages.commands.CommandResponse.Error
 import csw.messages.commands.{CommandResponse, ControlCommand, Setup}
 import csw.messages.events._
-import csw.messages.framework.ComponentInfo
 import csw.messages.location._
 import csw.messages.params.generics.{Key, KeyType}
 import csw.messages.params.models.{Id, Prefix}
-import csw.services.alarm.api.scaladsl.AlarmService
-import csw.services.command.CommandResponseManager
 import csw.services.command.scaladsl.CommandService
-import csw.services.event.api.scaladsl.{EventPublisher, EventService}
+import csw.services.event.api.scaladsl.EventPublisher
 
 import scala.concurrent.duration._
-import csw.services.location.scaladsl.LocationService
 
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import csw.services.logging.scaladsl.{Logger, LoggerFactory}
+import csw.services.logging.scaladsl.Logger
 
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
-                        componentInfo: ComponentInfo,
-                        commandResponseManager: CommandResponseManager,
-                        currentStatePublisher: CurrentStatePublisher,
-                        locationService: LocationService,
-                        eventService: EventService,
-                        alarmService: AlarmService,
-                        loggerFactory: LoggerFactory): ComponentHandlers =
-    new TestAssemblyHandlers(ctx,
-                             componentInfo,
-                             commandResponseManager,
-                             currentStatePublisher,
-                             locationService,
-                             eventService,
-                             alarmService,
-                             loggerFactory)
+                        cswServices: CswServices): ComponentHandlers =
+    new TestAssemblyHandlers(ctx, cswServices)
 }
 
 object TestAssemblyHandlers {
@@ -93,25 +76,12 @@ object TestAssemblyHandlers {
 
 }
 
-private class TestAssemblyHandlers(
-    ctx: ActorContext[TopLevelActorMessage],
-    componentInfo: ComponentInfo,
-    commandResponseManager: CommandResponseManager,
-    currentStatePublisher: CurrentStatePublisher,
-    locationService: LocationService,
-    eventService: EventService,
-    alarmService: AlarmService,
-    loggerFactory: LoggerFactory)
-    extends ComponentHandlers(ctx,
-                              componentInfo,
-                              commandResponseManager,
-                              currentStatePublisher,
-                              locationService,
-                              eventService,
-                              alarmService,
-                              loggerFactory) {
+private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
+                                   cswServices: CswServices)
+    extends ComponentHandlers(ctx, cswServices) {
 
   import TestAssemblyHandlers._
+  import cswServices._
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
@@ -147,7 +117,7 @@ private class TestAssemblyHandlers(
                         controlCommand.commandName,
                         controlCommand.maybeObsId,
                         controlCommand.paramSet)
-      commandResponseManager.addSubCommand(controlCommand.runId, setup.runId)
+      cswServices.commandResponseManager.addSubCommand(controlCommand.runId, setup.runId)
 
       val f = for {
         response <- hcd.submitAndSubscribe(setup)

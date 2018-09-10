@@ -4,23 +4,19 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import csw.framework.CurrentStatePublisher;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
+import csw.framework.models.JCswServices;
 import csw.messages.TopLevelActorMessage;
 import csw.messages.commands.CommandResponse;
 import csw.messages.commands.ControlCommand;
 import csw.messages.commands.Setup;
-import csw.messages.framework.ComponentInfo;
 import csw.messages.location.AkkaLocation;
 import csw.messages.location.LocationUpdated;
 import csw.messages.location.TrackingEvent;
-import csw.services.alarm.api.javadsl.IAlarmService;
 import csw.services.command.CommandResponseManager;
 import csw.services.command.javadsl.JCommandService;
-import csw.services.event.api.javadsl.IEventService;
-import csw.services.location.javadsl.ILocationService;
 import csw.services.logging.javadsl.ILogger;
 import csw.services.logging.javadsl.JLoggerFactory;
 
@@ -39,15 +35,8 @@ public class JTestAssembly {
     @Override
     public JComponentHandlers jHandlers(
         ActorContext<TopLevelActorMessage> ctx,
-        ComponentInfo componentInfo,
-        CommandResponseManager commandResponseManager,
-        CurrentStatePublisher currentStatePublisher,
-        ILocationService locationService,
-        IEventService eventService,
-        IAlarmService alarmService,
-        JLoggerFactory loggerFactory) {
-      return new JTestAssembly.JTestAssemblyHandlers(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService,
-          eventService, alarmService, loggerFactory);
+        JCswServices cswServices) {
+      return new JTestAssembly.JTestAssemblyHandlers(ctx, cswServices);
     }
   }
 
@@ -60,17 +49,12 @@ public class JTestAssembly {
 
 
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
-                          ComponentInfo componentInfo,
-                          CommandResponseManager commandResponseManager,
-                          CurrentStatePublisher currentStatePublisher,
-                          ILocationService locationService,
-                          IEventService eventService,
-                          IAlarmService alarmService,
-                          JLoggerFactory loggerFactory) {
-      super(ctx, componentInfo, commandResponseManager, currentStatePublisher, locationService, eventService, alarmService, loggerFactory);
-      this.log = new JLoggerFactory(componentInfo.name()).getLogger(getClass());
+                          JCswServices cswServices) {
+      super(ctx, cswServices);
+
+      this.log = new JLoggerFactory(cswServices.componentInfo().name()).getLogger(getClass());
       this.ctx = ctx;
-      this.commandResponseManager = commandResponseManager;
+      this.commandResponseManager = cswServices.commandResponseManager();
       log.debug("Starting Test Assembly");
     }
 
@@ -113,31 +97,6 @@ public class JTestAssembly {
           commandResponseManager.updateSubCommand(setup.runId(), new CommandResponse.Error(setup.runId(), ex.toString()));
         }
       });
-
-
-//        hcd.submit(controlCommand, timeout, scheduler)
-//            .thenAccept(commandResponse -> {
-//              RunId runId = commandResponse.runId();
-//              assert (runId.equals(controlCommand.runId()));
-//              if (commandResponse instanceof CommandResponse.Accepted) {
-//                hcd.getCommandResponse(runId, timeout, scheduler)
-//                    .thenAccept(finalResponse -> commandResponseManager.tell(new AddOrUpdateCommand(runId, finalResponse)))
-//                    .exceptionally(ex -> {
-//                      log.error("Failed to get command response from TestHcd", ex);
-//                      commandResponseManager.tell(new AddOrUpdateCommand(runId, new CommandResponse.Error(runId, ex.toString())));
-//                      return null;
-//                    });
-//              } else {
-//                log.error("Unexpected response from TestHcd: " + commandResponse);
-//              }
-//            })
-//            .exceptionally(ex -> {
-//              log.error("Failed to get validation response from TestHcd", ex);
-//              commandResponseManager.tell(new AddOrUpdateCommand(controlCommand.runId(),
-//                  new CommandResponse.Error(controlCommand.runId(), ex.toString())));
-//              return null;
-//            });
-//      });
     }
 
 
