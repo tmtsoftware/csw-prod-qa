@@ -3,24 +3,24 @@ package csw.qa.framework;
 import akka.actor.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import csw.command.CommandResponseManager;
+import csw.command.messages.TopLevelActorMessage;
+import csw.event.api.javadsl.IEventPublisher;
+import csw.event.api.javadsl.IEventService;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
-import csw.framework.models.JCswServices;
-import csw.messages.TopLevelActorMessage;
-import csw.messages.commands.CommandResponse;
-import csw.messages.commands.ControlCommand;
-import csw.messages.events.Event;
-import csw.messages.events.EventName;
-import csw.messages.events.SystemEvent;
-import csw.messages.location.TrackingEvent;
-import csw.messages.params.generics.JKeyType;
-import csw.messages.params.generics.Key;
-import csw.services.command.CommandResponseManager;
-import csw.services.event.api.javadsl.IEventPublisher;
-import csw.services.event.api.javadsl.IEventService;
-import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JLoggerFactory;
+import csw.framework.models.JCswContext;
+import csw.location.api.models.TrackingEvent;
+import csw.logging.javadsl.ILogger;
+import csw.logging.javadsl.JLoggerFactory;
+import csw.params.commands.CommandResponse;
+import csw.params.commands.ControlCommand;
+import csw.params.core.generics.Key;
+import csw.params.events.Event;
+import csw.params.events.EventName;
+import csw.params.events.SystemEvent;
+import csw.params.javadsl.JKeyType;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -44,7 +44,7 @@ public class JTestHcd {
     @Override
     public JComponentHandlers jHandlers(
         ActorContext<TopLevelActorMessage> ctx,
-        JCswServices cswServices) {
+        JCswContext cswServices) {
       return new JTestHcd.JTestHcdHandlers(ctx, cswServices);
     }
   }
@@ -57,7 +57,7 @@ public class JTestHcd {
 
 
     JTestHcdHandlers(ActorContext<TopLevelActorMessage> ctx,
-                     JCswServices cswServices) {
+                     JCswContext cswServices) {
       super(ctx, cswServices);
       this.log = new JLoggerFactory(cswServices.componentInfo().name()).getLogger(getClass());
       this.commandResponseManager = cswServices.commandResponseManager();

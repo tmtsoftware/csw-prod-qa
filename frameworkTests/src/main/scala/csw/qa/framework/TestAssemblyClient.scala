@@ -7,23 +7,23 @@ import akka.stream.ActorMaterializer
 import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior}
-import csw.services.location.scaladsl.LocationServiceFactory
-import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.actor.typed.scaladsl.adapter._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.Timeout
-import csw.messages.commands.CommandResultType.Negative
-import csw.messages.commands.{CommandName, CommandResponse, Setup}
-import csw.messages.events._
-import csw.messages.location.ComponentType.Assembly
-import csw.messages.location.Connection.AkkaConnection
-import csw.messages.location._
-import csw.messages.params.generics.{Key, KeyType}
-import csw.messages.params.models.{ObsId, Prefix}
-import csw.services.command.scaladsl.CommandService
-import csw.services.event.EventServiceFactory
-import csw.services.event.api.scaladsl.EventService
-import csw.services.location.commons.ClusterAwareSettings
+import csw.command.scaladsl.CommandService
+import csw.event.EventServiceFactory
+import csw.event.api.scaladsl.EventService
+import csw.location.api.models.ComponentType.Assembly
+import csw.location.api.models.Connection.AkkaConnection
+import csw.location.api.models._
+import csw.location.commons.ClusterAwareSettings
+import csw.location.scaladsl.LocationServiceFactory
+import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import csw.params.commands.CommandResultType.Negative
+import csw.params.commands.{CommandName, CommandResponse, Setup}
+import csw.params.core.generics.{Key, KeyType}
+import csw.params.core.models.{ObsId, Prefix}
+import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

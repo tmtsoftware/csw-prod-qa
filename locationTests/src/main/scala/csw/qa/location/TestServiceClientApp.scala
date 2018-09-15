@@ -6,10 +6,10 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
-import csw.services.location.scaladsl.LocationServiceFactory
-import csw.services.logging.scaladsl._
 import akka.actor.typed.scaladsl.adapter._
-import csw.services.location.commons.ActorSystemFactory
+import csw.location.commons.ActorSystemFactory
+import csw.location.scaladsl.LocationServiceFactory
+import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 import scala.concurrent.duration._
 

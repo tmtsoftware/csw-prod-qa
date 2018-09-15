@@ -6,12 +6,12 @@ import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
 import akka.actor.typed.ActorRef
-import csw.services.location.scaladsl.LocationServiceFactory
-import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.actor.typed.scaladsl.adapter._
-import csw.services.location.commons.ActorSystemFactory
-import csw.services.logging.commons.LogAdminActorFactory
-import csw.services.logging.messages.LogControlMessages
+import csw.location.commons.ActorSystemFactory
+import csw.location.scaladsl.LocationServiceFactory
+import csw.logging.commons.LogAdminActorFactory
+import csw.logging.messages.LogControlMessages
+import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 import scala.concurrent.duration._
 

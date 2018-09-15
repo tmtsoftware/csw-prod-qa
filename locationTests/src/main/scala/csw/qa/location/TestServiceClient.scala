@@ -3,10 +3,10 @@ package csw.qa.location
 import akka.stream.Materializer
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior, TimerScheduler}
-import csw.messages.location.Connection.AkkaConnection
-import csw.messages.location.{AkkaLocation, LocationRemoved, LocationUpdated}
-import csw.services.location.scaladsl.LocationService
-import csw.services.logging.scaladsl.GenericLoggerFactory
+import csw.location.api.models.Connection.AkkaConnection
+import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated}
+import csw.location.api.scaladsl.LocationService
+import csw.logging.scaladsl.GenericLoggerFactory
 
 object TestServiceClient {
   def behavior(options: TestServiceClientApp.Options, locationService: LocationService)(implicit mat: Materializer): Behavior[ServiceClientMessageType] =

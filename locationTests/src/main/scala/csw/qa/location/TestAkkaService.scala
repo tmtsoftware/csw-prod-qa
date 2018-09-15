@@ -2,12 +2,13 @@ package csw.qa.location
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior, TimerScheduler}
-import csw.messages.location.Connection.AkkaConnection
-import csw.messages.location.{ComponentId, ComponentType}
-import csw.messages.params.models.Prefix
-import csw.services.location.scaladsl.{LocationService, RegistrationFactory}
-import csw.services.logging.messages.LogControlMessages
-import csw.services.logging.scaladsl.GenericLoggerFactory
+import csw.location.api.models.Connection.AkkaConnection
+import csw.location.api.models.{ComponentId, ComponentType}
+import csw.location.api.scaladsl.LocationService
+import csw.location.scaladsl.RegistrationFactory
+import csw.logging.messages.LogControlMessages
+import csw.logging.scaladsl.GenericLoggerFactory
+import csw.params.core.models.Prefix
 
 import scala.concurrent.duration._
 import scala.concurrent.Await

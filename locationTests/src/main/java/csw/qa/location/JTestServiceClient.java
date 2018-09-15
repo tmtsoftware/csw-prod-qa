@@ -4,23 +4,23 @@ import akka.actor.*;
 import akka.japi.Creator;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
-import csw.messages.location.AkkaLocation;
-import csw.messages.location.Connection;
-import csw.messages.location.LocationRemoved;
-import csw.messages.location.LocationUpdated;
-import csw.services.location.commons.ActorSystemFactory;
-import csw.services.location.javadsl.ILocationService;
-import csw.services.location.javadsl.JLocationServiceFactory;
 import akka.actor.typed.javadsl.Adapter;
-import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JGenericLoggerFactory;
-import csw.services.logging.scaladsl.LoggingSystemFactory;
+import csw.location.api.javadsl.ILocationService;
+import csw.location.api.models.AkkaLocation;
+import csw.location.api.models.Connection;
+import csw.location.api.models.LocationRemoved;
+import csw.location.api.models.LocationUpdated;
+import csw.location.commons.ActorSystemFactory;
+import csw.location.javadsl.JLocationServiceFactory;
+import csw.logging.javadsl.ILogger;
+import csw.logging.javadsl.JGenericLoggerFactory;
+import csw.logging.scaladsl.LoggingSystemFactory;
 
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static csw.services.location.javadsl.JConnectionType.AkkaType;
+import static csw.location.javadsl.JConnectionType.AkkaType;
 
 /**
  * A location service test client application that attempts to resolve one or more sets of

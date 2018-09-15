@@ -4,7 +4,7 @@ import java.net.InetAddress
 
 import akka.actor._
 import akka.stream.ActorMaterializer
-import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 import scala.concurrent.duration._
 

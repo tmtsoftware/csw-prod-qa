@@ -4,21 +4,21 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import csw.command.CommandResponseManager;
+import csw.command.javadsl.JCommandService;
+import csw.command.messages.TopLevelActorMessage;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
-import csw.framework.models.JCswServices;
-import csw.messages.TopLevelActorMessage;
-import csw.messages.commands.CommandResponse;
-import csw.messages.commands.ControlCommand;
-import csw.messages.commands.Setup;
-import csw.messages.location.AkkaLocation;
-import csw.messages.location.LocationUpdated;
-import csw.messages.location.TrackingEvent;
-import csw.services.command.CommandResponseManager;
-import csw.services.command.javadsl.JCommandService;
-import csw.services.logging.javadsl.ILogger;
-import csw.services.logging.javadsl.JLoggerFactory;
+import csw.framework.models.JCswContext;
+import csw.location.api.models.AkkaLocation;
+import csw.location.api.models.LocationUpdated;
+import csw.location.api.models.TrackingEvent;
+import csw.logging.javadsl.ILogger;
+import csw.logging.javadsl.JLoggerFactory;
+import csw.params.commands.CommandResponse;
+import csw.params.commands.ControlCommand;
+import csw.params.commands.Setup;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -35,8 +35,8 @@ public class JTestAssembly {
     @Override
     public JComponentHandlers jHandlers(
         ActorContext<TopLevelActorMessage> ctx,
-        JCswServices cswServices) {
-      return new JTestAssembly.JTestAssemblyHandlers(ctx, cswServices);
+        JCswContext cswCtx) {
+      return new JTestAssembly.JTestAssemblyHandlers(ctx, cswCtx);
     }
   }
 
@@ -49,7 +49,7 @@ public class JTestAssembly {
 
 
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
-                          JCswServices cswServices) {
+                          JCswContext cswServices) {
       super(ctx, cswServices);
 
       this.log = new JLoggerFactory(cswServices.componentInfo().name()).getLogger(getClass());

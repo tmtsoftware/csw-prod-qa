@@ -3,17 +3,17 @@ package csw.qa.framework
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
+import csw.command.messages.TopLevelActorMessage
+import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
-import csw.framework.models.CswServices
+import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.messages.TopLevelActorMessage
-import csw.messages.commands.CommandResponse.{Completed, Error}
-import csw.messages.commands.{CommandResponse, ControlCommand, Setup}
-import csw.messages.events._
-import csw.messages.location.TrackingEvent
-import csw.messages.params.generics.{Key, KeyType}
-import csw.messages.params.models.Id
-import csw.services.event.api.exceptions.PublishFailure
+import csw.location.api.models.TrackingEvent
+import csw.params.commands.CommandResponse.{Completed, Error}
+import csw.params.commands.{CommandResponse, ControlCommand, Setup}
+import csw.params.core.generics.{Key, KeyType}
+import csw.params.core.models.Id
+import csw.params.events.{Event, EventName, EventTime, SystemEvent}
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -22,12 +22,12 @@ import scala.util.Random
 
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
-                        cswServices: CswServices): ComponentHandlers =
+                        cswServices: CswContext): ComponentHandlers =
     new TestHcdHandlers(ctx, cswServices)
 }
 
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
-                              cswServices: CswServices)
+                              cswServices: CswContext)
     extends ComponentHandlers(ctx, cswServices) {
 
   import cswServices._

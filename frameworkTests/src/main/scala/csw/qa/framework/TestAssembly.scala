@@ -5,29 +5,28 @@ import akka.actor.Scheduler
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import csw.command.messages.TopLevelActorMessage
+import csw.command.scaladsl.CommandService
+import csw.event.api.scaladsl.EventPublisher
 import csw.framework.deploy.containercmd.ContainerCmd
-import csw.framework.models.CswServices
+import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.messages.TopLevelActorMessage
-import csw.messages.commands.CommandResponse.Error
-import csw.messages.commands.{CommandResponse, ControlCommand, Setup}
-import csw.messages.events._
-import csw.messages.location._
-import csw.messages.params.generics.{Key, KeyType}
-import csw.messages.params.models.{Id, Prefix}
-import csw.services.command.scaladsl.CommandService
-import csw.services.event.api.scaladsl.EventPublisher
+import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.logging.scaladsl.Logger
+import csw.params.commands.CommandResponse.Error
+import csw.params.commands.{CommandResponse, ControlCommand, Setup}
+import csw.params.core.generics.{Key, KeyType}
+import csw.params.core.models.{Id, Prefix}
+import csw.params.events._
 
 import scala.concurrent.duration._
-
 import scala.async.Async._
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import csw.services.logging.scaladsl.Logger
 
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
-                        cswServices: CswServices): ComponentHandlers =
-    new TestAssemblyHandlers(ctx, cswServices)
+                        cswCtx: CswContext): ComponentHandlers =
+    new TestAssemblyHandlers(ctx, cswCtx)
 }
 
 object TestAssemblyHandlers {
@@ -77,7 +76,7 @@ object TestAssemblyHandlers {
 }
 
 private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
-                                   cswServices: CswServices)
+                                   cswServices: CswContext)
     extends ComponentHandlers(ctx, cswServices) {
 
   import TestAssemblyHandlers._
