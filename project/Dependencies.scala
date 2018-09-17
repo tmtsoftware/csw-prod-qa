@@ -4,10 +4,10 @@ import sbt._
 object Dependencies {
 
   val Version = "0.1-SNAPSHOT"
-//  val Version = "0.4.0-RC1"
   val ScalaVersion = "2.12.6"
 
   val `csw-logging` = "org.tmt" %% "csw-logging" % Version
+  val `csw-commons` = "org.tmt" %% "csw-commons" % Version
   val `csw-location-agent` = "org.tmt" %% "csw-location-agent" % Version
   val `csw-config-client` = "org.tmt" %% "csw-config-client" % Version
   val `csw-framework` = "org.tmt" %% "csw-framework" % Version
