@@ -11,8 +11,8 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.Timeout
 import csw.command.scaladsl.CommandService
-import csw.event.EventServiceFactory
 import csw.event.api.scaladsl.EventService
+import csw.event.client.EventServiceFactory
 import csw.location.api.models.ComponentType.Assembly
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models._
