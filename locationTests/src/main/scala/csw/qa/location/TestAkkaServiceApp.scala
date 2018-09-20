@@ -7,7 +7,7 @@ import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.adapter._
-import csw.location.commons.ActorSystemFactory
+import csw.location.client.ActorSystemFactory
 import csw.location.scaladsl.LocationServiceFactory
 import csw.logging.commons.LogAdminActorFactory
 import csw.logging.messages.LogControlMessages

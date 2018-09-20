@@ -10,7 +10,7 @@ import csw.location.api.models.AkkaLocation;
 import csw.location.api.models.Connection;
 import csw.location.api.models.LocationRemoved;
 import csw.location.api.models.LocationUpdated;
-import csw.location.commons.ActorSystemFactory;
+import csw.location.client.ActorSystemFactory;
 import csw.location.javadsl.JLocationServiceFactory;
 import csw.logging.javadsl.ILogger;
 import csw.logging.javadsl.JGenericLoggerFactory;

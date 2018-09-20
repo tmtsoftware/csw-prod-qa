@@ -9,7 +9,7 @@ import akka.actor.typed.javadsl.Adapter;
 import csw.location.api.javadsl.ILocationService;
 import csw.location.api.models.ComponentId;
 import csw.location.api.models.Connection;
-import csw.location.commons.ActorSystemFactory;
+import csw.location.client.ActorSystemFactory;
 import csw.location.javadsl.JComponentType;
 import csw.location.javadsl.JLocationServiceFactory;
 import csw.location.scaladsl.RegistrationFactory;
