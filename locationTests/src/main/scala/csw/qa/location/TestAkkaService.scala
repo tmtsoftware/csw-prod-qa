@@ -1,12 +1,11 @@
 package csw.qa.location
 
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior, TimerScheduler}
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models.{ComponentId, ComponentType}
 import csw.location.api.scaladsl.LocationService
 import csw.location.scaladsl.RegistrationFactory
-import csw.logging.messages.LogControlMessages
 import csw.logging.scaladsl.GenericLoggerFactory
 import csw.params.core.models.Prefix
 
@@ -16,10 +15,9 @@ import scala.concurrent.Await
 object TestAkkaService {
   // Behaviour of the ith service
   def behavior(i: Int, options: TestAkkaServiceApp.Options,
-               locationService: LocationService,
-               adminActorRef: ActorRef[LogControlMessages]): Behavior[ServiceMessageType] =
+               locationService: LocationService): Behavior[ServiceMessageType] =
     Behaviors.withTimers(timers => Behaviors.setup[ServiceMessageType](ctx ⇒
-      new TestAkkaService(ctx, timers, i, options, locationService, adminActorRef)))
+      new TestAkkaService(ctx, timers, i, options, locationService)))
 
   // Component ID of the ith service
   def componentId(i: Int) = ComponentId(s"TestAkkaService_$i", ComponentType.Assembly)
@@ -37,19 +35,17 @@ object TestAkkaService {
 class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       timers: TimerScheduler[ServiceMessageType],
                       i: Int, options: TestAkkaServiceApp.Options,
-                      locationService: LocationService,
-                      logAdminActorRef: ActorRef[LogControlMessages])
+                      locationService: LocationService)
   extends MutableBehavior[ServiceMessageType] {
 
   import options._
 
   private val log = GenericLoggerFactory.getLogger(ctx)
-  private val registrationFactory = new RegistrationFactory(logAdminActorRef)
+  private val registrationFactory = new RegistrationFactory()
 
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(registrationFactory.akkaTyped(TestAkkaService.connection(i), Prefix("test.prefix"), ctx.self)),
-    30.seconds)
+    locationService.register(registrationFactory.akkaTyped(TestAkkaService.connection(i), Prefix("test.prefix"), ctx.self)), 30.seconds)
 
   log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
 
@@ -78,10 +74,9 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
 object TestAkkaService2 {
   // Behaviour of the ith service
   def behavior(i: Int, options: TestAkkaServiceApp.Options,
-               locationService: LocationService,
-               adminActorRef: ActorRef[LogControlMessages]): Behavior[ServiceMessageType] =
+               locationService: LocationService): Behavior[ServiceMessageType] =
     Behaviors.withTimers(timers => Behaviors.setup[ServiceMessageType]( ctx ⇒
-      new TestAkkaService2(ctx, timers, i, options, locationService, adminActorRef)))
+      new TestAkkaService2(ctx, timers, i, options, locationService)))
 
   // Component ID of the ith service
   def componentId(i: Int) = ComponentId(s"TestAkkaService2_$i", ComponentType.Assembly)
@@ -99,14 +94,13 @@ object TestAkkaService2 {
 class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        timers: TimerScheduler[ServiceMessageType],
                        i: Int, options: TestAkkaServiceApp.Options,
-                       locationService: LocationService,
-                       logAdminActorRef: ActorRef[LogControlMessages])
+                       locationService: LocationService)
   extends MutableBehavior[ServiceMessageType] {
 
   import options._
 
   private val log = GenericLoggerFactory.getLogger(ctx)
-  private val registrationFactory = new RegistrationFactory(logAdminActorRef)
+  private val registrationFactory = new RegistrationFactory()
 
   // Register with the location service
   private val reg = Await.result(

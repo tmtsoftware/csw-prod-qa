@@ -5,12 +5,9 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
-import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.adapter._
 import csw.location.client.ActorSystemFactory
-import csw.location.scaladsl.LocationServiceFactory
-import csw.logging.commons.LogAdminActorFactory
-import csw.logging.messages.LogControlMessages
+import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 import scala.concurrent.duration._
@@ -29,16 +26,15 @@ import scala.concurrent.duration._
 object TestAkkaServiceApp extends App {
 
   implicit val system: ActorSystem = ActorSystemFactory.remote
-  private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
   LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
   private val log = GenericLoggerFactory.getLogger
 
-  private val adminActorRef: ActorRef[LogControlMessages] = LogAdminActorFactory.make(system)
-
   log.debug("Started TestAkkaServiceApp")
 
   implicit val mat: ActorMaterializer = ActorMaterializer()
+
+  val locationService = HttpLocationServiceFactory.makeLocalClient(system, mat)
 
   case class Options(numServices: Int = 1, firstService: Int = 1,
                      autostop: Int = 0, autoshutdown: Int = 0, delay: Int = 100,
@@ -99,9 +95,9 @@ object TestAkkaServiceApp extends App {
     for (i <- firstService until firstService + numServices) {
       Thread.sleep(delay) // Avoid timeouts?
       // Note: Need to start with the untyped system in order to have mixed typed/untyped actors!
-      system.spawn(TestAkkaService.behavior(i, options, locationService, adminActorRef), s"TestAkkaService$i")
+      system.spawn(TestAkkaService.behavior(i, options, locationService), s"TestAkkaService$i")
       if (startSecond)
-        system.spawn(TestAkkaService2.behavior(i, options, locationService, adminActorRef), s"TestAkkaService2$i")
+        system.spawn(TestAkkaService2.behavior(i, options, locationService), s"TestAkkaService2$i")
     }
     autoShutdown(options)
 

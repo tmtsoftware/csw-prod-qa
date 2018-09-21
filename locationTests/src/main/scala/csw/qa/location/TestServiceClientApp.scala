@@ -8,7 +8,7 @@ import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
 import akka.actor.typed.scaladsl.adapter._
 import csw.location.client.ActorSystemFactory
-import csw.location.scaladsl.LocationServiceFactory
+import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 import scala.concurrent.duration._
@@ -22,11 +22,11 @@ import scala.concurrent.duration._
   * The client and service applications can be run on the same or different hosts.
   */
 object TestServiceClientApp extends App {
-  private val locationService = LocationServiceFactory.make()
   private val host = InetAddress.getLocalHost.getHostName
   implicit val system: ActorSystem = ActorSystemFactory.remote
   LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
   implicit val mat: ActorMaterializer = ActorMaterializer()
+  val locationService = HttpLocationServiceFactory.makeLocalClient(system, mat)
   private val log = GenericLoggerFactory.getLogger
   log.info(s"TestServiceClientApp is running on $host")
 

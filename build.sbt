@@ -8,7 +8,8 @@ lazy val locationTests = project
   .enablePlugins(DeployApp)
   .settings(appSettings: _*)
   .settings(libraryDependencies ++= Seq(
-    `csw-location-agent`
+    `csw-location-agent`,
+    `csw-command`
   ))
 
 lazy val loggingTests = project
