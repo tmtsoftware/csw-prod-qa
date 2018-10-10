@@ -2,10 +2,10 @@ package csw.qa.location
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior, TimerScheduler}
+import csw.framework.scaladsl.RegistrationFactory
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models.{ComponentId, ComponentType}
 import csw.location.api.scaladsl.LocationService
-import csw.location.scaladsl.RegistrationFactory
 import csw.logging.scaladsl.GenericLoggerFactory
 import csw.params.core.models.Prefix
 

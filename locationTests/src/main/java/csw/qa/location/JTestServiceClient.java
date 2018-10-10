@@ -11,7 +11,7 @@ import csw.location.api.models.Connection;
 import csw.location.api.models.LocationRemoved;
 import csw.location.api.models.LocationUpdated;
 import csw.location.client.ActorSystemFactory;
-import csw.location.javadsl.JLocationServiceFactory;
+import csw.location.client.javadsl.JHttpLocationServiceFactory;
 import csw.logging.javadsl.ILogger;
 import csw.logging.javadsl.JGenericLoggerFactory;
 import csw.logging.scaladsl.LoggingSystemFactory;
@@ -20,7 +20,7 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static csw.location.javadsl.JConnectionType.AkkaType;
+import static csw.location.api.javadsl.JConnectionType.AkkaType;
 
 /**
  * A location service test client application that attempts to resolve one or more sets of
@@ -80,8 +80,9 @@ public class JTestServiceClient extends AbstractActor {
         if (args.length != 0)
             numServices = Integer.valueOf(args[0]);
 
-        ILocationService locationService = JLocationServiceFactory.make();
         ActorSystem system = ActorSystemFactory.remote();
+        ActorMaterializer mat = ActorMaterializer.create(system);
+        ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(system, mat);
 
         // Start the logging service
         String host = InetAddress.getLocalHost().getHostName();

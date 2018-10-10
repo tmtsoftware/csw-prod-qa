@@ -13,7 +13,7 @@ Assuming your host IP address is 192.168.178.77 and you want to start the locati
 * Start the location service cluster:
 
 ```bash
-# Assuming csw-prod/target/universal/stage/bin is in your shell path:
+# Assuming csw/target/universal/stage/bin is in your shell path:
 csw-cluster-seed -DclusterSeeds=192.168.178.77:7777 --clusterPort 7777 -DinterfaceName=enp0s31f6
 ```
 
@@ -33,7 +33,7 @@ csw-cluster-seed --clusterPort 7777
 ```
 
 The following examples assume the two environment variables above have been set
-and that `csw-prod/target/universal/stage/bin` is in your shell path.
+and that `csw/target/universal/stage/bin` is in your shell path.
 
 * Start the config service server (specify --initRepo only the first time):
 

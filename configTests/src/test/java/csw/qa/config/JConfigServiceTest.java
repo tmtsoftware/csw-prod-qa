@@ -2,13 +2,13 @@ package csw.qa.config;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import csw.services.config.api.javadsl.IConfigService;
-import csw.services.config.api.models.ConfigData;
-import csw.services.config.api.models.ConfigId;
-import csw.services.config.client.javadsl.JConfigClientFactory;
-import csw.services.location.commons.ActorSystemFactory;
-import csw.services.location.javadsl.ILocationService;
-import csw.services.location.javadsl.JLocationServiceFactory;
+import csw.config.api.javadsl.IConfigService;
+import csw.config.api.models.ConfigData;
+import csw.config.api.models.ConfigId;
+import csw.config.client.javadsl.JConfigClientFactory;
+import csw.location.api.javadsl.ILocationService;
+import csw.location.client.ActorSystemFactory;
+import csw.location.client.javadsl.JHttpLocationServiceFactory;
 import org.junit.Test;
 
 import java.io.File;
@@ -16,14 +16,14 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Objects;
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "OptionalGetWithoutIsPresent"})
 public class JConfigServiceTest {
   private Path path1 = new File("some/test1/TestConfig1").toPath();
   private Path path2 = new File("some/test2/TestConfig2").toPath();
 
-  private ILocationService clientLocationService = JLocationServiceFactory.make();
   private ActorSystem actorSystem = ActorSystemFactory.remote();
   private ActorMaterializer mat = ActorMaterializer.create(actorSystem);
+  private ILocationService clientLocationService = JHttpLocationServiceFactory.makeLocalClient(actorSystem, mat);
 
   private IConfigService configService = JConfigClientFactory.adminApi(actorSystem, clientLocationService);
 

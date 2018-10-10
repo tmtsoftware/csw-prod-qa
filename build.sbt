@@ -7,35 +7,19 @@ import Settings._
 lazy val locationTests = project
   .enablePlugins(DeployApp)
   .settings(appSettings: _*)
-  .settings(libraryDependencies ++= Seq(
-    `csw-location-agent`,
-    `csw-command`
-  ))
+  .settings(libraryDependencies ++= `locationTests-deps`)
 
 lazy val loggingTests = project
   .enablePlugins(DeployApp)
   .settings(appSettings: _*)
-  .settings(libraryDependencies ++= Seq(
-    `csw-logging`,
-    `csw-commons`,
-    scopt,
-    `slf4j-api`
-  ))
+  .settings(libraryDependencies ++= `loggingTests-deps`)
 
 lazy val configTests = project
   .enablePlugins(DeployApp)
   .settings(appSettings: _*)
-  .settings(libraryDependencies ++= Seq(
-    `csw-config-client`,
-    `junit-interface` % Test,
-    scalaTest % Test
-  ))
+  .settings(libraryDependencies ++= `configTests-deps`)
 
 lazy val frameworkTests = project
   .enablePlugins(DeployApp)
   .settings(appSettings: _*)
-  .settings(libraryDependencies ++= Seq(
-    `csw-framework`,
-    `junit-interface` % Test,
-    scalaTest % Test
-  ))
+  .settings(libraryDependencies ++= `frameworkTests-deps`)

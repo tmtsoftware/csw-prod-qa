@@ -5,13 +5,14 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.Creator;
 import akka.actor.typed.javadsl.Adapter;
+import akka.stream.ActorMaterializer;
+import csw.framework.scaladsl.RegistrationFactory;
 import csw.location.api.javadsl.ILocationService;
+import csw.location.api.javadsl.JComponentType;
 import csw.location.api.models.ComponentId;
 import csw.location.api.models.Connection;
 import csw.location.client.ActorSystemFactory;
-import csw.location.javadsl.JComponentType;
-import csw.location.javadsl.JLocationServiceFactory;
-import csw.location.scaladsl.RegistrationFactory;
+import csw.location.client.javadsl.JHttpLocationServiceFactory;
 import csw.logging.javadsl.ILogger;
 import csw.logging.javadsl.JGenericLoggerFactory;
 import csw.logging.scaladsl.LoggingSystemFactory;
@@ -54,8 +55,6 @@ public class JTestAkkaService extends AbstractActor {
         });
     }
 
-//    private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-
     // Constructor: registers self with the location service
     private JTestAkkaService(int i, ILocationService locationService) {
         RegistrationFactory registrationFactory = new RegistrationFactory();
@@ -76,8 +75,9 @@ public class JTestAkkaService extends AbstractActor {
         if (args.length != 0)
             numServices = Integer.valueOf(args[0]);
 
-        ILocationService locationService = JLocationServiceFactory.make();
-        ActorSystem system = ActorSystemFactory.remote();
+      ActorSystem system = ActorSystemFactory.remote();
+      ActorMaterializer mat = ActorMaterializer.create(system);
+      ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(system, mat);
 
         // Start the logging service
         String host = InetAddress.getLocalHost().getHostName();

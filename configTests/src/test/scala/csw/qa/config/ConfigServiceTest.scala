@@ -5,16 +5,15 @@ import java.net.InetAddress
 import java.time.Instant
 
 import akka.actor.ActorSystem
-import csw.services.config.api.models.ConfigData
-import csw.services.config.api.scaladsl.{ConfigClientService, ConfigService}
-import csw.services.config.client.scaladsl.ConfigClientFactory
-import csw.services.location.scaladsl.LocationServiceFactory
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
-import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
-import csw.services.location.commons.ActorSystemFactory
-import csw.services.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import csw.config.api.models.ConfigData
+import csw.config.api.scaladsl.{ConfigClientService, ConfigService}
+import csw.config.client.scaladsl.ConfigClientFactory
+import csw.location.client.ActorSystemFactory
+import csw.location.client.scaladsl.HttpLocationServiceFactory
+import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 /**
   * Some tests for the config service.
@@ -36,18 +35,15 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
   private val comment3 = "update 2 comment"
 
   implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
-  private val locationService = LocationServiceFactory.make()
+  implicit val mat: ActorMaterializer = ActorMaterializer()
+  private val locationService = HttpLocationServiceFactory.makeLocalClient(actorSystem, mat)
   private val host = InetAddress.getLocalHost.getHostName
 
   LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, actorSystem)
 
-  private val clientLocationService = LocationServiceFactory.make()
-  implicit val mat: ActorMaterializer = ActorMaterializer()
-  private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, clientLocationService)
+  private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, locationService)
 
   override def afterAll() {
-    clientLocationService.shutdown(UnknownReason).await
-    locationService.shutdown(UnknownReason).await
   }
 
   test("Run Tests") {

@@ -13,11 +13,11 @@ import akka.util.Timeout
 import csw.command.scaladsl.CommandService
 import csw.event.api.scaladsl.EventService
 import csw.event.client.EventServiceFactory
-import csw.location.api.commons.ClusterAwareSettings
 import csw.location.api.models.ComponentType.Assembly
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models._
-import csw.location.scaladsl.LocationServiceFactory
+import csw.location.client.ActorSystemFactory
+import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.CommandResultType.Negative
 import csw.params.commands.{CommandName, CommandResponse, Setup}
@@ -32,16 +32,13 @@ import scala.util.{Failure, Success}
 // A client to test locating and communicating with the Test assembly
 object TestAssemblyClient extends App {
 
-  implicit val system: ActorSystem = ClusterAwareSettings.system
-
+  implicit val system: ActorSystem = ActorSystemFactory.remote("TestAssemblyClient")
   import system.dispatcher
 
-//  implicit val scheduler: Scheduler = system.scheduler
-
-  private val locationService = LocationServiceFactory.withSystem(system)
+  implicit val mat: ActorMaterializer = ActorMaterializer()
+  private val locationService = HttpLocationServiceFactory.makeLocalClient(system, mat)
   private val host = InetAddress.getLocalHost.getHostName
   LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
-  implicit val mat: ActorMaterializer = ActorMaterializer()
   implicit val timeout: Timeout = Timeout(3.seconds)
   private val log = GenericLoggerFactory.getLogger
   log.info("Starting TestAssemblyClient")
