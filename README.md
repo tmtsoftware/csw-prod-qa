@@ -1,17 +1,21 @@
-# csw-qa
+# csw-prod-qa
 Contains additional tests and example applications for the csw software
 
 * [Location Service Tests](locationTests)
 * [Config Service Tests](configTests)
 * [Framework Tests](frameworkTests)
 
-To build, run sbt stage. 
+To build, run 
 
-Note that the tests and applications here require that the csw location service cluster and config service are
+    sbt stage 
+
+## Test Environment
+
+The tests and applications here require that the csw location and config services are
 running, `csw/target/universal/stage/bin` is in your shell path,
 and the required environment variables are set. For example:
 
-* Set the `interfaceName` environment variable to your host's network interface, as listed by `ifconfig -a`:
+* Set the `interfaceName` environment variable to your host's network interface, as listed by `ifconfig -a`. For example:
 
 ```bash
 export interfaceName=enp0s31f6
@@ -31,8 +35,4 @@ csw-services.sh start
 export clusterSeeds=192.168.178.77:5552
 ```
 
-* Start the location service
-
-```bash
-csw-location-server
-```
+See the READMEs in the subprojects for details on running the test applications.

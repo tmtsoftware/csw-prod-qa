@@ -29,13 +29,13 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
     toList.map(i => TestAkkaService.connection(i)).toSet
 
   // Subscribes to changes in each connection and forwards location messages to this actor
-  connections.foreach(locationService.subscribe(_, trackingEvent => ctx.self ! TrackingEventMessage(trackingEvent)))
+//  connections.foreach(locationService.subscribe(_, trackingEvent => ctx.self ! TrackingEventMessage(trackingEvent)))
+  connections.foreach(locationService.track(_).runForeach(trackingEvent => ctx.self ! TrackingEventMessage(trackingEvent)))
 
   override def onMessage(msg: ServiceClientMessageType): Behavior[ServiceClientMessageType] = {
     msg match {
       // Receive a location from the location service and if it is an akka location, send it a message
       case TrackingEventMessage(LocationUpdated(loc)) =>
-        log.debug(s"Location updated ${loc.connection.name}")
         loc match {
           case loc: AkkaLocation => log.info(s"Received Akka Location: $loc")
           case x => log.error(s"Received unexpected location type: $x")
