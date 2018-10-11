@@ -5,6 +5,8 @@ This project contains some simple applications using the location service.
 
 See [../README.md](../README.md) for how to set up the correct environment.
 
+__Note that the `akka.http.host-connection-pool.max-connections` settings needs to be set at least as high as the number of services being tracked!__
+
 Scala Version
 -------------
 

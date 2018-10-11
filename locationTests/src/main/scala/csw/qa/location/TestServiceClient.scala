@@ -30,7 +30,9 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
 
   // Subscribes to changes in each connection and forwards location messages to this actor
 //  connections.foreach(locationService.subscribe(_, trackingEvent => ctx.self ! TrackingEventMessage(trackingEvent)))
-  connections.foreach(locationService.track(_).runForeach(trackingEvent => ctx.self ! TrackingEventMessage(trackingEvent)))
+  connections.foreach{ c =>
+    locationService.track(c).runForeach(trackingEvent => ctx.self ! TrackingEventMessage(trackingEvent))
+  }
 
   override def onMessage(msg: ServiceClientMessageType): Behavior[ServiceClientMessageType] = {
     msg match {
