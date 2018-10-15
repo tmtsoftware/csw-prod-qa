@@ -3,13 +3,18 @@ package csw.qa.framework
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
-import csw.command.messages.TopLevelActorMessage
+import csw.command.client.internal.messages.TopLevelActorMessage
 import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.api.models.TrackingEvent
-import csw.params.commands.CommandResponse.{Completed, Error}
+import csw.params.commands.CommandResponse.{
+  Completed,
+  Error,
+  SubmitResponse,
+  ValidateCommandResponse
+}
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Id
@@ -48,13 +53,13 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   }
 
   override def validateCommand(
-      controlCommand: ControlCommand): CommandResponse = {
+      controlCommand: ControlCommand): ValidateCommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
   }
 
   var submitCount = 0
 
-  override def onSubmit(controlCommand: ControlCommand): Unit = {
+  override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
     log.debug(s"onSubmit called: $controlCommand")
     Thread.sleep(1000) // simulate some work
 
@@ -64,18 +69,12 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     controlCommand match {
       case _: Setup =>
         if (submitCount != 3)
-          commandResponseManager.addOrUpdateCommand(
-            controlCommand.runId,
-            Completed(controlCommand.runId))
+          Completed(controlCommand.runId)
         else
-          commandResponseManager.addOrUpdateCommand(
-            controlCommand.runId,
-            Error(controlCommand.runId, "Command failed"))
+          Error(controlCommand.runId, "Command failed")
 
       case x =>
-        commandResponseManager.addOrUpdateCommand(
-          controlCommand.runId,
-          Error(controlCommand.runId, s"Unsupported command type: $x"))
+        Error(controlCommand.runId, s"Unsupported command type: $x")
 
     }
   }

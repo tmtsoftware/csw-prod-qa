@@ -3,8 +3,7 @@ package csw.qa.framework;
 import akka.actor.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import csw.command.CommandResponseManager;
-import csw.command.messages.TopLevelActorMessage;
+import csw.command.client.internal.messages.TopLevelActorMessage;
 import csw.event.api.javadsl.IEventPublisher;
 import csw.event.api.javadsl.IEventService;
 import csw.framework.javadsl.JComponentBehaviorFactory;
@@ -51,7 +50,6 @@ public class JTestHcd {
 
   static class JTestHcdHandlers extends JComponentHandlers {
     private final ILogger log;
-    private final CommandResponseManager commandResponseManager;
     private final IEventService eventService;
     private final SystemEvent baseEvent;
 
@@ -60,7 +58,6 @@ public class JTestHcd {
                      JCswContext cswServices) {
       super(ctx, cswServices);
       this.log = new JLoggerFactory(cswServices.componentInfo().name()).getLogger(getClass());
-      this.commandResponseManager = cswServices.commandResponseManager();
       this.eventService = cswServices.eventService();
       this.baseEvent = (new SystemEvent(cswServices.componentInfo().prefix(), eventName)).add(eventValueKey.set(eventValues.nextInt()));
       log.debug("Starting Test HCD");
@@ -87,14 +84,14 @@ public class JTestHcd {
     }
 
     @Override
-    public CommandResponse validateCommand(ControlCommand controlCommand) {
+    public CommandResponse.ValidateCommandResponse validateCommand(ControlCommand controlCommand) {
       return new CommandResponse.Accepted(controlCommand.runId());
     }
 
     @Override
-    public void onSubmit(ControlCommand controlCommand) {
+    public CommandResponse.SubmitResponse onSubmit(ControlCommand controlCommand) {
       log.debug("onSubmit called: " + controlCommand);
-      commandResponseManager.addOrUpdateCommand(controlCommand.runId(), new CommandResponse.Completed(controlCommand.runId()));
+      return new CommandResponse.Completed(controlCommand.runId());
     }
 
     @Override

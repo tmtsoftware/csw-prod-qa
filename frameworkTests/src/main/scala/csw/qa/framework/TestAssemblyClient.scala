@@ -8,9 +8,9 @@ import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior}
 import akka.actor.typed.scaladsl.adapter._
-import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.Timeout
-import csw.command.scaladsl.CommandService
+import csw.command.api.scaladsl.CommandService
+import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
 import csw.event.client.EventServiceFactory
 import csw.location.api.models.ComponentType.Assembly
@@ -19,13 +19,11 @@ import csw.location.api.models._
 import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
-import csw.params.commands.CommandResultType.Negative
-import csw.params.commands.{CommandName, CommandResponse, Setup}
+import csw.params.commands.{CommandName, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.{ObsId, Prefix}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -107,7 +105,7 @@ object TestAssemblyClient extends App {
         case LocationUpdated(loc) =>
           log.info(s"LocationUpdated: $loc")
           implicit val sys: typed.ActorSystem[Nothing] = ctx.system
-          interact(ctx, new CommandService(loc.asInstanceOf[AkkaLocation]))
+          interact(ctx, CommandServiceFactory.make(loc.asInstanceOf[AkkaLocation]))
         case LocationRemoved(loc) =>
           log.info(s"LocationRemoved: $loc")
       }
@@ -127,34 +125,11 @@ object TestAssemblyClient extends App {
 
   }
 
-  private def interact(ctx: ActorContext[TrackingEvent],
-                       assembly: CommandService): Unit = {
+  private def interact(ctx: ActorContext[TrackingEvent], assembly: CommandService): Unit = {
     val setups = (1 to 10).toList.map(i => makeSetup(i, s"filter$i"))
-    submitAll(setups, assembly).onComplete {
+    assembly.completeAll(setups).onComplete {
       case Success(responses) => println(s"Test Passed: Responses = $responses")
       case Failure(ex)        => println(s"Test Failed: $ex")
     }
-  }
-
-  /**
-    * Submits the given setups, one after the other, and returns a future list of command responses.
-    * @param setups the setups to submit
-    * @param assembly the assembly to submit the setups to
-    * @return future list of responses
-    */
-  private def submitAll(
-      setups: List[Setup],
-      assembly: CommandService): Future[List[CommandResponse]] = {
-    Source(setups)
-      .mapAsync(1)(assembly.submitAndSubscribe)
-      .map { response =>
-        if (response.resultType == Negative)
-          throw new RuntimeException(s"Command failed: $response")
-        else
-          println(s"Command response: $response")
-        response
-      }.toMat(Sink.seq)(Keep.right)
-      .run()
-      .map(_.toList)
   }
 }

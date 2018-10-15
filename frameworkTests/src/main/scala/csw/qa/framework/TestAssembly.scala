@@ -5,15 +5,25 @@ import akka.actor.Scheduler
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import csw.command.messages.TopLevelActorMessage
-import csw.command.scaladsl.CommandService
+import csw.command.api.scaladsl.CommandService
+import csw.command.client.CommandServiceFactory
+import csw.command.client.internal.messages.TopLevelActorMessage
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.api.models.{
+  AkkaLocation,
+  LocationRemoved,
+  LocationUpdated,
+  TrackingEvent
+}
 import csw.logging.scaladsl.Logger
-import csw.params.commands.CommandResponse.Error
+import csw.params.commands.CommandResponse.{
+  Error,
+  SubmitResponse,
+  ValidateCommandResponse
+}
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.{Id, Prefix}
@@ -97,29 +107,31 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
   }
 
   override def validateCommand(
-      controlCommand: ControlCommand): CommandResponse = {
+      controlCommand: ControlCommand): ValidateCommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
   }
 
-  override def onSubmit(controlCommand: ControlCommand): Unit = {
+  override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
     implicit val timeout: Timeout = Timeout(3.seconds)
     log.debug(s"onSubmit called: $controlCommand")
     forwardCommandToHcd(controlCommand)
+    CommandResponse.Started(controlCommand.runId)
   }
 
   // For testing, forward command to HCD and complete this command when it completes
   private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
     implicit val scheduler: Scheduler = ctx.system.scheduler
     implicit val timeout: Timeout = Timeout(3.seconds)
-    testHcd.foreach { hcd =>
+    testHcd.map { hcd =>
       val setup = Setup(controlCommand.source,
                         controlCommand.commandName,
                         controlCommand.maybeObsId,
                         controlCommand.paramSet)
-      cswServices.commandResponseManager.addSubCommand(controlCommand.runId, setup.runId)
+      cswServices.commandResponseManager.addSubCommand(controlCommand.runId,
+                                                       setup.runId)
 
       val f = for {
-        response <- hcd.submitAndSubscribe(setup)
+        response <- hcd.complete(setup)
       } yield {
         log.info(s"response = $response")
         commandResponseManager.updateSubCommand(setup.runId, response)
@@ -149,7 +161,8 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     trackingEvent match {
       case LocationUpdated(location) =>
         testHcd = Some(
-          new CommandService(location.asInstanceOf[AkkaLocation])(ctx.system))
+          CommandServiceFactory.make(location.asInstanceOf[AkkaLocation])(
+            ctx.system))
       case LocationRemoved(_) =>
         testHcd = None
     }

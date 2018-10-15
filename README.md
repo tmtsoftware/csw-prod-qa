@@ -12,8 +12,7 @@ To build, run
 ## Test Environment
 
 The tests and applications here require that the csw location and config services are
-running, `csw/target/universal/stage/bin` is in your shell path,
-and the required environment variables are set. For example:
+running. The csw-services.sh script does this. 
 
 * Set the `interfaceName` environment variable to your host's network interface, as listed by `ifconfig -a`. For example:
 
@@ -27,12 +26,6 @@ This ensures that the location service uses the correct network interface (For e
 
 ```bash
 csw-services.sh start
-```
-
-* Set the `clusterSeeds` environment variable (The correct value is printed in the output of the above command):
-
-```bash
-export clusterSeeds=192.168.178.77:5552
 ```
 
 See the READMEs in the subprojects for details on running the test applications.

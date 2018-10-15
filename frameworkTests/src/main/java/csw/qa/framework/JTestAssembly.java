@@ -4,9 +4,10 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import csw.command.CommandResponseManager;
-import csw.command.javadsl.JCommandService;
-import csw.command.messages.TopLevelActorMessage;
+import csw.command.api.javadsl.ICommandService;
+import csw.command.client.CommandResponseManager;
+import csw.command.client.CommandServiceFactory;
+import csw.command.client.internal.messages.TopLevelActorMessage;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
@@ -40,12 +41,13 @@ public class JTestAssembly {
     }
   }
 
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   static class JTestAssemblyHandlers extends JComponentHandlers {
     private final ILogger log;
     private final ActorContext<TopLevelActorMessage> ctx;
     private final CommandResponseManager commandResponseManager;
     // Set when the location is received from the location service (below)
-    private Optional<JCommandService> testHcd = Optional.empty();
+    private Optional<ICommandService> testHcd = Optional.empty();
 
 
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
@@ -73,14 +75,15 @@ public class JTestAssembly {
     }
 
     @Override
-    public CommandResponse validateCommand(ControlCommand controlCommand) {
-      return new CommandResponse.Completed(controlCommand.runId());
+    public CommandResponse.ValidateCommandResponse validateCommand(ControlCommand controlCommand) {
+      return new CommandResponse.Accepted(controlCommand.runId());
     }
 
     @Override
-    public void onSubmit(ControlCommand controlCommand) {
+    public CommandResponse.SubmitResponse onSubmit(ControlCommand controlCommand) {
       log.debug("onSubmit called: " + controlCommand);
       forwardCommandToHcd(controlCommand);
+      return new CommandResponse.Started(controlCommand.runId());
     }
 
     // For testing, forward command to HCD and complete this command when it completes
@@ -90,7 +93,7 @@ public class JTestAssembly {
         Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
         commandResponseManager.addSubCommand(controlCommand.runId(), setup.runId());
         try {
-          CommandResponse response = hcd.submitAndSubscribe(setup, timeout).get();
+          CommandResponse.SubmitResponse response = hcd.complete(setup, timeout).get();
           log.info("response = " + response);
           commandResponseManager.updateSubCommand(setup.runId(), response);
         } catch (Exception ex) {
@@ -120,7 +123,7 @@ public class JTestAssembly {
       log.debug("onLocationTrackingEvent called: " + trackingEvent);
       if (trackingEvent instanceof LocationUpdated) {
         AkkaLocation location = (AkkaLocation) ((LocationUpdated) trackingEvent).location();
-        testHcd = Optional.of(new JCommandService(location, ctx.getSystem()));
+        testHcd = Optional.of(CommandServiceFactory.jMake(location, ctx.getSystem()));
       } else testHcd = Optional.empty();
     }
   }
