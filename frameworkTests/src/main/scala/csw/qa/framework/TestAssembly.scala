@@ -7,23 +7,14 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
-import csw.command.client.internal.messages.TopLevelActorMessage
+import csw.command.client.messages.TopLevelActorMessage
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.api.models.{
-  AkkaLocation,
-  LocationRemoved,
-  LocationUpdated,
-  TrackingEvent
-}
+import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
 import csw.logging.scaladsl.Logger
-import csw.params.commands.CommandResponse.{
-  Error,
-  SubmitResponse,
-  ValidateCommandResponse
-}
+import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.{Id, Prefix}
@@ -131,7 +122,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
                                                        setup.runId)
 
       val f = for {
-        response <- hcd.complete(setup)
+        response <- hcd.submit(setup)
       } yield {
         log.info(s"response = $response")
         commandResponseManager.updateSubCommand(setup.runId, response)

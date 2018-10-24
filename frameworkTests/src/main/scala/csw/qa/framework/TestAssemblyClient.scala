@@ -127,7 +127,7 @@ object TestAssemblyClient extends App {
 
   private def interact(ctx: ActorContext[TrackingEvent], assembly: CommandService): Unit = {
     val setups = (1 to 10).toList.map(i => makeSetup(i, s"filter$i"))
-    assembly.completeAll(setups).onComplete {
+    assembly.submitAll(setups).onComplete {
       case Success(responses) => println(s"Test Passed: Responses = $responses")
       case Failure(ex)        => println(s"Test Failed: $ex")
     }

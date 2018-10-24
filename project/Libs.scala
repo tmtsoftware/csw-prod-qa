@@ -13,7 +13,6 @@ object CSW {
 
   val `csw-logging` = Org %% "csw-logging" % Version
   val `csw-commons` = Org %% "csw-commons" % Version
-  val `csw-command` = Org %% "csw-command" % Version
   val `csw-location-client` = Org %% "csw-location-client" % Version
   val `csw-location-api` = Org %% "csw-location-api" % Version
   val `csw-config-client` = Org %% "csw-config-client" % Version

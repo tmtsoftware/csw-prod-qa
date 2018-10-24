@@ -3,18 +3,13 @@ package csw.qa.framework
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
-import csw.command.client.internal.messages.TopLevelActorMessage
+import csw.command.client.messages.TopLevelActorMessage
 import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.api.models.TrackingEvent
-import csw.params.commands.CommandResponse.{
-  Completed,
-  Error,
-  SubmitResponse,
-  ValidateCommandResponse
-}
+import csw.params.commands.CommandResponse.{Completed, Error, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Id

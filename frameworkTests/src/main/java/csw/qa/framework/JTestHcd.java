@@ -3,7 +3,7 @@ package csw.qa.framework;
 import akka.actor.typed.javadsl.ActorContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import csw.command.client.internal.messages.TopLevelActorMessage;
+import csw.command.client.messages.TopLevelActorMessage;
 import csw.event.api.javadsl.IEventPublisher;
 import csw.event.api.javadsl.IEventService;
 import csw.framework.javadsl.JComponentBehaviorFactory;

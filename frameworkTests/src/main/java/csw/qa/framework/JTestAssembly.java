@@ -7,7 +7,7 @@ import com.typesafe.config.ConfigFactory;
 import csw.command.api.javadsl.ICommandService;
 import csw.command.client.CommandResponseManager;
 import csw.command.client.CommandServiceFactory;
-import csw.command.client.internal.messages.TopLevelActorMessage;
+import csw.command.client.messages.TopLevelActorMessage;
 import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
@@ -93,7 +93,7 @@ public class JTestAssembly {
         Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
         commandResponseManager.addSubCommand(controlCommand.runId(), setup.runId());
         try {
-          CommandResponse.SubmitResponse response = hcd.complete(setup, timeout).get();
+          CommandResponse.SubmitResponse response = hcd.submit(setup, timeout).get();
           log.info("response = " + response);
           commandResponseManager.updateSubCommand(setup.runId(), response);
         } catch (Exception ex) {

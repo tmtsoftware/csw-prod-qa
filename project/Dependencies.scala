@@ -5,8 +5,7 @@ object Dependencies {
   val `locationTests-deps` = Seq(
     CSW.`csw-location-client`,
     CSW.`csw-location-api`,
-    CSW.`csw-framework`,
-    CSW.`csw-command`
+    CSW.`csw-framework`
   )
 
   val `loggingTests-deps` = Seq(
