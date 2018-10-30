@@ -17,7 +17,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 @SuppressWarnings({"ConstantConditions", "OptionalGetWithoutIsPresent"})
-public class JConfigServiceTest {
+  public class JConfigServiceTest {
   private Path path1 = new File("some/test1/TestConfig1").toPath();
   private Path path2 = new File("some/test2/TestConfig2").toPath();
 
@@ -47,7 +47,7 @@ public class JConfigServiceTest {
      String comment2 = "update 1 comment";
      String comment3 = "update 2 comment";
 
-    System.out.println("Running tests with annex = " + annex);
+    System.out.println("Running Java tests with annex = " + annex);
 
     if (cs.exists(path1).get()) cs.delete(path1, "some comment").get();
     if (cs.exists(path2).get()) cs.delete(path2, "another comment").get();

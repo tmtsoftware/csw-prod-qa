@@ -54,7 +54,7 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
   // Run tests using the given config cs instance
   def runTests(cs: ConfigService, annex: Boolean): Unit = {
     val csClient: ConfigClientService = cs
-    log.info(s"Running tests with annex = $annex")
+    log.info(s"Running Scala tests with annex = $annex")
 
     if (cs.exists(path1).await) cs.delete(path1, "some comment").await
     if (cs.exists(path2).await) cs.delete(path2, "another comment").await
