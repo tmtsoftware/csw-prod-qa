@@ -125,12 +125,12 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
         response <- hcd.submit(setup)
       } yield {
         log.info(s"response = $response")
-        commandResponseManager.updateSubCommand(setup.runId, response)
+        commandResponseManager.updateSubCommand(response)
       }
       f.recover {
         case ex =>
           val cmdStatus = Error(setup.runId, ex.toString)
-          commandResponseManager.updateSubCommand(setup.runId, cmdStatus)
+          commandResponseManager.updateSubCommand(cmdStatus)
       }
     }
   }

@@ -95,9 +95,9 @@ public class JTestAssembly {
         try {
           CommandResponse.SubmitResponse response = hcd.submit(setup, timeout).get();
           log.info("response = " + response);
-          commandResponseManager.updateSubCommand(setup.runId(), response);
+          commandResponseManager.updateSubCommand(response);
         } catch (Exception ex) {
-          commandResponseManager.updateSubCommand(setup.runId(), new CommandResponse.Error(setup.runId(), ex.toString()));
+          commandResponseManager.updateSubCommand(new CommandResponse.Error(setup.runId(), ex.toString()));
         }
       });
     }
