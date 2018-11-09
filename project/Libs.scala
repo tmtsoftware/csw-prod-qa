@@ -5,6 +5,8 @@ object Libs {
   val `scalaTest` = "org.scalatest" %% "scalatest" % "3.0.5" // ApacheV2
   val `junit-interface` = "com.novocode" % "junit-interface" % "0.11"
   val `slf4j-api` = "org.slf4j" % "slf4j-api" % "1.7.25"
+//  val `ea-async` = "com.ea.async" % "ea-async" % "1.2.1" //  BSD 3
+
 }
 
 object CSW {

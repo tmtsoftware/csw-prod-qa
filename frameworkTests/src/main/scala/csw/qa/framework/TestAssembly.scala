@@ -12,9 +12,18 @@ import csw.event.api.scaladsl.EventPublisher
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.api.models.{
+  AkkaLocation,
+  LocationRemoved,
+  LocationUpdated,
+  TrackingEvent
+}
 import csw.logging.scaladsl.Logger
-import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.CommandResponse.{
+  Error,
+  SubmitResponse,
+  ValidateCommandResponse
+}
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.{Id, Prefix}
@@ -41,21 +50,10 @@ object TestAssemblyHandlers {
   private val eventName = EventName("myAssemblyEvent")
 
   // Actor to receive HCD events
-  object EventHandler {
-    def make(log: Logger,
-             publisher: EventPublisher,
-             baseEvent: SystemEvent): Behavior[Event] = {
-      log.info("Starting event handler")
-      Behaviors.setup(ctx ⇒ new EventHandler(ctx, log, publisher, baseEvent))
-    }
-  }
-
-  class EventHandler(ctx: ActorContext[Event],
-                     log: Logger,
-                     publisher: EventPublisher,
-                     baseEvent: SystemEvent)
-      extends MutableBehavior[Event] {
-    override def onMessage(msg: Event): Behavior[Event] = {
+  private def eventHandler(log: Logger,
+                           publisher: EventPublisher,
+                           baseEvent: SystemEvent): Behavior[Event] =
+    Behaviors.receive { (ctx, msg) =>
       msg match {
         case e: SystemEvent =>
           e.get(hcdEventValueKey)
@@ -72,13 +70,11 @@ object TestAssemblyHandlers {
         case _ => throw new RuntimeException("Expected SystemEvent")
       }
     }
-  }
-
 }
 
 private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
                                    cswServices: CswContext)
-    extends ComponentHandlers(ctx, cswServices) {
+  extends ComponentHandlers(ctx, cswServices) {
 
   import TestAssemblyHandlers._
   import cswServices._
@@ -98,7 +94,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
   }
 
   override def validateCommand(
-      controlCommand: ControlCommand): ValidateCommandResponse = {
+                                controlCommand: ControlCommand): ValidateCommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
   }
 
@@ -115,11 +111,11 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.map { hcd =>
       val setup = Setup(controlCommand.source,
-                        controlCommand.commandName,
-                        controlCommand.maybeObsId,
-                        controlCommand.paramSet)
+        controlCommand.commandName,
+        controlCommand.maybeObsId,
+        controlCommand.paramSet)
       cswServices.commandResponseManager.addSubCommand(controlCommand.runId,
-                                                       setup.runId)
+        setup.runId)
 
       val f = for {
         response <- hcd.submit(setup)
@@ -164,9 +160,8 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     val publisher = eventService.defaultPublisher
     val baseEvent =
       SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(0))
-    val eventHandler =
-      ctx.spawnAnonymous(EventHandler.make(log, publisher, baseEvent))
-    subscriber.subscribeActorRef(Set(hcdEventKey), eventHandler)
+    val eventHandlerActor = ctx.spawn(eventHandler(log, publisher, baseEvent), "eventHandlerActor")
+    subscriber.subscribeActorRef(Set(hcdEventKey), eventHandlerActor)
   }
 
 }
