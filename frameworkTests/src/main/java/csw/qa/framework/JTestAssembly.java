@@ -27,7 +27,6 @@ import csw.params.commands.CommandResponse;
 import csw.params.commands.ControlCommand;
 import csw.params.commands.Setup;
 import csw.params.core.generics.Key;
-import csw.params.core.models.Id;
 import csw.params.core.models.Prefix;
 import csw.params.events.*;
 import csw.params.javadsl.JKeyType;
@@ -74,7 +73,7 @@ public class JTestAssembly {
                 Integer eventValue = p.head();
                 log.info("Received event with value: " + eventValue);
                 // fire a new event from the assembly based on the one from the HCD
-                SystemEvent se = baseEvent.copy(Id.apply(), baseEvent.source(), baseEvent.eventName(), EventTime.apply(), baseEvent.paramSet())
+                SystemEvent se = new SystemEvent(baseEvent.source(), baseEvent.eventName())
                     .add(eventKey.set(eventValue));
                 publisher.publish(se);
               });

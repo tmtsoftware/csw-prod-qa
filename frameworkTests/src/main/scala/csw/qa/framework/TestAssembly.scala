@@ -2,7 +2,7 @@ package csw.qa.framework
 
 import akka.actor.typed.Behavior
 import akka.actor.Scheduler
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, AbstractBehavior}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import csw.command.api.scaladsl.CommandService

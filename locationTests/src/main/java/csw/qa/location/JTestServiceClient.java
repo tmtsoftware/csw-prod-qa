@@ -32,14 +32,7 @@ public class JTestServiceClient extends AbstractActor {
 
     // Used to create the ith JTestServiceClient actor
     private static Props props(int numServices, ILocationService locationService) {
-        return Props.create(new Creator<JTestServiceClient>() {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public JTestServiceClient create() {
-                return new JTestServiceClient(numServices, locationService);
-            }
-        });
+        return Props.create(JTestServiceClient.class, () -> new JTestServiceClient(numServices, locationService));
     }
 
     // message sent when location stream ends (should not happen?)

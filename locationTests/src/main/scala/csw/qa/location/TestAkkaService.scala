@@ -1,7 +1,7 @@
 package csw.qa.location
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior, TimerScheduler}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, AbstractBehavior, TimerScheduler}
 import csw.framework.scaladsl.RegistrationFactory
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models.{ComponentId, ComponentType}
@@ -36,7 +36,7 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       timers: TimerScheduler[ServiceMessageType],
                       i: Int, options: TestAkkaServiceApp.Options,
                       locationService: LocationService)
-  extends MutableBehavior[ServiceMessageType] {
+  extends AbstractBehavior[ServiceMessageType] {
 
   import options._
 
@@ -95,7 +95,7 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        timers: TimerScheduler[ServiceMessageType],
                        i: Int, options: TestAkkaServiceApp.Options,
                        locationService: LocationService)
-  extends MutableBehavior[ServiceMessageType] {
+  extends AbstractBehavior[ServiceMessageType] {
 
   import options._
 

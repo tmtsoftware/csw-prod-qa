@@ -2,7 +2,7 @@ package csw.qa.location
 
 import akka.stream.Materializer
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, MutableBehavior, TimerScheduler}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, AbstractBehavior, TimerScheduler}
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.location.api.scaladsl.LocationService
@@ -20,7 +20,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
                         timers: TimerScheduler[ServiceClientMessageType],
                         options: TestServiceClientApp.Options,
                         locationService: LocationService)(implicit mat: Materializer)
-  extends MutableBehavior[ServiceClientMessageType] {
+  extends AbstractBehavior[ServiceClientMessageType] {
 
   import options._
 

@@ -3,7 +3,7 @@ package csw.qa.location;
 import akka.actor.AbstractActor;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.japi.Creator;
+import akka.japi.function.Creator;
 import akka.actor.typed.javadsl.Adapter;
 import akka.stream.ActorMaterializer;
 import csw.framework.scaladsl.RegistrationFactory;
@@ -45,14 +45,7 @@ public class JTestAkkaService extends AbstractActor {
 
     // Used to create the ith JTestAkkaService actor
     private static Props props(int i, ILocationService locationService) {
-        return Props.create(new Creator<JTestAkkaService>() {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public JTestAkkaService create() {
-                return new JTestAkkaService(i, locationService);
-            }
-        });
+        return Props.create(JTestAkkaService.class, () -> new JTestAkkaService(i, locationService));
     }
 
     // Constructor: registers self with the location service
