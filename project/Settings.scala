@@ -16,8 +16,9 @@ object Settings {
     scalaVersion := ScalaVersion,
     crossPaths := true,
     parallelExecution in Test := false,
-    resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
+//    resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
     fork := true,
+    resolvers += "jitpack" at "https://jitpack.io",
     updateOptions := updateOptions.value.withLatestSnapshots(false)
   )
 
