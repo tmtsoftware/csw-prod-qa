@@ -55,6 +55,8 @@ object TestAssemblyClient extends App {
   private val prefix = Prefix("wfos.blue.filter")
   private val command = CommandName("myCommand")
 
+  val connection = AkkaConnection(ComponentId("TestAssembly", Assembly))
+
   lazy val eventService: EventService =
     new EventServiceFactory().make(locationService)
 
@@ -66,7 +68,7 @@ object TestAssemblyClient extends App {
     }
   }
 
-  class EventHandler(ctx: ActorContext[Event]) extends AbstractBehavior[Event] {
+  private class EventHandler(ctx: ActorContext[Event]) extends AbstractBehavior[Event] {
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
         case e: SystemEvent =>
@@ -81,7 +83,7 @@ object TestAssemblyClient extends App {
     }
   }
 
-  def startSubscribingToEvents(ctx: ActorContext[TrackingEvent]) = {
+  def startSubscribingToEvents(ctx: ActorContext[TrackingEvent]): Unit = {
     val subscriber = eventService.defaultSubscriber
     val eventHandler = ctx.spawnAnonymous(EventHandler.make())
     subscriber.subscribeActorRef(Set(assemblyEventKey), eventHandler)
@@ -91,7 +93,6 @@ object TestAssemblyClient extends App {
 
   def initialBehavior: Behavior[TrackingEvent] =
     Behaviors.setup { ctx =>
-      val connection = AkkaConnection(ComponentId("TestAssembly", Assembly))
       locationService.subscribe(connection, { loc =>
         ctx.self ! loc
       })

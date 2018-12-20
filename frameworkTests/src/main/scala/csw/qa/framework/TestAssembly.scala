@@ -1,33 +1,17 @@
 package csw.qa.framework
 
-import akka.actor.typed.Behavior
 import akka.actor.Scheduler
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, AbstractBehavior}
+import akka.actor.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import csw.command.api.scaladsl.CommandService
-import csw.command.client.CommandServiceFactory
 import csw.command.client.messages.TopLevelActorMessage
-import csw.event.api.scaladsl.EventPublisher
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.api.models.{
-  AkkaLocation,
-  LocationRemoved,
-  LocationUpdated,
-  TrackingEvent
-}
-import csw.logging.scaladsl.Logger
-import csw.params.commands.CommandResponse.{
-  Error,
-  SubmitResponse,
-  ValidateCommandResponse
-}
-import csw.params.commands.{CommandResponse, ControlCommand, Setup}
-import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.{Id, Prefix}
-import csw.params.events._
+import csw.location.api.models.TrackingEvent
+import csw.params.commands.CommandResponse.{SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.{CommandResponse, ControlCommand}
+import akka.actor.typed.scaladsl.AskPattern._
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -39,58 +23,24 @@ private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
     new TestAssemblyHandlers(ctx, cswCtx)
 }
 
-object TestAssemblyHandlers {
-  // Key for HCD events
-  private val hcdEventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
-  private val hcdEventName = EventName("myHcdEvent")
-  private val hcdPrefix = Prefix("test.hcd")
-
-  // Dummy key for publishing events from assembly
-  private val eventKey: Key[Int] = KeyType.IntKey.make("assemblyEventValue")
-  private val eventName = EventName("myAssemblyEvent")
-
-  // Actor to receive HCD events
-  private def eventHandler(log: Logger,
-                           publisher: EventPublisher,
-                           baseEvent: SystemEvent): Behavior[Event] =
-    Behaviors.receive { (ctx, msg) =>
-      msg match {
-        case e: SystemEvent =>
-          e.get(hcdEventValueKey)
-            .foreach { p =>
-              val eventValue = p.head
-              log.info(s"Received event with value: $eventValue")
-              // fire a new event from the assembly based on the one from the HCD
-              val e = baseEvent
-                .copy(eventId = Id(), eventTime = EventTime())
-                .add(eventKey.set(eventValue))
-              publisher.publish(e)
-            }
-          Behaviors.same
-        case _ => throw new RuntimeException("Expected SystemEvent")
-      }
-    }
-}
 
 private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
-                                   cswServices: CswContext)
-  extends ComponentHandlers(ctx, cswServices) {
+                                   cswCtx: CswContext)
+  extends ComponentHandlers(ctx, cswCtx) {
 
-  import TestAssemblyHandlers._
-  import cswServices._
+  import cswCtx._
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
+  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val sched: Scheduler = ctx.system.scheduler
 
   private val log = loggerFactory.getLogger
-  // Set when the location is received from the location service (below)
-  private var testHcd: Option[CommandService] = None
 
-  // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
-  private val hcdEventKey = EventKey(hcdPrefix, hcdEventName)
+  // A worker actor that holds the state and implements the assembly (Optional if the assembly has no mutable state)
+  private val worker = ctx.spawn(TestAssemblyWorker.make(cswCtx), "testWorker")
 
-  override def initialize(): Future[Unit] = async {
-    log.debug("Initialize called")
-    startSubscribingToEvents()
+  override def initialize(): Future[Unit] = {
+    worker ? (ref => TestAssemblyWorker.Initialize(ref))
   }
 
   override def validateCommand(
@@ -99,36 +49,8 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
   }
 
   override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
-    implicit val timeout: Timeout = Timeout(3.seconds)
-    log.debug(s"onSubmit called: $controlCommand")
-    forwardCommandToHcd(controlCommand)
+    worker ! TestAssemblyWorker.Submit(controlCommand)
     CommandResponse.Started(controlCommand.runId)
-  }
-
-  // For testing, forward command to HCD and complete this command when it completes
-  private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
-    implicit val scheduler: Scheduler = ctx.system.scheduler
-    implicit val timeout: Timeout = Timeout(3.seconds)
-    testHcd.map { hcd =>
-      val setup = Setup(controlCommand.source,
-        controlCommand.commandName,
-        controlCommand.maybeObsId,
-        controlCommand.paramSet)
-      cswServices.commandResponseManager.addSubCommand(controlCommand.runId,
-        setup.runId)
-
-      val f = for {
-        response <- hcd.submit(setup)
-      } yield {
-        log.info(s"response = $response")
-        commandResponseManager.updateSubCommand(response)
-      }
-      f.recover {
-        case ex =>
-          val cmdStatus = Error(setup.runId, ex.toString)
-          commandResponseManager.updateSubCommand(cmdStatus)
-      }
-    }
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {
@@ -144,24 +66,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onGoOnline(): Unit = log.debug("onGoOnline called")
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit = {
-    log.debug(s"onLocationTrackingEvent called: $trackingEvent")
-    trackingEvent match {
-      case LocationUpdated(location) =>
-        testHcd = Some(
-          CommandServiceFactory.make(location.asInstanceOf[AkkaLocation])(
-            ctx.system))
-      case LocationRemoved(_) =>
-        testHcd = None
-    }
-  }
-
-  private def startSubscribingToEvents() = async {
-    val subscriber = eventService.defaultSubscriber
-    val publisher = eventService.defaultPublisher
-    val baseEvent =
-      SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(0))
-    val eventHandlerActor = ctx.spawn(eventHandler(log, publisher, baseEvent), "eventHandlerActor")
-    subscriber.subscribeActorRef(Set(hcdEventKey), eventHandlerActor)
+    worker ! TestAssemblyWorker.Location(trackingEvent)
   }
 
 }
