@@ -42,7 +42,7 @@ object DatabaseTest extends App {
 
     log.info(s"resultSet = $resultSet")
     assert(resultSet.size == 2)
-    //System.exit(0)
+    system.terminate()
   }
 
   private def initDatabase(): Future[DSLContext] = async {
