@@ -6,7 +6,7 @@ import com.typesafe.sbt.packager.Keys._
 // Defines the global build settings so they don't need to be edited everywhere
 object Settings {
   val Version = "0.1-SNAPSHOT"
-  val ScalaVersion = "2.12.7"
+  val ScalaVersion = "2.12.8"
 
   val buildSettings = Seq(
     organization := "org.tmt",
@@ -16,8 +16,8 @@ object Settings {
     scalaVersion := ScalaVersion,
     crossPaths := true,
     parallelExecution in Test := false,
-//    resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
     fork := true,
+    resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
     resolvers += "jitpack" at "https://jitpack.io",
     updateOptions := updateOptions.value.withLatestSnapshots(false)
   )

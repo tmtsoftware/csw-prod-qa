@@ -5,10 +5,10 @@ import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import TestAssemblyWorker._
 import akka.actor.Scheduler
 import akka.util.Timeout
-import csw.alarm.api.models.AlarmSeverity.Okay
 import csw.alarm.api.models.Key.AlarmKey
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
+import csw.database.client.DatabaseServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
 import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
@@ -18,9 +18,13 @@ import csw.params.commands.{ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.{Id, Prefix, Subsystem}
 import csw.params.events._
+import csw.database.client.scaladsl.JooqExtentions._
+import org.jooq.DSLContext
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.async.Async.{async, await}
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 object TestAssemblyWorker {
 
@@ -28,15 +32,21 @@ object TestAssemblyWorker {
 
   case class Initialize(replyTo: ActorRef[Unit]) extends TestAssemblyWorkerMsg
 
-  case class Submit(controlCommand: ControlCommand) extends TestAssemblyWorkerMsg
+  case class Submit(controlCommand: ControlCommand)
+      extends TestAssemblyWorkerMsg
 
-  case class Location(trackingEvent: TrackingEvent) extends TestAssemblyWorkerMsg
+  case class Location(trackingEvent: TrackingEvent)
+      extends TestAssemblyWorkerMsg
 
   case object RefreshAlarms extends TestAssemblyWorkerMsg
+
+  case class SetDatabase(dsl: DSLContext) extends TestAssemblyWorkerMsg
 
   def make(cswCtx: CswContext): Behavior[TestAssemblyWorkerMsg] = {
     Behaviors.setup(ctx ⇒ new TestAssemblyWorker(ctx, cswCtx))
   }
+
+  private val dbName = "postgres"
 
   // --- Events ---
 
@@ -75,7 +85,9 @@ object TestAssemblyWorker {
   val alarmKey = AlarmKey(Subsystem.TEST, "testComponent", "testAlarm")
 }
 
-class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg], cswCtx: CswContext) extends AbstractBehavior[TestAssemblyWorkerMsg] {
+class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
+                         cswCtx: CswContext)
+    extends AbstractBehavior[TestAssemblyWorkerMsg] {
 
   import cswCtx._
   import TestAssemblyWorker._
@@ -89,15 +101,30 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg], cswCtx: CswCo
   // Set when the location is received from the location service (below)
   private var testHcd: Option[CommandService] = None
 
+  // Set when the database has been located
+  private var database: Option[DSLContext] = None
+
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val hcdEventKey = EventKey(hcdPrefix, hcdEventName)
 
-  override def onMessage(msg: TestAssemblyWorkerMsg): Behavior[TestAssemblyWorkerMsg] = {
+  override def onMessage(
+      msg: TestAssemblyWorkerMsg): Behavior[TestAssemblyWorkerMsg] = {
     msg match {
       case Initialize(replyTo) =>
-        startSubscribingToEvents()
-        refreshAlarms()
-        replyTo.tell(())
+        async {
+          startSubscribingToEvents()
+          refreshAlarms()
+          log.info(s"getting database")
+          val dsl = await(initDatabaseTable())
+          log.info(s"database = $dsl")
+          ctx.self ! SetDatabase(dsl)
+          replyTo.tell(())
+        }.onComplete {
+          case Success(_) => log.info("Initialized")
+          case Failure(ex) => log.error("Initialize failed", ex = ex)
+        }
+      case SetDatabase(dsl) =>
+        database = Some(dsl)
       case Submit(controlCommand) =>
         forwardCommandToHcd(controlCommand)
       case Location(trackingEvent) =>
@@ -120,7 +147,8 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg], cswCtx: CswCo
     val publisher = eventService.defaultPublisher
     val baseEvent =
       SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(0))
-    val eventHandlerActor = ctx.spawn(eventHandler(log, publisher, baseEvent), "eventHandlerActor")
+    val eventHandlerActor =
+      ctx.spawn(eventHandler(log, publisher, baseEvent), "eventHandlerActor")
     subscriber.subscribeActorRef(Set(hcdEventKey), eventHandlerActor)
   }
 
@@ -130,11 +158,11 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg], cswCtx: CswCo
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.map { hcd =>
       val setup = Setup(controlCommand.source,
-        controlCommand.commandName,
-        controlCommand.maybeObsId,
-        controlCommand.paramSet)
+                        controlCommand.commandName,
+                        controlCommand.maybeObsId,
+                        controlCommand.paramSet)
       cswCtx.commandResponseManager.addSubCommand(controlCommand.runId,
-        setup.runId)
+                                                  setup.runId)
 
       val f = for {
         response <- hcd.submit(setup)
@@ -153,6 +181,12 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg], cswCtx: CswCo
   private def refreshAlarms(): Unit = {
 //    alarmService.setSeverity(alarmKey, Okay)
     ctx.scheduleOnce(1.seconds, ctx.self, RefreshAlarms)
+  }
+
+  private def initDatabaseTable(): Future[DSLContext] = async {
+    val dbFactory = new DatabaseServiceFactory(ctx.system)
+    val dsl = await(dbFactory.makeDsl(locationService, dbName))
+    dsl
   }
 
 }

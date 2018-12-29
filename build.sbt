@@ -23,3 +23,8 @@ lazy val frameworkTests = project
   .enablePlugins(DeployApp)
   .settings(appSettings: _*)
   .settings(libraryDependencies ++= `frameworkTests-deps`)
+
+lazy val databaseTests = project
+  .enablePlugins(DeployApp)
+  .settings(appSettings: _*)
+  .settings(libraryDependencies ++= `databaseTests-deps`)
