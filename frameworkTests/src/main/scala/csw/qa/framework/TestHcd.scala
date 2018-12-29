@@ -27,10 +27,10 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
 }
 
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
-                              cswServices: CswContext)
-    extends ComponentHandlers(ctx, cswServices) {
+                              cswCtx: CswContext)
+    extends ComponentHandlers(ctx, cswCtx) {
 
-  import cswServices._
+  import cswCtx._
 
   private val log = loggerFactory.getLogger
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
@@ -56,10 +56,6 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
     log.debug(s"onSubmit called: $controlCommand")
-    Thread.sleep(1000) // simulate some work
-
-    // Temp: Used to test what happens when a submit fails
-    //    submitCount = submitCount + 1
 
     controlCommand match {
       case _: Setup =>
