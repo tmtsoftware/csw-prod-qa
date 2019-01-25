@@ -13,9 +13,9 @@ import csw.location.api.models.ComponentId;
 import csw.location.api.models.Connection;
 import csw.location.client.ActorSystemFactory;
 import csw.location.client.javadsl.JHttpLocationServiceFactory;
-import csw.logging.javadsl.ILogger;
-import csw.logging.javadsl.JGenericLoggerFactory;
-import csw.logging.scaladsl.LoggingSystemFactory;
+import csw.logging.api.javadsl.ILogger;
+import csw.logging.client.javadsl.JGenericLoggerFactory;
+import csw.logging.client.scaladsl.LoggingSystemFactory;
 import csw.params.core.models.Prefix;
 
 import java.net.InetAddress;

@@ -13,7 +13,8 @@ import csw.params.commands.CommandResponse.{Completed, Error, SubmitResponse, Va
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Id
-import csw.params.events.{Event, EventName, EventTime, SystemEvent}
+import csw.params.events.{Event, EventName, SystemEvent}
+import csw.time.api.models.UTCTime
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -95,7 +96,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   // this holds the logic for event generation, could be based on some computation or current state of HCD
   private def eventGenerator(): Event = {
     val event = baseEvent
-      .copy(eventId = Id(), eventTime = EventTime())
+      .copy(eventId = Id(), eventTime = UTCTime.now())
       .add(eventValueKey.set(eventValues.nextInt))
     log.debug(s"Publishing event: $event")
     event
