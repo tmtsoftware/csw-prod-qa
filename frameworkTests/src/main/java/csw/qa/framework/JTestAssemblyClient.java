@@ -18,9 +18,9 @@ import csw.location.api.javadsl.JComponentType;
 import csw.location.api.models.*;
 import csw.location.client.ActorSystemFactory;
 import csw.location.client.javadsl.JHttpLocationServiceFactory;
-import csw.logging.javadsl.ILogger;
-import csw.logging.javadsl.JGenericLoggerFactory;
-import csw.logging.scaladsl.LoggingSystemFactory;
+import csw.logging.api.javadsl.ILogger;
+import csw.logging.client.javadsl.JGenericLoggerFactory;
+import csw.logging.client.scaladsl.LoggingSystemFactory;
 import csw.params.commands.CommandName;
 import csw.params.commands.CommandResponse;
 import csw.params.commands.ControlCommand;
@@ -139,6 +139,7 @@ public class JTestAssemblyClient {
     return new Setup(prefix, command, Optional.of(obsId)).add(i1).add(i2);
   }
 
+  @SuppressWarnings("unused")
   private void interact(ActorContext<TrackingEvent> ctx, ICommandService assembly) {
     List<ControlCommand> setups = new ArrayList<>();
     for (int i = 1; i <= 10; i++) {

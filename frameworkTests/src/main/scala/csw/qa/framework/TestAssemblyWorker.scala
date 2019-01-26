@@ -12,13 +12,13 @@ import csw.database.client.DatabaseServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
 import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
-import csw.logging.scaladsl.Logger
+import csw.logging.api.scaladsl.Logger
 import csw.params.commands.CommandResponse.Error
 import csw.params.commands.{ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.{Id, Prefix, Subsystem}
 import csw.params.events._
-import csw.database.client.scaladsl.JooqExtentions._
+import csw.time.api.models.UTCTime
 import org.jooq.DSLContext
 
 import scala.async.Async.{async, await}
@@ -72,7 +72,7 @@ object TestAssemblyWorker {
               log.info(s"Received event with value: $eventValue")
               // fire a new event from the assembly based on the one from the HCD
               val e = baseEvent
-                .copy(eventId = Id(), eventTime = EventTime())
+                .copy(eventId = Id(), eventTime = UTCTime.now())
                 .add(eventKey.set(eventValue))
               publisher.publish(e)
             }

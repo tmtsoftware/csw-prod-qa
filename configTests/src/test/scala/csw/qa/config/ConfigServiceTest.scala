@@ -8,12 +8,14 @@ import akka.actor.ActorSystem
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
+import csw.config.api.TokenFactory
 import csw.config.api.models.ConfigData
 import csw.config.api.scaladsl.{ConfigClientService, ConfigService}
 import csw.config.client.scaladsl.ConfigClientFactory
+import csw.location.api.scaladsl.LocationService
 import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
-import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 /**
   * Some tests for the config service.
@@ -41,7 +43,12 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
 
   LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, actorSystem)
 
-  private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, locationService)
+  lazy val locationService: LocationService        = HttpLocationServiceFactory.makeLocalClient(actorSystem, mat)
+  lazy val authStore                               = new FileAuthStore(settings.authStorePath)
+  lazy val nativeAuthAdapter: NativeAppAuthAdapter = NativeAppAuthAdapterFactory.make(locationService, authStore)
+  lazy val tokenFactory: TokenFactory              = new CliTokenFactory(nativeAuthAdapter)
+  lazy val configService: ConfigService            = ConfigClientFactory.adminApi(actorSystem, locationService, tokenFactory)
+  private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, locationService, tokenFactory)
 
   override def afterAll() {
   }

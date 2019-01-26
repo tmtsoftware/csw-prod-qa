@@ -7,7 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.actor.typed.scaladsl.adapter._
 import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
-import csw.logging.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
 import scala.concurrent.duration._
 

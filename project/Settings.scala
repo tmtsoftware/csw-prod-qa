@@ -17,8 +17,8 @@ object Settings {
     crossPaths := true,
     parallelExecution in Test := false,
     fork := true,
-    resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
-    resolvers += "jitpack" at "https://jitpack.io",
+    //resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
+    //resolvers += "jitpack" at "https://jitpack.io",
     updateOptions := updateOptions.value.withLatestSnapshots(false)
   )
 
