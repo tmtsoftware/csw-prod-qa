@@ -20,5 +20,6 @@ object CSW {
   val `csw-config-client` = Org %% "csw-config-client" % Version
   val `csw-framework` = Org %% "csw-framework" % Version
   val `csw-event-client` = Org %% "csw-event-client" % Version
-  val `csw-database-client` = Org %% "csw-database-client" % Version
+  val `csw-database` = Org %% "csw-database" % Version
+  val `csw-aas-native` = Org %% "csw-aas-native" % Version
 }

@@ -18,20 +18,21 @@ object Dependencies {
   val `configTests-deps` = Seq(
     CSW.`csw-config-client`,
     CSW.`csw-location-client`,
+    CSW.`csw-aas-native`,
     Libs.`junit-interface` % Test,
     Libs.scalaTest % Test
   )
 
   val `frameworkTests-deps` = Seq(
     CSW.`csw-framework`,
-    CSW.`csw-database-client`,
+    CSW.`csw-database`,
     Libs.`junit-interface` % Test,
     Libs.`scalaTest` % Test
   )
 
   val `databaseTests-deps` = Seq(
     CSW.`csw-framework`,
-    CSW.`csw-database-client`,
+    CSW.`csw-database`,
     Libs.`junit-interface` % Test,
     Libs.`scalaTest` % Test
   )

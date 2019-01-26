@@ -4,12 +4,12 @@ import java.net.InetAddress
 
 import akka.actor.typed.javadsl.Adapter
 import akka.stream.ActorMaterializer
-import csw.database.client.DatabaseServiceFactory
+import csw.database.DatabaseServiceFactory
 import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
-import csw.database.client.scaladsl.JooqExtentions._
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import org.jooq.DSLContext
+import csw.database.scaladsl.JooqExtentions._
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, Future}
