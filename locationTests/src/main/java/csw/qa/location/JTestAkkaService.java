@@ -3,7 +3,6 @@ package csw.qa.location;
 import akka.actor.AbstractActor;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.japi.function.Creator;
 import akka.actor.typed.javadsl.Adapter;
 import akka.stream.ActorMaterializer;
 import csw.framework.scaladsl.RegistrationFactory;

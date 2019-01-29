@@ -2,17 +2,20 @@ package csw.qa.config
 
 import java.io.File
 import java.net.InetAddress
+import java.nio.file.Paths
 import java.time.Instant
 
 import akka.actor.ActorSystem
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
+import csw.aas.native.NativeAppAuthAdapterFactory
+import csw.aas.native.api.NativeAppAuthAdapter
+import csw.aas.native.scaladsl.FileAuthStore
 import csw.config.api.TokenFactory
 import csw.config.api.models.ConfigData
 import csw.config.api.scaladsl.{ConfigClientService, ConfigService}
 import csw.config.client.scaladsl.ConfigClientFactory
-import csw.location.api.scaladsl.LocationService
 import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
@@ -23,7 +26,7 @@ import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
   * Note: This test assumes that the location and config services are running and that the necessary
   * csw cluster environment variables or system properties are defined.
   */
-class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
+class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   private val log = GenericLoggerFactory.getLogger
   private val path1 = new File(s"some/test1/TestConfig1").toPath
   private val path2 = new File(s"some/test2/TestConfig2").toPath
@@ -37,25 +40,39 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
   private val comment3 = "update 2 comment"
 
   implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
+
+  import actorSystem.dispatcher
+
   implicit val mat: ActorMaterializer = ActorMaterializer()
-  private val locationService = HttpLocationServiceFactory.makeLocalClient(actorSystem, mat)
+  private val locationService =
+    HttpLocationServiceFactory.makeLocalClient(actorSystem, mat)
   private val host = InetAddress.getLocalHost.getHostName
 
   LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, actorSystem)
 
-  lazy val locationService: LocationService        = HttpLocationServiceFactory.makeLocalClient(actorSystem, mat)
-  lazy val authStore                               = new FileAuthStore(settings.authStorePath)
-  lazy val nativeAuthAdapter: NativeAppAuthAdapter = NativeAppAuthAdapterFactory.make(locationService, authStore)
-  lazy val tokenFactory: TokenFactory              = new CliTokenFactory(nativeAuthAdapter)
-  lazy val configService: ConfigService            = ConfigClientFactory.adminApi(actorSystem, locationService, tokenFactory)
-  private val configService: ConfigService = ConfigClientFactory.adminApi(actorSystem, locationService, tokenFactory)
+  private val `auth-store-dir` = "/tmp/config-cli/auth"
+  private val authStorePath = Paths.get(`auth-store-dir`)
+  val authStore = new FileAuthStore(authStorePath)
+  val nativeAuthAdapter: NativeAppAuthAdapter =
+    NativeAppAuthAdapterFactory.make(locationService, authStore)
 
-  override def afterAll() {
+  class CliTokenFactory extends TokenFactory {
+    override def getToken: String =
+      nativeAuthAdapter
+        .getAccessTokenString()
+        .getOrElse(throw new RuntimeException(
+          "Missing access token, You must login before executing this command."))
   }
+
+  val tokenFactory: TokenFactory = new CliTokenFactory
+  val configService: ConfigService =
+    ConfigClientFactory.adminApi(actorSystem, locationService, tokenFactory)
+
+  override def afterAll() {}
 
   test("Run Tests") {
     runTests(configService, annex = false)
-//    runTests(configService, annex = true)
+    //    runTests(configService, annex = true)
   }
 
   // Run tests using the given config cs instance
@@ -68,14 +85,18 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
     // Add, then update the file twice
     val date1 = Instant.now
     Thread.sleep(100)
-    val createId1 = cs.create(path1, ConfigData.fromString(contents1), annex, comment1).await
-    val createId2 = cs.create(path2, ConfigData.fromString(contents1), annex, comment1).await
+    val createId1 =
+      cs.create(path1, ConfigData.fromString(contents1), annex, comment1).await
+    val createId2 =
+      cs.create(path2, ConfigData.fromString(contents1), annex, comment1).await
     val date1a = Instant.now
     Thread.sleep(100) // make sure date is different
-    val updateId1 = cs.update(path1, ConfigData.fromString(contents2), comment2).await
+    val updateId1 =
+      cs.update(path1, ConfigData.fromString(contents2), comment2).await
     val date2 = Instant.now
     Thread.sleep(100) // make sure date is different
-    val updateId2 = cs.update(path1, ConfigData.fromString(contents3), comment3).await
+    val updateId2 =
+      cs.update(path1, ConfigData.fromString(contents3), comment3).await
     val date3 = Instant.now
 
     // Check that we can access each version
@@ -85,7 +106,12 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
     assert(cs.getById(path1, createId1).await.get.toStringF.await == contents1)
     assert(cs.getById(path1, updateId1).await.get.toStringF.await == contents2)
     assert(cs.getById(path1, updateId2).await.get.toStringF.await == contents3)
-    assert(cs.getLatest(path2).await.map(_.toStringF.await).get.toString == contents1)
+    assert(
+      cs.getLatest(path2)
+        .await
+        .map(_.toStringF.await)
+        .get
+        .toString == contents1)
     assert(cs.getById(path2, createId2).await.get.toStringF.await == contents1)
 
     assert(cs.getByTime(path1, date1).await.get.toStringF.await == contents1)
@@ -133,4 +159,3 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll{
   }
 
 }
-

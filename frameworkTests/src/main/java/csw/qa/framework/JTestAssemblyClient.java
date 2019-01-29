@@ -139,6 +139,7 @@ public class JTestAssemblyClient {
     return new Setup(prefix, command, Optional.of(obsId)).add(i1).add(i2);
   }
 
+  @SuppressWarnings("unused")
   private void interact(ActorContext<TrackingEvent> ctx, ICommandService assembly) {
     List<ControlCommand> setups = new ArrayList<>();
     for (int i = 1; i <= 10; i++) {

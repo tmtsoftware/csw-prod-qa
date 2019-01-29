@@ -9,7 +9,7 @@ object Dependencies {
   )
 
   val `loggingTests-deps` = Seq(
-    CSW.`csw-logging`,
+    CSW.`csw-logging-client`,
     CSW.`csw-commons`,
     Libs.`scopt`,
     Libs.`slf4j-api`

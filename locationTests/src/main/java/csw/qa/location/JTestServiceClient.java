@@ -1,7 +1,6 @@
 package csw.qa.location;
 
 import akka.actor.*;
-import akka.japi.Creator;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.typed.javadsl.Adapter;
