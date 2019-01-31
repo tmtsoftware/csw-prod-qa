@@ -13,6 +13,7 @@
 //
 //import java.io.File;
 //import java.nio.file.Path;
+//import java.nio.file.Paths;
 //import java.time.Instant;
 //import java.util.Objects;
 //
@@ -24,6 +25,10 @@
 //  private ActorSystem actorSystem = ActorSystemFactory.remote();
 //  private ActorMaterializer mat = ActorMaterializer.create(actorSystem);
 //  private ILocationService clientLocationService = JHttpLocationServiceFactory.makeLocalClient(actorSystem, mat);
+//
+//  private String authStoreDir = "/tmp/config-cli/auth";
+//  private Path authStorePath = Paths.get(authStoreDir);
+//  FileAuthStore authStore = new csw.aas.native.scaladsl.FileAuthStore(authStorePath);
 //
 //  private IConfigService configService = JConfigClientFactory.adminApi(actorSystem, clientLocationService);
 //
