@@ -14,7 +14,7 @@ import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Id
 import csw.params.events.{Event, EventName, SystemEvent}
-import csw.time.api.models.UTCTime
+import csw.time.core.models.UTCTime
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -41,7 +41,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private val eventName = EventName("myHcdEvent")
   private val eventValues = Random
   private val baseEvent = SystemEvent(componentInfo.prefix, eventName)
-    .add(eventValueKey.set(eventValues.nextInt))
+    .add(eventValueKey.set(eventValues.nextInt(100)))
 
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
@@ -90,16 +90,16 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     log.debug("start publishing events (1)")
     val publisher = eventService.defaultPublisher
     log.debug("start publishing events (2)")
-    publisher.publish(eventGenerator(), 5.seconds, onError)
+    publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
   }
 
   // this holds the logic for event generation, could be based on some computation or current state of HCD
-  private def eventGenerator(): Event = {
+  private def eventGenerator(): Option[Event] = {
     val event = baseEvent
       .copy(eventId = Id(), eventTime = UTCTime.now())
-      .add(eventValueKey.set(eventValues.nextInt))
+      .add(eventValueKey.set(eventValues.nextInt(100)))
     log.debug(s"Publishing event: $event")
-    event
+    Some(event)
   }
 
   private def onError(publishFailure: PublishFailure): Unit =

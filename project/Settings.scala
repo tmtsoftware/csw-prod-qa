@@ -17,17 +17,12 @@ object Settings {
 //    crossPaths := true,
     parallelExecution in Test := false,
     fork := true,
-//    resolvers += "twtmt-maven" at "http://dl.bintray.com/twtmt/maven/",
-//    resolvers += "jitpack" at "https://jitpack.io",
+    resolvers += "jitpack" at "https://jitpack.io",
+    resolvers += "bintray" at "http://jcenter.bintray.com",
     updateOptions := updateOptions.value.withLatestSnapshots(false)
   )
 
   lazy val defaultSettings = buildSettings ++ Seq(
-    // compile options ScalaUnidoc, unidoc
-//    scalacOptions ++= Seq("-target:jvm-1.8", "-encoding", "UTF-8", "-feature", "-deprecation", "-unchecked"),
-//    javacOptions in Compile ++= Seq("-source", "1.8"),
-//    javacOptions in (Compile, compile) ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-Xlint:deprecation"),
-//    javaOptions in (Test, run) ++= Seq("-Djava.net.preferIPv4Stack=true")  // For location service use
   )
 
   lazy val appSettings = defaultSettings ++ Seq(

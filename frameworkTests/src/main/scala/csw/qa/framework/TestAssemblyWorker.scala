@@ -18,7 +18,7 @@ import csw.params.commands.{ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.{Id, Prefix, Subsystem}
 import csw.params.events._
-import csw.time.api.models.UTCTime
+import csw.time.core.models.UTCTime
 import org.jooq.DSLContext
 
 import scala.async.Async.{async, await}
@@ -56,8 +56,8 @@ object TestAssemblyWorker {
   private val hcdPrefix = Prefix("test.hcd")
 
   // Dummy key for publishing events from assembly
-  private val eventKey: Key[Int] = KeyType.IntKey.make("assemblyEventValue")
-  private val eventName = EventName("myAssemblyEvent")
+  private[framework] val eventKey: Key[Double] = KeyType.DoubleKey.make("assemblyEventValue")
+  private[framework] val eventName = EventName("myAssemblyEvent")
 
   // Actor to receive HCD events
   private def eventHandler(log: Logger,
@@ -73,7 +73,7 @@ object TestAssemblyWorker {
               // fire a new event from the assembly based on the one from the HCD
               val e = baseEvent
                 .copy(eventId = Id(), eventTime = UTCTime.now())
-                .add(eventKey.set(eventValue))
+                .add(eventKey.set(1.0/eventValue))
               publisher.publish(e)
             }
           Behaviors.same

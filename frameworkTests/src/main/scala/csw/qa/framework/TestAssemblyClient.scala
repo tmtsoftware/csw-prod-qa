@@ -42,9 +42,8 @@ object TestAssemblyClient extends App {
   log.info("Starting TestAssemblyClient")
 
   // Key for events from assembly
-  private val assemblyEventValueKey: Key[Int] =
-    KeyType.IntKey.make("assemblyEventValue")
-  private val assemblyEventName = EventName("myAssemblyEvent")
+  private val assemblyEventValueKey = TestAssemblyWorker.eventKey
+  private val assemblyEventName = TestAssemblyWorker.eventName
   private val assemblyPrefix = Prefix("test.assembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val assemblyEventKey = EventKey(assemblyPrefix, assemblyEventName)

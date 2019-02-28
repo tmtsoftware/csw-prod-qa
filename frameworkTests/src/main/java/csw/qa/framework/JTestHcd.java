@@ -116,11 +116,11 @@ public class JTestHcd {
     }
 
     // this holds the logic for event generation, could be based on some computation or current state of HCD
-    private Event eventGenerator() {
+    private Optional<Event> eventGenerator() {
       SystemEvent newEvent = new SystemEvent(baseEvent.source(), baseEvent.eventName())
           .add(eventValueKey.set(eventValues.nextInt()));
       log.debug("Publishing event: " + newEvent);
-      return newEvent;
+      return Optional.of(newEvent);
     }
   }
 
