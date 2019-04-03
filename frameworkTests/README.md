@@ -9,9 +9,9 @@ Note that the assembly accesses the postgres database, which is started by csw-s
 Make sure to set the necessary environment variables for the user name and password.
 For example:
 
-    setenv dbReadUsername myName
+    setenv DB_READ_USERNAME myName
 
-    setenv dbReadPassword myPassword
+    setenv DB_READ_PASSWORD myPassword
 
 You can use a command like this to set the password the first time. 
 (Note: Temporarily replace `password` with `trust` in the installed version of `pg_hba.conf` under csw/target/universal/stage/conf):

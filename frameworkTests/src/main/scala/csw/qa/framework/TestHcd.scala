@@ -39,9 +39,15 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   // Dummy key for publishing events
   private val eventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val eventName = EventName("myHcdEvent")
+  private val eventName2 = EventName("myHcdEvent2")
+  private val eventName3 = EventName("myHcdEvent3")
   private val eventValues = Random
   private val baseEvent = SystemEvent(componentInfo.prefix, eventName)
     .add(eventValueKey.set(eventValues.nextInt(100)))
+  private val baseEvent2 = SystemEvent(componentInfo.prefix, eventName2)
+    .add(eventValueKey.set(eventValues.nextInt(1000)))
+  private val baseEvent3 = SystemEvent(componentInfo.prefix, eventName3)
+    .add(eventValueKey.set(eventValues.nextInt(10000)))
 
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
@@ -87,10 +93,10 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
 
   private def startPublishingEvents(): Cancellable = {
-    log.debug("start publishing events (1)")
     val publisher = eventService.defaultPublisher
-    log.debug("start publishing events (2)")
     publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
+    publisher.publish(eventGenerator2(), 50.millis, p => onError(p))
+    publisher.publish(eventGenerator3(), 5.seconds, p => onError(p))
   }
 
   // this holds the logic for event generation, could be based on some computation or current state of HCD
@@ -98,7 +104,19 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     val event = baseEvent
       .copy(eventId = Id(), eventTime = UTCTime.now())
       .add(eventValueKey.set(eventValues.nextInt(100)))
-    log.debug(s"Publishing event: $event")
+    Some(event)
+  }
+  private def eventGenerator2(): Option[Event] = {
+    val event = baseEvent2
+      .copy(eventId = Id(), eventTime = UTCTime.now())
+      .add(eventValueKey.set(eventValues.nextInt(1000)))
+    Some(event)
+  }
+
+  private def eventGenerator3(): Option[Event] = {
+    val event = baseEvent3
+      .copy(eventId = Id(), eventTime = UTCTime.now())
+      .add(eventValueKey.set(eventValues.nextInt(10000)))
     Some(event)
   }
 

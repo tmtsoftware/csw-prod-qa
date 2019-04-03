@@ -14,10 +14,10 @@ To build, run
 The tests and applications here require that the csw location and config services are
 running. The csw-services.sh script does this. 
 
-* Set the `interfaceName` environment variable to your host's network interface, as listed by `ifconfig -a`. For example:
+* Set the `INTERFACE_NAME` environment variable to your host's network interface, as listed by `ifconfig -a`. For example:
 
 ```bash
-export interfaceName=enp0s31f6
+export INTERFACE_NAME=enp0s31f6
 ```
 
 This ensures that the location service uses the correct network interface (For example, ethernet instead of wireless).
