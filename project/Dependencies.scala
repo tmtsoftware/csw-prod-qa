@@ -18,7 +18,7 @@ object Dependencies {
 
   val `configTests-deps` = Seq(
     CSW.`csw-config-client`,
-    CSW.`csw-aas-native`,
+    CSW.`csw-aas-installed`,
     CSW.`csw-location-client`,
     Libs.`junit-interface` % Test,
     Libs.scalaTest % Test

@@ -9,9 +9,9 @@ import akka.actor.ActorSystem
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.stream.ActorMaterializer
-import csw.aas.native.NativeAppAuthAdapterFactory
-import csw.aas.native.api.NativeAppAuthAdapter
-import csw.aas.native.scaladsl.FileAuthStore
+import csw.aas.installed.InstalledAppAuthAdapterFactory
+import csw.aas.installed.api.InstalledAppAuthAdapter
+import csw.aas.installed.scaladsl.FileAuthStore
 import csw.config.api.TokenFactory
 import csw.config.api.models.ConfigData
 import csw.config.api.scaladsl.{ConfigClientService, ConfigService}
@@ -53,12 +53,12 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   private val `auth-store-dir` = "/tmp/config-cli/auth"
   private val authStorePath = Paths.get(`auth-store-dir`)
   val authStore = new FileAuthStore(authStorePath)
-  val nativeAuthAdapter: NativeAppAuthAdapter =
-    NativeAppAuthAdapterFactory.make(locationService, authStore)
+  val installedAuthAdapter: InstalledAppAuthAdapter =
+    InstalledAppAuthAdapterFactory.make(locationService, authStore)
 
   class CliTokenFactory extends TokenFactory {
     override def getToken: String =
-      nativeAuthAdapter
+      installedAuthAdapter
         .getAccessTokenString()
         .getOrElse(throw new RuntimeException(
           "Missing access token, You must login before executing this command."))
