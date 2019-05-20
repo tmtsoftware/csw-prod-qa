@@ -20,9 +20,10 @@ import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.{CommandName, Setup}
-import csw.params.core.generics.{Key, KeyType}
+import csw.params.core.generics.KeyType
+import csw.params.core.models.Coords.EqCoord
 import csw.params.core.models.{ObsId, Prefix}
-import csw.params.events.{Event, EventKey, EventName, SystemEvent}
+import csw.params.events.{Event, EventKey, SystemEvent}
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -42,12 +43,9 @@ object TestAssemblyClient extends App {
   log.info("Starting TestAssemblyClient")
 
   // Key for events from assembly
-  private val assemblyEventValueKey = TestAssemblyWorker.eventKey
-  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
-  private val assemblyEventName = TestAssemblyWorker.eventName
   private val assemblyPrefix = Prefix("test.assembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
-  private val assemblyEventKey = EventKey(assemblyPrefix, assemblyEventName)
+  private val assemblyEventKey = EventKey(assemblyPrefix, TestAssemblyWorker.eventName)
 
   private val obsId = ObsId("2023-Q22-4-33")
   private val encoderKey = KeyType.IntKey.make("encoder")
@@ -77,16 +75,25 @@ object TestAssemblyClient extends App {
             log.info(s"Received parameter: $p")
 
           }
-//          e.get(assemblyEventValueKey)
-//            .foreach { p =>
-//              val eventValue = p.head
-//              log.info(s"Received event with value: $eventValue")
-//            }
-//          e.get(assemblyEventValueKey2)
-//            .foreach { p =>
-//              val eventValue = p.head
-//              log.info(s"Received event with struct value: ${eventValue.get(assemblyEventValueKey).head.head}")
-//            }
+          e.get(TestAssemblyWorker.eventKey)
+            .foreach { p =>
+              val eventValue = p.head
+              log.info(s"Received event with value: $eventValue")
+            }
+          e.get(TestAssemblyWorker.eventKey2)
+            .foreach { p =>
+              val eventValue = p.head
+              log.info(s"Received event with struct value: ${eventValue.get(TestAssemblyWorker.eventKey).head.head}")
+            }
+          e.get(TestAssemblyWorker.basePosKey)
+            .foreach { p =>
+              p.head match {
+                case eq: EqCoord =>
+                  log.info(s"Received event with EqCoord value: $eq")
+                case x =>
+                  log.error(s"Unexpected coordinate value: $x")
+              }
+            }
           Behaviors.same
         case _ => throw new RuntimeException("Expected SystemEvent")
       }
