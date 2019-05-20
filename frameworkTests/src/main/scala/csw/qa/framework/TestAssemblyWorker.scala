@@ -93,7 +93,7 @@ object TestAssemblyWorker {
                   Struct()
                   .add(eventKey.set(2.0f / eventValue))
                   .add(eventKey3.set(eventValue, 4, 5, 6))
-                  .add(eventKey4.set(9.toByte, 10.toByte),
+                  .add(eventKey4.set(9.toByte, 10.toByte)
                 )))
               publisher.publish(e)
             }
