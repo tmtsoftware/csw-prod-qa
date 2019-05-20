@@ -43,6 +43,7 @@ object TestAssemblyClient extends App {
 
   // Key for events from assembly
   private val assemblyEventValueKey = TestAssemblyWorker.eventKey
+  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
   private val assemblyEventName = TestAssemblyWorker.eventName
   private val assemblyPrefix = Prefix("test.assembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
@@ -71,11 +72,21 @@ object TestAssemblyClient extends App {
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
         case e: SystemEvent =>
-          e.get(assemblyEventValueKey)
-            .foreach { p =>
-              val eventValue = p.head
-              log.info(s"Received event with value: $eventValue")
-            }
+          log.info(s"Received event: $e")
+          e.paramSet.foreach { p =>
+            log.info(s"Received parameter: $p")
+
+          }
+//          e.get(assemblyEventValueKey)
+//            .foreach { p =>
+//              val eventValue = p.head
+//              log.info(s"Received event with value: $eventValue")
+//            }
+//          e.get(assemblyEventValueKey2)
+//            .foreach { p =>
+//              val eventValue = p.head
+//              log.info(s"Received event with struct value: ${eventValue.get(assemblyEventValueKey).head.head}")
+//            }
           Behaviors.same
         case _ => throw new RuntimeException("Expected SystemEvent")
       }

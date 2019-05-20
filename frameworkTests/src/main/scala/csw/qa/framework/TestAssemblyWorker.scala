@@ -11,12 +11,17 @@ import csw.command.client.CommandServiceFactory
 import csw.database.DatabaseServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
-import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.api.models.{
+  AkkaLocation,
+  LocationRemoved,
+  LocationUpdated,
+  TrackingEvent
+}
 import csw.logging.api.scaladsl.Logger
 import csw.params.commands.CommandResponse.Error
 import csw.params.commands.{ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.{Id, Prefix, Subsystem}
+import csw.params.core.models.{Id, Prefix, Struct, Subsystem}
 import csw.params.events._
 import csw.time.core.models.UTCTime
 import org.jooq.DSLContext
@@ -33,10 +38,10 @@ object TestAssemblyWorker {
   case class Initialize(replyTo: ActorRef[Unit]) extends TestAssemblyWorkerMsg
 
   case class Submit(controlCommand: ControlCommand)
-      extends TestAssemblyWorkerMsg
+    extends TestAssemblyWorkerMsg
 
   case class Location(trackingEvent: TrackingEvent)
-      extends TestAssemblyWorkerMsg
+    extends TestAssemblyWorkerMsg
 
   case object RefreshAlarms extends TestAssemblyWorkerMsg
 
@@ -56,7 +61,14 @@ object TestAssemblyWorker {
   private val hcdPrefix = Prefix("test.hcd")
 
   // Dummy key for publishing events from assembly
-  private[framework] val eventKey: Key[Double] = KeyType.DoubleKey.make("assemblyEventValue")
+  private[framework] val eventKey: Key[Float] =
+    KeyType.FloatKey.make("assemblyEventValue")
+  private[framework] val eventKey2: Key[Struct] =
+    KeyType.StructKey.make("assemblyEventStructValue")
+  private[framework] val eventKey3: Key[Int] =
+    KeyType.IntKey.make("assemblyEventStructValue3")
+  private[framework] val eventKey4: Key[Byte] =
+    KeyType.ByteKey.make("assemblyEventStructValue4")
   private[framework] val eventName = EventName("myAssemblyEvent")
 
   // Actor to receive HCD events
@@ -73,7 +85,16 @@ object TestAssemblyWorker {
               // fire a new event from the assembly based on the one from the HCD
               val e = baseEvent
                 .copy(eventId = Id(), eventTime = UTCTime.now())
-                .add(eventKey.set(1.0/eventValue))
+                .add(eventKey.set(1.0f / eventValue, 2.0f, 3.0f))
+                .add(eventKey2.set(
+                  Struct()
+                  .add(eventKey.set(1.0f / eventValue))
+                  .add(eventKey3.set(eventValue, 1, 2, 3)),
+                  Struct()
+                  .add(eventKey.set(2.0f / eventValue))
+                  .add(eventKey3.set(eventValue, 4, 5, 6))
+                  .add(eventKey4.set(9.toByte, 10.toByte),
+                )))
               publisher.publish(e)
             }
           Behaviors.same
@@ -87,7 +108,7 @@ object TestAssemblyWorker {
 
 class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
                          cswCtx: CswContext)
-    extends AbstractBehavior[TestAssemblyWorkerMsg] {
+  extends AbstractBehavior[TestAssemblyWorkerMsg] {
 
   import cswCtx._
   import TestAssemblyWorker._
@@ -108,16 +129,16 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   private val hcdEventKey = EventKey(hcdPrefix, hcdEventName)
 
   override def onMessage(
-      msg: TestAssemblyWorkerMsg): Behavior[TestAssemblyWorkerMsg] = {
+                          msg: TestAssemblyWorkerMsg): Behavior[TestAssemblyWorkerMsg] = {
     msg match {
       case Initialize(replyTo) =>
         async {
           startSubscribingToEvents()
           refreshAlarms()
-          log.info(s"getting database")
-          val dsl = await(initDatabaseTable())
-          log.info(s"database = $dsl")
-          ctx.self ! SetDatabase(dsl)
+          //          log.info(s"getting database")
+          //          val dsl = await(initDatabaseTable())
+          //          log.info(s"database = $dsl")
+          //          ctx.self ! SetDatabase(dsl)
           replyTo.tell(())
         }.onComplete {
           case Success(_) => log.info("Initialized")
@@ -146,7 +167,10 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     val subscriber = eventService.defaultSubscriber
     val publisher = eventService.defaultPublisher
     val baseEvent =
-      SystemEvent(componentInfo.prefix, eventName).add(eventKey.set(0))
+      SystemEvent(componentInfo.prefix, eventName)
+        .add(eventKey.set(0))
+        .add(eventKey2.set(Struct().add(eventKey.set(0)).add(eventKey3.set(0))))
+
     val eventHandlerActor =
       ctx.spawn(eventHandler(log, publisher, baseEvent), "eventHandlerActor")
     subscriber.subscribeActorRef(Set(hcdEventKey), eventHandlerActor)
@@ -158,11 +182,11 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.map { hcd =>
       val setup = Setup(controlCommand.source,
-                        controlCommand.commandName,
-                        controlCommand.maybeObsId,
-                        controlCommand.paramSet)
+        controlCommand.commandName,
+        controlCommand.maybeObsId,
+        controlCommand.paramSet)
       cswCtx.commandResponseManager.addSubCommand(controlCommand.runId,
-                                                  setup.runId)
+        setup.runId)
 
       val f = for {
         response <- hcd.submit(setup)
@@ -179,7 +203,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   }
 
   private def refreshAlarms(): Unit = {
-//    alarmService.setSeverity(alarmKey, Okay)
+    //    alarmService.setSeverity(alarmKey, Okay)
     ctx.scheduleOnce(1.seconds, ctx.self, RefreshAlarms)
   }
 
