@@ -3,13 +3,16 @@ package csw.qa.location
 
 import java.net.InetAddress
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.actor.typed.scaladsl.adapter._
-import csw.location.client.ActorSystemFactory
-import csw.location.client.scaladsl.HttpLocationServiceFactory
+import akka.actor
+import akka.actor.typed.{ActorSystem, SpawnProtocol}
+import akka.stream.Materializer
+import akka.stream.typed.scaladsl.ActorMaterializer
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
+import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
+import csw.location.client.scaladsl.HttpLocationServiceFactory
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 /**
@@ -22,12 +25,16 @@ import scala.concurrent.duration._
   */
 object TestServiceClientApp extends App {
   private val host = InetAddress.getLocalHost.getHostName
-  implicit val system: ActorSystem = ActorSystemFactory.remote
-  LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
-  implicit val mat: ActorMaterializer = ActorMaterializer()
-  val locationService = HttpLocationServiceFactory.makeLocalClient(system, mat)
+  implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "TestAkkaServiceApp")
+  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
+  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+  implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
+  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
+
+  LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
-  log.info(s"TestServiceClientApp is running on $host")
+
+  log.debug("Started TestServiceClientApp")
 
   case class Options(numServices: Int = 1, firstService: Int = 1, autoshutdown: Int = 0)
 
@@ -66,19 +73,18 @@ object TestServiceClientApp extends App {
 
   private def run(options: Options): Unit = {
     // Note: Need to start with the untyped system in order to have mixed typed/untyped actors!
-    system.spawn(TestServiceClient.behavior(options, locationService), "TestServiceClientApp")
+    typedSystem.spawn(TestServiceClient.behavior(options, locationService), "TestServiceClientApp")
     autoShutdown(options)
   }
 
   // If the autoshutdown option was specified, shutdown the app after the given number of seconds
   private def autoShutdown(options: Options): Unit = {
     import options._
-    import system.dispatcher
     if (options.autoshutdown != 0) {
-      system.scheduler.scheduleOnce(autoshutdown.seconds) {
+      typedSystem.scheduler.scheduleOnce(autoshutdown.seconds) {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         for {
-          _ <- system.terminate()
+          _ <- untypedSystem.terminate()
         } {
           println("Shutdown complete")
         }

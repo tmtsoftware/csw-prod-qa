@@ -1,6 +1,7 @@
 package csw.qa.location;
 
 import akka.actor.*;
+import akka.actor.typed.SpawnProtocol;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.typed.javadsl.Adapter;
@@ -27,59 +28,60 @@ import static csw.location.api.javadsl.JConnectionType.AkkaType;
  */
 public class JTestServiceClient extends AbstractActor {
 
-    private ILogger log = JGenericLoggerFactory.getLogger(context(), getClass());
+  private ILogger log = JGenericLoggerFactory.getLogger(context(), getClass());
 
-    // Used to create the ith JTestServiceClient actor
-    private static Props props(int numServices, ILocationService locationService) {
-        return Props.create(JTestServiceClient.class, () -> new JTestServiceClient(numServices, locationService));
+  // Used to create the ith JTestServiceClient actor
+  private static Props props(int numServices, ILocationService locationService) {
+    return Props.create(JTestServiceClient.class, () -> new JTestServiceClient(numServices, locationService));
+  }
+
+  // message sent when location stream ends (should not happen?)
+  private static class AllDone implements Serializable {
+  }
+
+  // Connection for the ith service
+  private static Connection.AkkaConnection connection(int i) {
+    return new Connection.AkkaConnection(JTestAkkaService.componentId(i));
+  }
+
+  // Constructor: tracks the given number of akka connections
+  private JTestServiceClient(int numServices, ILocationService locationService) {
+    ActorMaterializer mat = ActorMaterializer.create(context());
+    for (int i = 1; i <= numServices; i++) {
+      locationService.track(connection(i)).to(Sink.actorRef(self(), new AllDone())).run(mat);
     }
+  }
 
-    // message sent when location stream ends (should not happen?)
-    private static class AllDone implements Serializable {
-    }
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder()
+        .match(LocationUpdated.class, loc -> {
+          log.info("Location updated: " + loc);
+          if (loc.connection().connectionType() == AkkaType) {
+            ActorRef actorRef = Adapter.toUntyped(((AkkaLocation) loc.location()).actorRef());
+            actorRef.tell(new ClientMessage(Adapter.toTyped(getSelf())), self());
+          }
+        })
+        .match(LocationRemoved.class, loc -> log.info("Location removed: " + loc))
+        .matchAny(x -> log.warn("Unknown message received: " + x))
+        .build();
+  }
 
-    // Connection for the ith service
-    private static Connection.AkkaConnection connection(int i) {
-        return new Connection.AkkaConnection(JTestAkkaService.componentId(i));
-    }
+  // If a command line arg is given, it should be the number of services to resolve (default: 1).
+  public static void main(String[] args) throws UnknownHostException {
+    int numServices = 1;
+    if (args.length != 0)
+      numServices = Integer.valueOf(args[0]);
 
-    // Constructor: tracks the given number of akka connections
-    private JTestServiceClient(int numServices, ILocationService locationService) {
-        ActorMaterializer mat = ActorMaterializer.create(context());
-        for (int i = 1; i <= numServices; i++) {
-            locationService.track(connection(i)).to(Sink.actorRef(self(), new AllDone())).run(mat);
-        }
-    }
+    akka.actor.typed.ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestAkkaService");
+    akka.actor.ActorSystem untypedSystem = ActorSystemFactory.remote();
+    ActorMaterializer mat = ActorMaterializer.create(untypedSystem);
+    ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem, mat);
 
-    @Override
-    public Receive createReceive() {
-        return receiveBuilder()
-                .match(LocationUpdated.class, loc -> {
-                    log.info("Location updated: " + loc);
-                    if (loc.connection().connectionType() == AkkaType) {
-                        ActorRef actorRef = Adapter.toUntyped(((AkkaLocation)loc.location()).actorRef());
-                        actorRef.tell(new ClientMessage(Adapter.toTyped(getSelf())), self());
-                    }
-                })
-                .match(LocationRemoved.class, loc -> log.info("Location removed: " + loc))
-                .matchAny(x -> log.warn("Unknown message received: " + x))
-                .build();
-    }
+    // Start the logging service
+    String host = InetAddress.getLocalHost().getHostName();
+    LoggingSystemFactory.start("JTestAkkaService", "0.1", host, typedSystem);
 
-    // If a command line arg is given, it should be the number of services to resolve (default: 1).
-    public static void main(String[] args) throws UnknownHostException {
-        int numServices = 1;
-        if (args.length != 0)
-            numServices = Integer.valueOf(args[0]);
-
-        ActorSystem system = ActorSystemFactory.remote();
-        ActorMaterializer mat = ActorMaterializer.create(system);
-        ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(system, mat);
-
-        // Start the logging service
-        String host = InetAddress.getLocalHost().getHostName();
-        LoggingSystemFactory.start("JTestServiceClient", "0.1", host, system);
-
-        system.actorOf(JTestServiceClient.props(numServices, locationService));
-    }
+    untypedSystem.actorOf(JTestServiceClient.props(numServices, locationService));
+  }
 }

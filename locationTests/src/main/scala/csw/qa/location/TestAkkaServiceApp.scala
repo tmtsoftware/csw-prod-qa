@@ -2,13 +2,17 @@ package csw.qa.location
 
 import java.net.InetAddress
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.actor.typed.scaladsl.adapter._
-import csw.location.client.ActorSystemFactory
+import akka.actor
+import akka.actor.typed.{ActorSystem, SpawnProtocol}
+import akka.stream.Materializer
+import akka.stream.typed.scaladsl.ActorMaterializer
+import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
+
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 /**
@@ -24,16 +28,19 @@ import scala.concurrent.duration._
   */
 object TestAkkaServiceApp extends App {
 
-  implicit val system: ActorSystem = ActorSystemFactory.remote
   private val host = InetAddress.getLocalHost.getHostName
-  LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, system)
+  implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "TestAkkaServiceApp")
+  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
+  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+  implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
+
+  LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
 
   log.debug("Started TestAkkaServiceApp")
 
-  implicit val mat: ActorMaterializer = ActorMaterializer()
 
-  val locationService = HttpLocationServiceFactory.makeLocalClient(system, mat)
+  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
 
   case class Options(numServices: Int = 1, firstService: Int = 1,
                      autostop: Int = 0, autoshutdown: Int = 0, delay: Int = 100,
@@ -94,9 +101,9 @@ object TestAkkaServiceApp extends App {
     for (i <- firstService until firstService + numServices) {
       Thread.sleep(delay) // Avoid timeouts?
       // Note: Need to start with the untyped system in order to have mixed typed/untyped actors!
-      system.spawn(TestAkkaService.behavior(i, options, locationService), s"TestAkkaService$i")
+      typedSystem.spawn(TestAkkaService.behavior(i, options, locationService), s"TestAkkaService$i")
       if (startSecond)
-        system.spawn(TestAkkaService2.behavior(i, options, locationService), s"TestAkkaService2$i")
+        typedSystem.spawn(TestAkkaService2.behavior(i, options, locationService), s"TestAkkaService2$i")
     }
     autoShutdown(options)
 
@@ -105,11 +112,10 @@ object TestAkkaServiceApp extends App {
   // If the autoshutdown option was specified, shutdown the app after the given number of seconds
   private def autoShutdown(options: Options): Unit = {
     import options._
-    import system.dispatcher
     if (options.autoshutdown != 0) {
-      system.scheduler.scheduleOnce(autoshutdown.seconds) {
+      typedSystem.scheduler.scheduleOnce(autoshutdown.seconds) {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
-        system.terminate()
+        typedSystem.terminate()
       }
     }
   }

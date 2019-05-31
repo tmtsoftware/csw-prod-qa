@@ -1,8 +1,8 @@
 package csw.qa.framework;
 
-import akka.actor.ActorSystem;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.SpawnProtocol;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
@@ -69,14 +69,13 @@ public class JTestAssemblyClient {
   private static final Connection.AkkaConnection connection = new Connection.AkkaConnection(componentId);
 
 
-  private final ActorSystem system = ActorSystemFactory.remote();
-  private final akka.actor.typed.ActorSystem<Void> typedSystem = Adapter.toTyped(system);
-
-  private final ActorMaterializer mat = ActorMaterializer.create(system);
-  private final ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(system, mat);
+  private akka.actor.typed.ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestAkkaService");
+  private akka.actor.ActorSystem untypedSystem = ActorSystemFactory.remote();
+  private ActorMaterializer mat = ActorMaterializer.create(untypedSystem);
+  private ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem, mat);
   private final ILogger log = JGenericLoggerFactory.getLogger(JTestAssemblyClient.class);
 
-  private final IEventService eventService = (new EventServiceFactory()).jMake(locationService, system);
+  private final IEventService eventService = (new EventServiceFactory()).jMake(locationService, typedSystem);
 
 
   // Actor to receive HCD events
@@ -101,9 +100,9 @@ public class JTestAssemblyClient {
   private void start() throws UnknownHostException {
     // Start the logging service
     String host = InetAddress.getLocalHost().getHostName();
-    LoggingSystemFactory.start("JTestAssemblyClient", "0.1", host, system);
+    LoggingSystemFactory.start("JTestAssemblyClient", "0.1", host, typedSystem);
 
-    Adapter.spawn(system, initialBehavior(), "TestAssemblyClient");
+    Adapter.spawn(untypedSystem, initialBehavior(), "TestAssemblyClient");
   }
 
   private void startSubscribingToEvents(ActorContext<TrackingEvent> ctx) {

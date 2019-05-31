@@ -2,24 +2,36 @@ package csw.qa.logging
 
 import java.net.InetAddress
 
+import akka.actor
 import akka.actor._
-import akka.stream.ActorMaterializer
+import akka.actor.typed.{ActorSystem, SpawnProtocol}
+import akka.stream.Materializer
+import akka.stream.typed.scaladsl.ActorMaterializer
+import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
+
+import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 /**
   * An test application that uses the logging service
   */
 object LoggingTestApp extends App {
-  implicit val system: ActorSystem = ActorSystem("LoggingTest")
   private val host = InetAddress.getLocalHost.getHostName
-  LoggingSystemFactory.start("LoggingTestApp", "0.1", host, system)
+  val typedSystem = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
+  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
+  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+  implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
+
+  LoggingSystemFactory.start("LoggingTestApp", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
+
+  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
 
   log.debug("Started LoggingTestApp")
 
-  implicit val mat: ActorMaterializer = ActorMaterializer()
 
   case class Options(numActors: Int = 1, autostop: Int = 0, autoshutdown: Int = 0,
                      delay: Int = 1000)
@@ -63,20 +75,19 @@ object LoggingTestApp extends App {
 
   private def run(options: Options): Unit = {
     import options._
-    import system.dispatcher
     if (options.autoshutdown != 0)
-      system.scheduler.scheduleOnce(autoshutdown.seconds) {
+      typedSystem.scheduler.scheduleOnce(autoshutdown.seconds) {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         for {
         //          _ <- loggingSystem.stop
-          _ <- system.terminate()
+          _ <- untypedSystem.terminate()
         } {
           println("Shutdown complete")
         }
       }
 
     for (i <- 0 until numActors) {
-      system.actorOf(LoggingTest.props(i, options))
+      untypedSystem.actorOf(LoggingTest.props(i, options))
     }
   }
 }

@@ -5,10 +5,11 @@ import java.net.InetAddress
 import java.nio.file.Paths
 import java.time.Instant
 
-import akka.actor.ActorSystem
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
-import akka.stream.ActorMaterializer
+import akka.actor
+import akka.actor.typed.{ActorSystem, SpawnProtocol}
+import akka.stream.typed.scaladsl.ActorMaterializer
 import csw.aas.installed.InstalledAppAuthAdapterFactory
 import csw.aas.installed.api.InstalledAppAuthAdapter
 import csw.aas.installed.scaladsl.FileAuthStore
@@ -16,9 +17,12 @@ import csw.config.api.TokenFactory
 import csw.config.api.models.ConfigData
 import csw.config.api.scaladsl.{ConfigClientService, ConfigService}
 import csw.config.client.scaladsl.ConfigClientFactory
-import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import akka.actor.typed.scaladsl.adapter._
+import akka.stream.Materializer
+
+import scala.concurrent.ExecutionContextExecutor
 
 /**
   * Some tests for the config service.
@@ -27,7 +31,6 @@ import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
   * csw cluster environment variables or system properties are defined.
   */
 class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
-  private val log = GenericLoggerFactory.getLogger
   private val path1 = new File(s"some/test1/TestConfig1").toPath
   private val path2 = new File(s"some/test2/TestConfig2").toPath
 
@@ -39,16 +42,17 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   private val comment2 = "update 1 comment"
   private val comment3 = "update 2 comment"
 
-  implicit val actorSystem: ActorSystem = ActorSystemFactory.remote
-
-  import actorSystem.dispatcher
-
-  implicit val mat: ActorMaterializer = ActorMaterializer()
-  private val locationService =
-    HttpLocationServiceFactory.makeLocalClient(actorSystem, mat)
   private val host = InetAddress.getLocalHost.getHostName
+  val typedSystem = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
+  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
+  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+  implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
 
-  LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, actorSystem)
+  LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, typedSystem)
+  private val log = GenericLoggerFactory.getLogger
+
+  private val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
+
 
   private val `auth-store-dir` = "/tmp/config-cli/auth"
   private val authStorePath = Paths.get(`auth-store-dir`)
@@ -66,7 +70,7 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
 
   val tokenFactory: TokenFactory = new CliTokenFactory
   val configService: ConfigService =
-    ConfigClientFactory.adminApi(actorSystem, locationService, tokenFactory)
+    ConfigClientFactory.adminApi(typedSystem, locationService, tokenFactory)
 
   override def afterAll() {}
 
