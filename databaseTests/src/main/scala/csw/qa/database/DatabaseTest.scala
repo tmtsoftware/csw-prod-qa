@@ -2,10 +2,9 @@ package csw.qa.database
 
 import java.net.InetAddress
 
-import akka.actor.typed.javadsl.Adapter
+import akka.actor.typed.{ActorSystem, SpawnProtocol}
 import akka.stream.ActorMaterializer
 import csw.database.DatabaseServiceFactory
-import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import org.jooq.DSLContext
@@ -17,11 +16,8 @@ import scala.concurrent.duration._
 
 object DatabaseTest extends App {
   private val host = InetAddress.getLocalHost.getHostName
-  implicit val system: akka.actor.ActorSystem = ActorSystemFactory.remote
-
-  import system._
-
-  private val typedSystem = Adapter.toTyped(system)
+  val system = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
+//  implicit val x = system.d
   LoggingSystemFactory.start("DatabaseTest", "0.1", host, system)
   private val log = GenericLoggerFactory.getLogger
   implicit val mat: ActorMaterializer = ActorMaterializer()
