@@ -2,13 +2,15 @@ package csw.qa.framework
 
 import java.net.InetAddress
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.actor
 import akka.actor.typed
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorSystem, Behavior, SpawnProtocol}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter._
+import akka.stream.Materializer
+import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.util.Timeout
+
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
@@ -16,30 +18,34 @@ import csw.event.client.EventServiceFactory
 import csw.location.api.models.ComponentType.Assembly
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models._
-import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.{CommandName, Setup}
-import csw.params.core.generics.{Key, KeyType}
+import csw.params.core.generics.KeyType
 import csw.params.core.models.{ObsId, Prefix}
-import csw.params.events.{Event, EventKey, EventName, SystemEvent}
+import csw.params.events.{Event, EventKey, SystemEvent}
+import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 // A client to test locating and communicating with the Test assembly
 object TestAssemblyClient extends App {
 
-  implicit val system: ActorSystem = ActorSystemFactory.remote("TestAssemblyClient")
-  import system.dispatcher
-
-  implicit val mat: ActorMaterializer = ActorMaterializer()
-  private val locationService = HttpLocationServiceFactory.makeLocalClient(system, mat)
   private val host = InetAddress.getLocalHost.getHostName
-  LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, system)
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
+  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
+  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+  implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
+
+  LoggingSystemFactory.start("TestAssemblyClient", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
   log.info("Starting TestAssemblyClient")
+
+  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
+
+  implicit val timeout: Timeout = Timeout(3.seconds)
 
   // Key for events from assembly
   private val assemblyEventValueKey = TestAssemblyWorker.eventKey
@@ -99,7 +105,7 @@ object TestAssemblyClient extends App {
     subscriber.subscribeActorRef(Set(assemblyEventKey), eventHandler)
   }
 
-  system.spawn(initialBehavior, "TestAssemblyClient")
+  typedSystem.spawn(initialBehavior, "TestAssemblyClient")
 
   def initialBehavior: Behavior[TrackingEvent] =
     Behaviors.setup { ctx =>
