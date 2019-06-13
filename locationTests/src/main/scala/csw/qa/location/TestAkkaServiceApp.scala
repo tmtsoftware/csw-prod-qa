@@ -2,11 +2,9 @@ package csw.qa.location
 
 import java.net.InetAddress
 
-import akka.actor
 import akka.actor.typed.{ActorSystem, SpawnProtocol}
 import akka.stream.Materializer
 import akka.stream.typed.scaladsl.ActorMaterializer
-import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
@@ -30,9 +28,8 @@ object TestAkkaServiceApp extends App {
 
   private val host = InetAddress.getLocalHost.getHostName
   implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "TestAkkaServiceApp")
-  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
   implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
-  implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
+  implicit lazy val ec: ExecutionContextExecutor            = typedSystem.executionContext
 
   LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
@@ -99,8 +96,6 @@ object TestAkkaServiceApp extends App {
     import options._
 
     for (i <- firstService until firstService + numServices) {
-      Thread.sleep(delay) // Avoid timeouts?
-      // Note: Need to start with the untyped system in order to have mixed typed/untyped actors!
       typedSystem.spawn(TestAkkaService.behavior(i, options, locationService), s"TestAkkaService$i")
       if (startSecond)
         typedSystem.spawn(TestAkkaService2.behavior(i, options, locationService), s"TestAkkaService2$i")

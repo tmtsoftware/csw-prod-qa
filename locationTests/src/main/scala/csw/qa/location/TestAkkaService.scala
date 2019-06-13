@@ -13,14 +13,14 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 
 object TestAkkaService {
-  // Behaviour of the ith service
+  // Behavior of the ith service
   def behavior(i: Int, options: TestAkkaServiceApp.Options,
                locationService: LocationService): Behavior[ServiceMessageType] =
     Behaviors.withTimers(timers => Behaviors.setup[ServiceMessageType](ctx ⇒
       new TestAkkaService(ctx, timers, i, options, locationService)))
 
   // Component ID of the ith service
-  def componentId(i: Int) = ComponentId(s"TestAkkaService_$i", ComponentType.Assembly)
+  def componentId(i: Int) = ComponentId(s"TestAkkaService_$i", ComponentType.Service)
 
   // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
@@ -72,14 +72,14 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
 // ---- test second component -----
 
 object TestAkkaService2 {
-  // Behaviour of the ith service
+  // Behavior of the ith service
   def behavior(i: Int, options: TestAkkaServiceApp.Options,
                locationService: LocationService): Behavior[ServiceMessageType] =
     Behaviors.withTimers(timers => Behaviors.setup[ServiceMessageType]( ctx ⇒
       new TestAkkaService2(ctx, timers, i, options, locationService)))
 
   // Component ID of the ith service
-  def componentId(i: Int) = ComponentId(s"TestAkkaService2_$i", ComponentType.Assembly)
+  def componentId(i: Int) = ComponentId(s"TestAkkaService2_$i", ComponentType.Service)
 
   // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))

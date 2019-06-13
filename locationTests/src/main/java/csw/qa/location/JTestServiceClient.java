@@ -2,6 +2,7 @@ package csw.qa.location;
 
 import akka.actor.*;
 import akka.actor.typed.SpawnProtocol;
+import akka.actor.typed.internal.adapter.ActorSystemAdapter;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.typed.javadsl.Adapter;
@@ -73,14 +74,14 @@ public class JTestServiceClient extends AbstractActor {
     if (args.length != 0)
       numServices = Integer.valueOf(args[0]);
 
-    akka.actor.typed.ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestAkkaService");
-    akka.actor.ActorSystem untypedSystem = ActorSystemFactory.remote();
+    akka.actor.typed.ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestServiceClient");
+    akka.actor.ActorSystem untypedSystem = ActorSystemAdapter.toUntyped(typedSystem);
     ActorMaterializer mat = ActorMaterializer.create(untypedSystem);
     ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem, mat);
 
     // Start the logging service
     String host = InetAddress.getLocalHost().getHostName();
-    LoggingSystemFactory.start("JTestAkkaService", "0.1", host, typedSystem);
+    LoggingSystemFactory.start("JTestServiceClient", "0.1", host, typedSystem);
 
     untypedSystem.actorOf(JTestServiceClient.props(numServices, locationService));
   }

@@ -22,10 +22,7 @@ object Settings {
     updateOptions := updateOptions.value.withLatestSnapshots(false)
   )
 
-  lazy val defaultSettings = buildSettings ++ Seq(
-  )
-
-  lazy val appSettings = defaultSettings ++ Seq(
+  lazy val appSettings = buildSettings ++ Seq(
     bashScriptExtraDefines ++= Seq(s"addJava -DVERSION=$Version")
   )
 }

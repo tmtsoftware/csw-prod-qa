@@ -1,10 +1,11 @@
 package csw.qa.location;
 
-import akka.actor.AbstractActor;
-import akka.actor.Props;
+import akka.actor.typed.ActorSystem;
+import akka.actor.typed.Behavior;
 import akka.actor.typed.SpawnProtocol;
-import akka.actor.typed.javadsl.Adapter;
-import akka.stream.ActorMaterializer;
+import akka.actor.typed.javadsl.*;
+import akka.stream.Materializer;
+import akka.stream.typed.javadsl.ActorMaterializerFactory;
 import csw.framework.scaladsl.RegistrationFactory;
 import csw.location.api.javadsl.ILocationService;
 import csw.location.api.javadsl.JComponentType;
@@ -28,9 +29,9 @@ import java.net.UnknownHostException;
  * will try to find all the services.
  * The client and service applications can be run on the same or different hosts.
  */
-public class JTestAkkaService extends AbstractActor {
+public class JTestAkkaService extends AbstractBehavior<ClientMessage> {
 
-  private ILogger log = JGenericLoggerFactory.getLogger(context(), getClass());
+  private final ILogger log;
 
   // Component id for the ith service
   static ComponentId componentId(int i) {
@@ -42,42 +43,49 @@ public class JTestAkkaService extends AbstractActor {
     return new Connection.AkkaConnection(componentId(i));
   }
 
-  // Used to create the ith JTestAkkaService actor
-  private static Props props(int i, ILocationService locationService) {
-    return Props.create(JTestAkkaService.class, () -> new JTestAkkaService(i, locationService));
-  }
-
-  // Constructor: registers self with the location service
-  private JTestAkkaService(int i, ILocationService locationService) {
+  private JTestAkkaService(ActorContext<ClientMessage> context, int i, ILocationService locationService) {
+    log = JGenericLoggerFactory.getLogger(context, getClass());
     RegistrationFactory registrationFactory = new RegistrationFactory();
-    locationService.register(registrationFactory.akkaTyped(JTestAkkaService.connection(i), new Prefix("test.prefix"), Adapter.toTyped(self())));
+    locationService.register(registrationFactory.akkaTyped(JTestAkkaService.connection(i), new Prefix("test.prefix"), context.getSelf()));
   }
 
   @Override
-  public Receive createReceive() {
-    return receiveBuilder()
-        .match(ClientMessage.class, loc -> log.info("Received java client message from: " + sender()))
-        .matchAny(t -> log.warn("Unknown message received: " + t))
-        .build();
+  public Receive<ClientMessage> createReceive() {
+    return newReceiveBuilder().onMessage(
+        ClientMessage.class,
+        msg -> {
+          log.info("Received java client message from: " + msg.replyTo());
+          return this;
+        }).build();
+  }
+
+  private static Behavior<ClientMessage> behavior(int i, ILocationService locationService) {
+    return Behaviors.setup(ctx -> new JTestAkkaService(ctx, i, locationService));
   }
 
   // main: Starts and registers the given number of services (default: 1)
   public static void main(String[] args) throws UnknownHostException {
-    int numServices = 1;
+    final int numServices;
     if (args.length != 0)
       numServices = Integer.valueOf(args[0]);
+    else
+      numServices = 1;
 
-    akka.actor.typed.ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestAkkaService");
-    akka.actor.ActorSystem untypedSystem = ActorSystemFactory.remote();
-    ActorMaterializer mat = ActorMaterializer.create(untypedSystem);
+    ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestAkkaService");
+    Materializer mat = ActorMaterializerFactory.create(typedSystem);
     ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem, mat);
 
     // Start the logging service
     String host = InetAddress.getLocalHost().getHostName();
     LoggingSystemFactory.start("JTestAkkaService", "0.1", host, typedSystem);
 
-    for (int i = 1; i <= numServices; i++)
-      untypedSystem.actorOf(JTestAkkaService.props(i, locationService));
+    Behaviors.setup(
+        context -> {
+          for (int i = 1; i <= numServices; i++)
+            context.spawnAnonymous(JTestAkkaService.behavior(i, locationService));
+          return Behaviors.same();
+        }
+    );
   }
 }
 

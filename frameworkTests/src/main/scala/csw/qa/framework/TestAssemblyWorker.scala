@@ -20,15 +20,15 @@ import csw.location.api.models.{
 import csw.logging.api.scaladsl.Logger
 import csw.params.commands.CommandResponse.Error
 import csw.params.commands.{ControlCommand, Setup}
+import csw.params.core.generics.KeyType.CoordKey
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.{Id, Prefix, Struct, Subsystem}
-import csw.params.events._
+import csw.params.core.models.{Angle, Coords, Id, Prefix, ProperMotion, Struct, Subsystem}
+import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
 import org.jooq.DSLContext
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 object TestAssemblyWorker {
@@ -60,7 +60,7 @@ object TestAssemblyWorker {
   private val hcdEventName = EventName("myHcdEvent")
   private val hcdPrefix = Prefix("test.hcd")
 
-  // Dummy key for publishing events from assembly
+  // Keys for publishing events from assembly
   private[framework] val eventKey: Key[Float] =
     KeyType.FloatKey.make("assemblyEventValue")
   private[framework] val eventKey2: Key[Struct] =
@@ -70,11 +70,12 @@ object TestAssemblyWorker {
   private[framework] val eventKey4: Key[Byte] =
     KeyType.ByteKey.make("assemblyEventStructValue4")
   private[framework] val eventName = EventName("myAssemblyEvent")
+  private[framework] val basePosKey  = CoordKey.make("BasePosition")
 
   // Actor to receive HCD events
-  private def eventHandler(log: Logger,
-                           publisher: EventPublisher,
-                           baseEvent: SystemEvent): Behavior[Event] =
+  private def eventHandler(log: Logger, publisher: EventPublisher, baseEvent: SystemEvent): Behavior[Event] = {
+    import Angle._
+    import Coords._
     Behaviors.receive { (_, msg) =>
       msg match {
         case e: SystemEvent =>
@@ -83,8 +84,18 @@ object TestAssemblyWorker {
               val eventValue = p.head
               log.info(s"Received event with value: $eventValue")
               // fire a new event from the assembly based on the one from the HCD
+
+              val pm = ProperMotion(0.5, 2.33)
+              val eqCoord = EqCoord(ra = "12:13:14.15", dec = "-30:31:32.3", frame = FK5, pmx = pm.pmx, pmy = pm.pmy)
+              val solarSystemCoord = SolarSystemCoord(Tag("BASE"), Venus)
+              val minorPlanetCoord = MinorPlanetCoord(Tag("GUIDER1"), 2000, 90.degree, 2.degree, 100.degree, 1.4, 0.234, 220.degree)
+              val cometCoord = CometCoord(Tag("BASE"), 2000.0, 90.degree, 2.degree, 100.degree, 1.4, 0.234)
+              val altAzCoord = AltAzCoord(Tag("BASE"), 301.degree, 42.5.degree)
+              val posParam = basePosKey.set(eqCoord, solarSystemCoord, minorPlanetCoord, cometCoord, altAzCoord)
+
               val e = baseEvent
                 .copy(eventId = Id(), eventTime = UTCTime.now())
+                .add(posParam)
                 .add(eventKey.set(1.0f / eventValue, 2.0f, 3.0f))
                 .add(eventKey2.set(
                   Struct()
@@ -101,6 +112,7 @@ object TestAssemblyWorker {
         case _ => throw new RuntimeException("Expected SystemEvent")
       }
     }
+  }
 
   // --- Alarms ---
   val alarmKey = AlarmKey(Subsystem.TEST, "testComponent", "testAlarm")
@@ -112,6 +124,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
 
   import cswCtx._
   import TestAssemblyWorker._
+  import scala.concurrent.duration._
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   implicit val timeout: Timeout = Timeout(3.seconds)
@@ -178,6 +191,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
 
   // For testing, forward command to HCD and complete this command when it completes
   private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
+    import scala.concurrent.duration._
     implicit val scheduler: Scheduler = ctx.system.scheduler
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.map { hcd =>

@@ -1,12 +1,13 @@
 package csw.qa.framework;
 
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SpawnProtocol;
 import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
+import akka.stream.typed.javadsl.ActorMaterializerFactory;
 import akka.util.Timeout;
 import csw.command.api.javadsl.ICommandService;
 import csw.command.client.CommandServiceFactory;
@@ -62,26 +63,20 @@ public class JTestAssemblyClient {
   private static final Key<String> filterKey = JKeyType.StringKey().make("filter");
   private static final Prefix prefix = new Prefix("wfos.blue.filter");
   private static final CommandName command = new CommandName("myCommand");
-
-
   private static final ComponentId componentId = new ComponentId("TestAssembly", JComponentType.Assembly);
-
   private static final Connection.AkkaConnection connection = new Connection.AkkaConnection(componentId);
 
-
-  private akka.actor.typed.ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestAkkaService");
-  private akka.actor.ActorSystem untypedSystem = ActorSystemFactory.remote();
-  private ActorMaterializer mat = ActorMaterializer.create(untypedSystem);
+  private final ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestAssemblyClient");
+  private final Materializer mat = ActorMaterializerFactory.create(typedSystem);
   private ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem, mat);
   private final ILogger log = JGenericLoggerFactory.getLogger(JTestAssemblyClient.class);
-
   private final IEventService eventService = (new EventServiceFactory()).jMake(locationService, typedSystem);
-
 
   // Actor to receive HCD events
   private Behavior<Event> eventHandler() {
     return Behaviors.receive(Event.class)
         .onMessage(SystemEvent.class, (ctx, e) -> {
+          log.info("XXX Got an event " + e);
           e.jGet(assemblyEventValueKey)
               .ifPresent(p -> {
                 Integer eventValue = p.head();
@@ -102,12 +97,18 @@ public class JTestAssemblyClient {
     String host = InetAddress.getLocalHost().getHostName();
     LoggingSystemFactory.start("JTestAssemblyClient", "0.1", host, typedSystem);
 
-    Adapter.spawn(untypedSystem, initialBehavior(), "TestAssemblyClient");
+    Behaviors.setup(
+        context -> {
+          context.spawn(initialBehavior(), "TestAssemblyClient");
+          return Behaviors.same();
+        }
+    );
   }
 
   private void startSubscribingToEvents(ActorContext<TrackingEvent> ctx) {
+    log.info("XXX Subscribing to events");
     IEventSubscriber subscriber = eventService.defaultSubscriber();
-    ActorRef<Event> eventHandler = ctx.spawn(eventHandler(), "EventHandler");
+    ActorRef<Event> eventHandler = ctx.spawnAnonymous(eventHandler());
     subscriber.subscribeActorRef(Collections.singleton(assemblyEventKey), eventHandler);
   }
 
