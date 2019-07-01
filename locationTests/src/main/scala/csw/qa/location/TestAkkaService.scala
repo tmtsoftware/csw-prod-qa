@@ -3,11 +3,14 @@ package csw.qa.location
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
 import csw.framework.scaladsl.RegistrationFactory
-import csw.location.api.models.Connection.AkkaConnection
-import csw.location.api.models.{ComponentId, ComponentType}
+import csw.location.api.codecs.LocationCodecs
+import csw.location.api.models.Connection.{AkkaConnection, HttpConnection}
+import csw.location.api.models.{ComponentId, ComponentType, HttpRegistration}
 import csw.location.api.scaladsl.LocationService
+import csw.location.client.HttpCodecs
 import csw.logging.client.scaladsl.GenericLoggerFactory
 import csw.params.core.models.Prefix
+import io.bullet.borer.Json
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -36,7 +39,7 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       timers: TimerScheduler[ServiceMessageType],
                       i: Int, options: TestAkkaServiceApp.Options,
                       locationService: LocationService)
-  extends AbstractBehavior[ServiceMessageType] {
+  extends AbstractBehavior[ServiceMessageType] with HttpCodecs with LocationCodecs {
 
   import options._
 
@@ -51,6 +54,20 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
 
   if (autostop != 0)
     timers.startSingleTimer(TestAkkaService.TimerKey, Quit, autostop.seconds)
+
+
+  // XXX TEMP XXX
+    implicit def actorSystem = ctx.system
+
+    val componentId = ComponentId("rmyservice", ComponentType.Service)
+    val connection  = HttpConnection(componentId)
+
+    private val Path = "myservice/test"
+    private val Port = 9999
+    val registration                           = HttpRegistration(connection, Port, Path)
+    println("XXX Registration JSON: " + Json.encode(registration).toUtf8String)
+    println("XXX Connection JSON: " + Json.encode(connection).toUtf8String)
+
 
   override def onMessage(msg: ServiceMessageType): Behavior[ServiceMessageType] = {
     msg match {

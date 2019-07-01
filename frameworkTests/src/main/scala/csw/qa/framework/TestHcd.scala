@@ -1,24 +1,32 @@
 package csw.qa.framework
 
-import akka.actor.Cancellable
+import akka.actor.{ActorSystem, Cancellable}
 import akka.actor.typed.scaladsl.ActorContext
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, StatusCodes}
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.typed.scaladsl.ActorMaterializer
+import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import csw.command.client.messages.TopLevelActorMessage
 import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.api.models.TrackingEvent
+import csw.location.api.models.Connection.HttpConnection
+import csw.location.api.models.{ComponentId, ComponentType, TrackingEvent}
 import csw.params.commands.CommandResponse.{Completed, Error, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Id
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
+import io.bullet.borer.Cbor
 
 import scala.concurrent.duration._
 import scala.async.Async._
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.util.Random
 
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
@@ -61,11 +69,52 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   var submitCount = 0
 
+
+  // Test connection to pycsw based service
+  def pycswTest(setup: Setup): Unit = {
+    import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
+    import csw.params.core.formats.ParamCodecs._
+    implicit val sys: ActorSystem = ctx.system.toUntyped
+    implicit val mat: Materializer = ActorMaterializer()(ctx.system)
+
+    def concatByteStrings(source: Source[ByteString, _]): Future[ByteString] = {
+      val sink = Sink.fold[ByteString, ByteString](ByteString()) { case (acc, bs) =>
+        acc ++ bs
+      }
+      source.runWith(sink)
+    }
+
+    val maybeLocation = Await.result(cswCtx.locationService.find(HttpConnection(ComponentId("pycswTest", ComponentType.Service))), 2.seconds)
+    maybeLocation.foreach {loc =>
+      val host = loc.uri.getHost
+      val port = loc.uri.getPort
+      val uri = s"http://$host:$port/submit"
+      val byteArray = Cbor.encode(setup).toByteArray
+
+      val response = Await.result(
+        Http(sys).singleRequest(
+          HttpRequest(HttpMethods.POST, uri,
+            entity = HttpEntity(ContentTypes.`application/octet-stream`, byteArray)
+          )
+        ), 3.seconds)
+      if (response.status == StatusCodes.OK) {
+        log.info(s"pycsw response: $response")
+        val bs = Await.result(concatByteStrings(response.entity.dataBytes), 1.second)
+        val commandResponse = Cbor.decode(bs.toArray).to[CommandResponse.RemoteMsg].value
+        log.info(s"pycsw commandResponse = $commandResponse")
+      } else {
+        log.error(s"pycsw error response: $response")
+      }
+    }
+  }
+
   override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
     log.debug(s"onSubmit called: $controlCommand")
 
     controlCommand match {
-      case _: Setup =>
+      case setup: Setup =>
+        pycswTest(setup)
+
         if (submitCount != 3)
           Completed(controlCommand.runId)
         else

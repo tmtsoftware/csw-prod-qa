@@ -138,8 +138,9 @@ object TestAssemblyClient extends App {
     val i1 = encoderKey.set(encoder)
     val i2 = filterKey.set(filter)
     implicit val timeout: Timeout = Timeout(3.seconds)
-    Setup(prefix, command, Some(obsId)).add(i1).add(i2)
+    val setup = Setup(prefix, command, Some(obsId)).add(i1).add(i2)
 
+    setup
   }
 
   private def interact(ctx: ActorContext[TrackingEvent], assembly: CommandService): Unit = {
