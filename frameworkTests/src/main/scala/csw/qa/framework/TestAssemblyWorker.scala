@@ -22,7 +22,15 @@ import csw.params.commands.CommandResponse.Error
 import csw.params.commands.{ControlCommand, Setup}
 import csw.params.core.generics.KeyType.CoordKey
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.{Angle, Coords, Id, Prefix, ProperMotion, Struct, Subsystem}
+import csw.params.core.models.{
+  Angle,
+  Coords,
+  Id,
+  Prefix,
+  ProperMotion,
+  Struct,
+  Subsystem
+}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
 import org.jooq.DSLContext
@@ -38,10 +46,10 @@ object TestAssemblyWorker {
   case class Initialize(replyTo: ActorRef[Unit]) extends TestAssemblyWorkerMsg
 
   case class Submit(controlCommand: ControlCommand)
-    extends TestAssemblyWorkerMsg
+      extends TestAssemblyWorkerMsg
 
   case class Location(trackingEvent: TrackingEvent)
-    extends TestAssemblyWorkerMsg
+      extends TestAssemblyWorkerMsg
 
   case object RefreshAlarms extends TestAssemblyWorkerMsg
 
@@ -70,10 +78,12 @@ object TestAssemblyWorker {
   private[framework] val eventKey4: Key[Byte] =
     KeyType.ByteKey.make("assemblyEventStructValue4")
   private[framework] val eventName = EventName("myAssemblyEvent")
-  private[framework] val basePosKey  = CoordKey.make("BasePosition")
+  private[framework] val basePosKey = CoordKey.make("BasePosition")
 
   // Actor to receive HCD events
-  private def eventHandler(log: Logger, publisher: EventPublisher, baseEvent: SystemEvent): Behavior[Event] = {
+  private def eventHandler(log: Logger,
+                           publisher: EventPublisher,
+                           baseEvent: SystemEvent): Behavior[Event] = {
     import Angle._
     import Coords._
     Behaviors.receive { (_, msg) =>
@@ -86,26 +96,57 @@ object TestAssemblyWorker {
               // fire a new event from the assembly based on the one from the HCD
 
               val pm = ProperMotion(0.5, 2.33)
-              val eqCoord = EqCoord(ra = "12:13:14.15", dec = "-30:31:32.3", frame = FK5, pmx = pm.pmx, pmy = pm.pmy)
+              val eqCoord = EqCoord(
+                ra = "12:13:14.15",
+                dec = "-30:31:32.3",
+                frame = FK5,
+                pmx = pm.pmx,
+                pmy = pm.pmy
+              )
               val solarSystemCoord = SolarSystemCoord(Tag("BASE"), Venus)
-              val minorPlanetCoord = MinorPlanetCoord(Tag("GUIDER1"), 2000, 90.degree, 2.degree, 100.degree, 1.4, 0.234, 220.degree)
-              val cometCoord = CometCoord(Tag("BASE"), 2000.0, 90.degree, 2.degree, 100.degree, 1.4, 0.234)
+              val minorPlanetCoord = MinorPlanetCoord(
+                Tag("GUIDER1"),
+                2000,
+                90.degree,
+                2.degree,
+                100.degree,
+                1.4,
+                0.234,
+                220.degree
+              )
+              val cometCoord = CometCoord(
+                Tag("BASE"),
+                2000.0,
+                90.degree,
+                2.degree,
+                100.degree,
+                1.4,
+                0.234
+              )
               val altAzCoord = AltAzCoord(Tag("BASE"), 301.degree, 42.5.degree)
-              val posParam = basePosKey.set(eqCoord, solarSystemCoord, minorPlanetCoord, cometCoord, altAzCoord)
+              val posParam = basePosKey.set(
+                eqCoord,
+                solarSystemCoord,
+                minorPlanetCoord,
+                cometCoord,
+                altAzCoord
+              )
 
               val e = baseEvent
                 .copy(eventId = Id(), eventTime = UTCTime.now())
                 .add(posParam)
                 .add(eventKey.set(1.0f / eventValue, 2.0f, 3.0f))
-                .add(eventKey2.set(
-                  Struct()
-                  .add(eventKey.set(1.0f / eventValue))
-                  .add(eventKey3.set(eventValue, 1, 2, 3)),
-                  Struct()
-                  .add(eventKey.set(2.0f / eventValue))
-                  .add(eventKey3.set(eventValue, 4, 5, 6))
-                  .add(eventKey4.set(9.toByte, 10.toByte)
-                )))
+                .add(
+                  eventKey2.set(
+                    Struct()
+                      .add(eventKey.set(1.0f / eventValue))
+                      .add(eventKey3.set(eventValue, 1, 2, 3)),
+                    Struct()
+                      .add(eventKey.set(2.0f / eventValue))
+                      .add(eventKey3.set(eventValue, 4, 5, 6))
+                      .add(eventKey4.set(9.toByte, 10.toByte))
+                  )
+                )
               publisher.publish(e)
             }
           Behaviors.same
@@ -120,7 +161,7 @@ object TestAssemblyWorker {
 
 class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
                          cswCtx: CswContext)
-  extends AbstractBehavior[TestAssemblyWorkerMsg] {
+    extends AbstractBehavior[TestAssemblyWorkerMsg] {
 
   import cswCtx._
   import TestAssemblyWorker._
@@ -142,7 +183,8 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   private val hcdEventKey = EventKey(hcdPrefix, hcdEventName)
 
   override def onMessage(
-                          msg: TestAssemblyWorkerMsg): Behavior[TestAssemblyWorkerMsg] = {
+      msg: TestAssemblyWorkerMsg
+  ): Behavior[TestAssemblyWorkerMsg] = {
     msg match {
       case Initialize(replyTo) =>
         async {
@@ -154,7 +196,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
           //          ctx.self ! SetDatabase(dsl)
           replyTo.tell(())
         }.onComplete {
-          case Success(_) => log.info("Initialized")
+          case Success(_)  => log.info("Initialized")
           case Failure(ex) => log.error("Initialize failed", ex = ex)
         }
       case SetDatabase(dsl) =>
@@ -165,8 +207,9 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
         trackingEvent match {
           case LocationUpdated(location) =>
             testHcd = Some(
-              CommandServiceFactory.make(location.asInstanceOf[AkkaLocation])(
-                ctx.system))
+              CommandServiceFactory
+                .make(location.asInstanceOf[AkkaLocation])(ctx.system)
+            )
           case LocationRemoved(_) =>
             testHcd = None
         }
@@ -195,12 +238,14 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     implicit val scheduler: Scheduler = ctx.system.scheduler
     implicit val timeout: Timeout = Timeout(3.seconds)
     testHcd.map { hcd =>
-      val setup = Setup(controlCommand.source,
+      val setup = Setup(
+        controlCommand.source,
         controlCommand.commandName,
         controlCommand.maybeObsId,
-        controlCommand.paramSet)
-      cswCtx.commandResponseManager.addSubCommand(controlCommand.runId,
-        setup.runId)
+        controlCommand.paramSet
+      )
+      cswCtx.commandResponseManager
+        .addSubCommand(controlCommand.runId, setup.runId)
 
       val f = for {
         response <- hcd.submit(setup)

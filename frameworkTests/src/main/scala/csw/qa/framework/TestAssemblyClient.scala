@@ -3,7 +3,6 @@ package csw.qa.framework
 import java.net.InetAddress
 
 import akka.actor
-import akka.actor.typed
 import akka.actor.typed.{ActorSystem, Behavior, SpawnProtocol}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter._
@@ -34,7 +33,7 @@ import scala.util.{Failure, Success}
 object TestAssemblyClient extends App {
 
   private val host = InetAddress.getLocalHost.getHostName
-  implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
+  implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "TestAssemblyClient")
   implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
   implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
   implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
@@ -121,7 +120,6 @@ object TestAssemblyClient extends App {
       msg match {
         case LocationUpdated(loc) =>
           log.info(s"LocationUpdated: $loc")
-          implicit val sys: typed.ActorSystem[Nothing] = ctx.system
           interact(ctx, CommandServiceFactory.make(loc.asInstanceOf[AkkaLocation]))
         case LocationRemoved(loc) =>
           log.info(s"LocationRemoved: $loc")

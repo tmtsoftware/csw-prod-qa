@@ -76,6 +76,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     import csw.params.core.formats.ParamCodecs._
     implicit val sys: ActorSystem = ctx.system.toUntyped
     implicit val mat: Materializer = ActorMaterializer()(ctx.system)
+    log.info("XXX pycsw test")
 
     def concatByteStrings(source: Source[ByteString, _]): Future[ByteString] = {
       val sink = Sink.fold[ByteString, ByteString](ByteString()) { case (acc, bs) =>
@@ -86,6 +87,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
 
     val maybeLocation = Await.result(cswCtx.locationService.find(HttpConnection(ComponentId("pycswTest", ComponentType.Service))), 2.seconds)
     maybeLocation.foreach {loc =>
+    log.info("pycsw test")
       val host = loc.uri.getHost
       val port = loc.uri.getPort
       val uri = s"http://$host:$port/submit"
