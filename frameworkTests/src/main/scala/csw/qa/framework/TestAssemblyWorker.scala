@@ -255,9 +255,10 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
         .addSubCommand(controlCommand.runId, setup.runId)
 
       val f = for {
+        onewayResponse <-hcd.oneway(setup)
         response <- hcd.submit(setup)
       } yield {
-        log.info(s"response = $response")
+        log.info(s"oneway response = $onewayResponse, submit response = $response")
         commandResponseManager.updateSubCommand(response)
       }
       f.recover {

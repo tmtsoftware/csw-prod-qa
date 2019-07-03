@@ -10,7 +10,11 @@ import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.api.models.Connection.HttpConnection
 import csw.location.api.models.{ComponentId, ComponentType, TrackingEvent}
-import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.CommandResponse.{
+  Error,
+  SubmitResponse,
+  ValidateCommandResponse
+}
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Id
@@ -48,8 +52,11 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private val baseEvent2 = SystemEvent(componentInfo.prefix, eventName2)
   private val baseEvent3 = SystemEvent(componentInfo.prefix, eventName3)
 
-  private val connection = HttpConnection(ComponentId("pycswTest", ComponentType.Service))
-  private val service = HttpCommandService(ctx.system, cswCtx.locationService, connection)
+  private val connection = HttpConnection(
+    ComponentId("pycswTest", ComponentType.Service)
+  )
+  private val service =
+    HttpCommandService(ctx.system, cswCtx.locationService, connection)
 
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
@@ -57,7 +64,8 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   }
 
   override def validateCommand(
-      controlCommand: ControlCommand): ValidateCommandResponse = {
+      controlCommand: ControlCommand
+  ): ValidateCommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
   }
 
@@ -68,22 +76,45 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
       case setup: Setup =>
         try {
           val commandResponse = Await.result(service.submit(setup), 5.seconds)
-          log.info(s"Response from ${connection.componentId.name}: $commandResponse")
+          log.info(s"Response from setup command to ${connection.componentId.name}: $commandResponse")
           commandResponse
         } catch {
           case e: Exception =>
-            log.error(s"Error sending command to ${service.connection.componentId.name}: $e", ex = e)
-            Error(controlCommand.runId, s"Error sending command to ${service.connection.componentId.name}: $e")
+            log.error(
+              s"Error sending command to ${service.connection.componentId.name}: $e",
+              ex = e
+            )
+            Error(
+              controlCommand.runId,
+              s"Error sending command to ${service.connection.componentId.name}: $e"
+            )
         }
 
       case x =>
         Error(controlCommand.runId, s"Unsupported command type: $x")
-
     }
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {
-    log.debug("onOneway called")
+    log.debug(s"onOneway called: $controlCommand")
+    controlCommand match {
+      case setup: Setup =>
+        try {
+          val onewayResponse = Await.result(service.oneway(setup), 5.seconds)
+          log.info(
+            s"Response from oneway command to ${connection.componentId.name}: $onewayResponse"
+          )
+        } catch {
+          case e: Exception =>
+            log.error(
+              s"Error sending oneway command to ${service.connection.componentId.name}: $e",
+              ex = e
+            )
+        }
+
+      case x =>
+        log.error(s"Unsupported command type: $x")
+    }
   }
 
   override def onShutdown(): Future[Unit] = async {
@@ -126,8 +157,10 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   }
 
   private def onError(publishFailure: PublishFailure): Unit =
-    log.error(s"Publish failed for event: [${publishFailure.event}]",
-              ex = publishFailure.cause)
+    log.error(
+      s"Publish failed for event: [${publishFailure.event}]",
+      ex = publishFailure.cause
+    )
 
 }
 
