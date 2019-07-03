@@ -9,7 +9,6 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.stream.Materializer
 import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.util.Timeout
-
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
@@ -25,7 +24,7 @@ import csw.params.core.models.{ObsId, Prefix}
 import csw.params.events.{Event, EventKey, SystemEvent}
 import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -44,10 +43,10 @@ object TestAssemblyClient extends App {
 
   val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
 
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = Timeout(10.seconds)
 
   // Key for events from assembly
-  private val assemblyEventValueKey = TestAssemblyWorker.eventKey
+  private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
   private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
   private val assemblyEventName = TestAssemblyWorker.eventName
   private val assemblyPrefix = Prefix("test.assembly")
@@ -135,17 +134,18 @@ object TestAssemblyClient extends App {
   private def makeSetup(encoder: Int, filter: String): Setup = {
     val i1 = encoderKey.set(encoder)
     val i2 = filterKey.set(filter)
-    implicit val timeout: Timeout = Timeout(3.seconds)
-    val setup = Setup(prefix, command, Some(obsId)).add(i1).add(i2)
-
-    setup
+    Setup(prefix, command, Some(obsId)).add(i1).add(i2)
   }
 
   private def interact(ctx: ActorContext[TrackingEvent], assembly: CommandService): Unit = {
-    val setups = (1 to 10).toList.map(i => makeSetup(i, s"filter$i"))
-    assembly.submitAll(setups).onComplete {
-      case Success(responses) => println(s"Test Passed: Responses = $responses")
-      case Failure(ex)        => println(s"Test Failed: $ex")
+    assembly.submit(makeSetup(0, s"filter0")).onComplete {
+      case Success(responses) => log.info(s"Single Submit Test Passed: Responses = $responses")
+      case Failure(ex)        => log.info(s"Single Submit Test Failed: $ex")
     }
+//    val setups = (1 to 10).toList.map(i => makeSetup(i, s"filter$i"))
+//    assembly.submitAll(setups).onComplete {
+//      case Success(responses) => log.info(s"Submit All Test Passed: Responses = $responses")
+//      case Failure(ex)        => log.info(s"Submit All Test Failed: $ex")
+//    }
   }
 }

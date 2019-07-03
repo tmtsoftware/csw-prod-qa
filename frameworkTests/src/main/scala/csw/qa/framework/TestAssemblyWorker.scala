@@ -11,26 +11,13 @@ import csw.command.client.CommandServiceFactory
 import csw.database.DatabaseServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
-import csw.location.api.models.{
-  AkkaLocation,
-  LocationRemoved,
-  LocationUpdated,
-  TrackingEvent
-}
+import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
 import csw.logging.api.scaladsl.Logger
 import csw.params.commands.CommandResponse.Error
-import csw.params.commands.{ControlCommand, Setup}
+import csw.params.commands.{CommandName, ControlCommand, Setup}
 import csw.params.core.generics.KeyType.CoordKey
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.{
-  Angle,
-  Coords,
-  Id,
-  Prefix,
-  ProperMotion,
-  Struct,
-  Subsystem
-}
+import csw.params.core.models.{Angle, Coords, Id, ObsId, Prefix, ProperMotion, Struct, Subsystem}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
 import org.jooq.DSLContext
@@ -69,10 +56,14 @@ object TestAssemblyWorker {
   private val hcdPrefix = Prefix("test.hcd")
 
   // Keys for publishing events from assembly
-  private[framework] val eventKey: Key[Float] =
+  private[framework] val eventKey1: Key[Float] =
+    KeyType.FloatKey.make("assemblyEventValue")
+  private[framework] val eventKey1b: Key[Float] =
     KeyType.FloatKey.make("assemblyEventValue")
   private[framework] val eventKey2: Key[Struct] =
     KeyType.StructKey.make("assemblyEventStructValue")
+  private[framework] val eventKey2b: Key[Struct] =
+    KeyType.StructKey.make("assemblyEventStructValueB")
   private[framework] val eventKey3: Key[Int] =
     KeyType.IntKey.make("assemblyEventStructValue3")
   private[framework] val eventKey4: Key[Byte] =
@@ -135,14 +126,14 @@ object TestAssemblyWorker {
               val e = baseEvent
                 .copy(eventId = Id(), eventTime = UTCTime.now())
                 .add(posParam)
-                .add(eventKey.set(1.0f / eventValue, 2.0f, 3.0f))
+                .add(eventKey1b.set(1.0f / eventValue, 2.0f, 3.0f))
                 .add(
-                  eventKey2.set(
+                  eventKey2b.set(
                     Struct()
-                      .add(eventKey.set(1.0f / eventValue))
+                      .add(eventKey1.set(1.0f / eventValue))
                       .add(eventKey3.set(eventValue, 1, 2, 3)),
                     Struct()
-                      .add(eventKey.set(2.0f / eventValue))
+                      .add(eventKey1.set(2.0f / eventValue))
                       .add(eventKey3.set(eventValue, 4, 5, 6))
                       .add(eventKey4.set(9.toByte, 10.toByte))
                   )
@@ -182,6 +173,18 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val hcdEventKey = EventKey(hcdPrefix, hcdEventName)
 
+  private val obsId = ObsId("2023-Q22-4-33")
+  private val encoderKey = KeyType.IntKey.make("encoder")
+  private val filterKey = KeyType.StringKey.make("filter")
+  private val prefix = Prefix("wfos.blue.filter")
+  private val command = CommandName("myCommand")
+
+  private def makeSetup(encoder: Int, filter: String): Setup = {
+    val i1 = encoderKey.set(encoder)
+    val i2 = filterKey.set(filter)
+    Setup(prefix, command, Some(obsId)).add(i1).add(i2)
+  }
+
   override def onMessage(
       msg: TestAssemblyWorkerMsg
   ): Behavior[TestAssemblyWorkerMsg] = {
@@ -204,12 +207,15 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
       case Submit(controlCommand) =>
         forwardCommandToHcd(controlCommand)
       case Location(trackingEvent) =>
+        log.info(s"Location updated: $trackingEvent")
         trackingEvent match {
           case LocationUpdated(location) =>
-            testHcd = Some(
-              CommandServiceFactory
-                .make(location.asInstanceOf[AkkaLocation])(ctx.system)
-            )
+            testHcd = Some(CommandServiceFactory.make(location.asInstanceOf[AkkaLocation])(ctx.system))
+            val setup = makeSetup(0, "None")
+            testHcd.get.submit(setup).onComplete {
+              case Success(responses) => log.info(s"Initial Submit Test Passed: Responses = $responses")
+              case Failure(ex)        => log.info(s"Initial Submit Test Failed: $ex")
+            }
           case LocationRemoved(_) =>
             testHcd = None
         }
@@ -224,8 +230,8 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     val publisher = eventService.defaultPublisher
     val baseEvent =
       SystemEvent(componentInfo.prefix, eventName)
-        .add(eventKey.set(0))
-        .add(eventKey2.set(Struct().add(eventKey.set(0)).add(eventKey3.set(0))))
+        .add(eventKey1.set(0))
+        .add(eventKey2.set(Struct().add(eventKey1.set(0)).add(eventKey3.set(0))))
 
     val eventHandlerActor =
       ctx.spawn(eventHandler(log, publisher, baseEvent), "eventHandlerActor")
@@ -237,6 +243,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     import scala.concurrent.duration._
     implicit val scheduler: Scheduler = ctx.system.scheduler
     implicit val timeout: Timeout = Timeout(3.seconds)
+    log.info(s"Forward command to hcd: $testHcd")
     testHcd.map { hcd =>
       val setup = Setup(
         controlCommand.source,

@@ -49,6 +49,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
   }
 
   override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
+    log.info(s"Received submit: $controlCommand")
     worker ! TestAssemblyWorker.Submit(controlCommand)
     CommandResponse.Started(controlCommand.runId)
   }
