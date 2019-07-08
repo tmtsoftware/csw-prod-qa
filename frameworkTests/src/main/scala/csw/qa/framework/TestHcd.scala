@@ -3,6 +3,7 @@ package csw.qa.framework
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.ConfigFactory
+import csw.command.client.HttpCommandService
 import csw.command.client.messages.TopLevelActorMessage
 import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
@@ -10,17 +11,12 @@ import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.api.models.Connection.HttpConnection
 import csw.location.api.models.{ComponentId, ComponentType, TrackingEvent}
-import csw.params.commands.CommandResponse.{
-  Error,
-  SubmitResponse,
-  ValidateCommandResponse
-}
+import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Id
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
-import csw.command.api.scaladsl.HttpCommandService
 
 import scala.concurrent.duration._
 import scala.async.Async._
