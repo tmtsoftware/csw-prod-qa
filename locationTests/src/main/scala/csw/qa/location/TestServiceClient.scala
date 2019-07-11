@@ -42,7 +42,9 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
         loc match {
           case loc:
             AkkaLocation => log.info(s"Received Akka Location: $loc")
-            loc.uri.toActorRef.unsafeUpcast[ServiceMessageType] ! ClientMessage(ctx.self)
+            // Note: Need to cast the actorRef.
+            // TODO: configure serialization: Search for "serialization-bindings" in the csw config files.
+//            loc.uri.toActorRef.unsafeUpcast[ServiceMessageType] ! ClientMessage(ctx.self)
           case x => log.error(s"Received unexpected location type: $x")
         }
 

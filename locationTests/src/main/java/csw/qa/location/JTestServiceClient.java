@@ -4,7 +4,6 @@ import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 import akka.stream.ActorMaterializer;
 import akka.stream.typed.javadsl.ActorMaterializerFactory;
-import csw.location.api.extensions.URIExtension;
 import csw.location.api.javadsl.ILocationService;
 import csw.location.api.models.Connection;
 import csw.location.api.models.LocationUpdated;
@@ -58,7 +57,10 @@ public class JTestServiceClient extends AbstractBehavior<ServiceClientMessageTyp
         log.info("Location updated: " + loc);
         if (loc.connection().connectionType() == AkkaType) {
           URI uri = locUpdate.location().uri();
+
+          // Note: Need to cast the actorRef.
 //          ActorRef<?> actorRef = new URIExtension.RichURI(uri).toActorRef(typedSystem);
+          // TODO: configure serialization: Search for "serialization-bindings" in the csw config files.
 //          actorRef.unsafeUpcast().tell(new ClientMessage(ctx.getSelf()));
         }
       } else {
