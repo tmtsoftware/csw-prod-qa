@@ -1,8 +1,9 @@
 package csw.qa.location
 
 import akka.stream.Materializer
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
+import csw.location.api.extensions.URIExtension.RichURI
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.location.api.scaladsl.LocationService
@@ -23,6 +24,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
   extends AbstractBehavior[ServiceClientMessageType] {
 
   import options._
+  implicit def actorSystem: ActorSystem[Nothing] = ctx.system
 
   private val log = GenericLoggerFactory.getLogger
   private val connections: Set[AkkaConnection] = (firstService until firstService + numServices).
@@ -40,7 +42,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
         loc match {
           case loc:
             AkkaLocation => log.info(s"Received Akka Location: $loc")
-            loc.actorRef.unsafeUpcast[ServiceMessageType] ! ClientMessage(ctx.self)
+            loc.uri.toActorRef.unsafeUpcast[ServiceMessageType] ! ClientMessage(ctx.self)
           case x => log.error(s"Received unexpected location type: $x")
         }
 

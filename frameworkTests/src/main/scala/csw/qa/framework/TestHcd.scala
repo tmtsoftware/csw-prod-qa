@@ -11,8 +11,12 @@ import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.api.models.Connection.HttpConnection
 import csw.location.api.models.{ComponentId, ComponentType, TrackingEvent}
-import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
-import csw.params.commands.{CommandResponse, ControlCommand, Setup}
+import csw.params.commands.CommandResponse.{
+  Error,
+  SubmitResponse,
+  ValidateCommandResponse
+}
+import csw.params.commands.{CommandResponse, ControlCommand}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Id
 import csw.params.events.{Event, EventName, SystemEvent}
@@ -60,7 +64,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   }
 
   override def validateCommand(
-      controlCommand: ControlCommand
+    controlCommand: ControlCommand
   ): ValidateCommandResponse = {
     CommandResponse.Accepted(controlCommand.runId)
   }
@@ -68,48 +72,40 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
     log.debug(s"onSubmit called: $controlCommand")
 
-    controlCommand match {
-      case setup: Setup =>
-        try {
-          val commandResponse = Await.result(service.submit(setup), 5.seconds)
-          log.info(s"Response from setup command to ${connection.componentId.name}: $commandResponse")
-          commandResponse
-        } catch {
-          case e: Exception =>
-            log.error(
-              s"Error sending command to ${service.connection.componentId.name}: $e",
-              ex = e
-            )
-            Error(
-              controlCommand.runId,
-              s"Error sending command to ${service.connection.componentId.name}: $e"
-            )
-        }
-
-      case x =>
-        Error(controlCommand.runId, s"Unsupported command type: $x")
+    try {
+      val commandResponse =
+        Await.result(service.submit(controlCommand), 5.seconds)
+      log.info(
+        s"Response from command to ${connection.componentId.name}: $commandResponse"
+      )
+      // XXX TODO FIXME
+      commandResponse.asInstanceOf[SubmitResponse]
+    } catch {
+      case e: Exception =>
+        log.error(
+          s"Error sending command to ${service.connection.componentId.name}: $e",
+          ex = e
+        )
+        Error(
+          controlCommand.runId,
+          s"Error sending command to ${service.connection.componentId.name}: $e"
+        )
     }
   }
 
   override def onOneway(controlCommand: ControlCommand): Unit = {
     log.debug(s"onOneway called: $controlCommand")
-    controlCommand match {
-      case setup: Setup =>
-        try {
-          val onewayResponse = Await.result(service.oneway(setup), 5.seconds)
-          log.info(
-            s"Response from oneway command to ${connection.componentId.name}: $onewayResponse"
-          )
-        } catch {
-          case e: Exception =>
-            log.error(
-              s"Error sending oneway command to ${service.connection.componentId.name}: $e",
-              ex = e
-            )
-        }
-
-      case x =>
-        log.error(s"Unsupported command type: $x")
+    try {
+      val onewayResponse = Await.result(service.oneway(controlCommand), 5.seconds)
+      log.info(
+        s"Response from oneway command to ${connection.componentId.name}: $onewayResponse"
+      )
+    } catch {
+      case e: Exception =>
+        log.error(
+          s"Error sending oneway command to ${service.connection.componentId.name}: $e",
+          ex = e
+        )
     }
   }
 

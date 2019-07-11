@@ -17,6 +17,8 @@ import csw.params.commands.CommandResponse.Error
 import csw.params.commands.{CommandName, ControlCommand, Setup}
 import csw.params.core.generics.KeyType.CoordKey
 import csw.params.core.generics.{Key, KeyType}
+import csw.params.core.models.Coords.EqFrame.FK5
+import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ObsId, Prefix, ProperMotion, Struct, Subsystem}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.time.core.models.UTCTime

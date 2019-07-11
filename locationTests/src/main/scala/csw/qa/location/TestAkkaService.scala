@@ -1,29 +1,39 @@
 package csw.qa.location
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
+import akka.actor.typed.{ActorSystem, Behavior}
+import akka.actor.typed.scaladsl.{
+  AbstractBehavior,
+  ActorContext,
+  Behaviors,
+  TimerScheduler
+}
 import csw.framework.scaladsl.RegistrationFactory
 import csw.location.api.codecs.LocationCodecs
 import csw.location.api.models.Connection.{AkkaConnection, HttpConnection}
-import csw.location.api.models.{ComponentId, ComponentType, HttpRegistration}
+import csw.location.api.models.{ComponentId, ComponentType}
 import csw.location.api.scaladsl.LocationService
 import csw.location.client.HttpCodecs
 import csw.logging.client.scaladsl.GenericLoggerFactory
 import csw.params.core.models.Prefix
-import io.bullet.borer.Json
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
 object TestAkkaService {
   // Behavior of the ith service
-  def behavior(i: Int, options: TestAkkaServiceApp.Options,
+  def behavior(i: Int,
+               options: TestAkkaServiceApp.Options,
                locationService: LocationService): Behavior[ServiceMessageType] =
-    Behaviors.withTimers(timers => Behaviors.setup[ServiceMessageType](ctx ⇒
-      new TestAkkaService(ctx, timers, i, options, locationService)))
+    Behaviors.withTimers(
+      timers =>
+        Behaviors.setup[ServiceMessageType](
+          ctx ⇒ new TestAkkaService(ctx, timers, i, options, locationService)
+      )
+    )
 
   // Component ID of the ith service
-  def componentId(i: Int) = ComponentId(s"TestAkkaService_$i", ComponentType.Service)
+  def componentId(i: Int) =
+    ComponentId(s"TestAkkaService_$i", ComponentType.Service)
 
   // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
@@ -37,39 +47,44 @@ object TestAkkaService {
   */
 class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       timers: TimerScheduler[ServiceMessageType],
-                      i: Int, options: TestAkkaServiceApp.Options,
+                      i: Int,
+                      options: TestAkkaServiceApp.Options,
                       locationService: LocationService)
-  extends AbstractBehavior[ServiceMessageType] with HttpCodecs with LocationCodecs {
+    extends AbstractBehavior[ServiceMessageType]
+    with HttpCodecs
+    with LocationCodecs {
 
   import options._
 
+  implicit def actorSystem: ActorSystem[Nothing] = ctx.system
   private val log = GenericLoggerFactory.getLogger(ctx)
   private val registrationFactory = new RegistrationFactory()
 
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(registrationFactory.akkaTyped(TestAkkaService.connection(i), Prefix("test.prefix"), ctx.self)), 30.seconds)
+    locationService.register(
+      registrationFactory.akkaTyped(
+        TestAkkaService.connection(i),
+        Prefix("test.prefix"),
+        ctx.self
+      )
+    ),
+    30.seconds
+  )
 
-  log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
+  log.debug(
+    s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}"
+  )
 
   if (autostop != 0)
     timers.startSingleTimer(TestAkkaService.TimerKey, Quit, autostop.seconds)
 
+  val componentId = ComponentId("rmyservice", ComponentType.Service)
+  val connection = HttpConnection(componentId)
 
-  // XXX TEMP XXX
-    implicit def actorSystem = ctx.system
-
-    val componentId = ComponentId("rmyservice", ComponentType.Service)
-    val connection  = HttpConnection(componentId)
-
-    private val Path = "myservice/test"
-    private val Port = 9999
-    val registration                           = HttpRegistration(connection, Port, Path)
-    println("XXX Registration JSON: " + Json.encode(registration).toUtf8String)
-    println("XXX Connection JSON: " + Json.encode(connection).toUtf8String)
-
-
-  override def onMessage(msg: ServiceMessageType): Behavior[ServiceMessageType] = {
+  override def onMessage(
+    msg: ServiceMessageType
+  ): Behavior[ServiceMessageType] = {
     msg match {
       // This is the message that TestServiceClient sends when it discovers this service
       case ClientMessage(replyTo) =>
@@ -85,18 +100,23 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
   }
 }
 
-
 // ---- test second component -----
 
 object TestAkkaService2 {
   // Behavior of the ith service
-  def behavior(i: Int, options: TestAkkaServiceApp.Options,
+  def behavior(i: Int,
+               options: TestAkkaServiceApp.Options,
                locationService: LocationService): Behavior[ServiceMessageType] =
-    Behaviors.withTimers(timers => Behaviors.setup[ServiceMessageType]( ctx ⇒
-      new TestAkkaService2(ctx, timers, i, options, locationService)))
+    Behaviors.withTimers(
+      timers =>
+        Behaviors.setup[ServiceMessageType](
+          ctx ⇒ new TestAkkaService2(ctx, timers, i, options, locationService)
+      )
+    )
 
   // Component ID of the ith service
-  def componentId(i: Int) = ComponentId(s"TestAkkaService2_$i", ComponentType.Service)
+  def componentId(i: Int) =
+    ComponentId(s"TestAkkaService2_$i", ComponentType.Service)
 
   // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
@@ -104,32 +124,44 @@ object TestAkkaService2 {
   private case object TimerKey
 }
 
-
 /**
   * A dummy akka test service that registers with the location service
   */
 class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        timers: TimerScheduler[ServiceMessageType],
-                       i: Int, options: TestAkkaServiceApp.Options,
+                       i: Int,
+                       options: TestAkkaServiceApp.Options,
                        locationService: LocationService)
-  extends AbstractBehavior[ServiceMessageType] {
+    extends AbstractBehavior[ServiceMessageType] {
 
   import options._
 
+  implicit def actorSystem: ActorSystem[Nothing] = ctx.system
   private val log = GenericLoggerFactory.getLogger(ctx)
   private val registrationFactory = new RegistrationFactory()
 
   // Register with the location service
   private val reg = Await.result(
-    locationService.register(registrationFactory.akkaTyped(TestAkkaService2.connection(i), Prefix("test.prefix"), ctx.self)),
-    30.seconds)
+    locationService.register(
+      registrationFactory.akkaTyped(
+        TestAkkaService2.connection(i),
+        Prefix("test.prefix"),
+        ctx.self
+      )
+    ),
+    30.seconds
+  )
 
-  log.debug(s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}")
+  log.debug(
+    s"Registered service $i as: ${reg.location.connection.name} with URI = ${reg.location.uri}"
+  )
 
   if (autostop != 0)
     timers.startSingleTimer(TestAkkaService2.TimerKey, Quit, autostop.seconds)
 
-  override def onMessage(msg: ServiceMessageType): Behavior[ServiceMessageType] = {
+  override def onMessage(
+    msg: ServiceMessageType
+  ): Behavior[ServiceMessageType] = {
     msg match {
       // This is the message that TestServiceClient sends when it discovers this service
       case ClientMessage(replyTo) =>
@@ -144,4 +176,3 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
     }
   }
 }
-
