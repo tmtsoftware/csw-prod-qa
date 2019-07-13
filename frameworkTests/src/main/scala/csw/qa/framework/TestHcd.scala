@@ -132,12 +132,12 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     try {
       // Test sending a command to a python based HTTP service
       // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
-      val testCommand = makeTestCommand()
-      val commandResponse =
-        Await.result(service.submit(testCommand), 5.seconds)
-      log.info(
-        s"Response from command to ${connection.componentId.name}: $commandResponse"
-      )
+      val validateResponse = Await.result(service.validate(controlCommand), 5.seconds)
+      log.info(s"Response from validate command to ${connection.componentId.name}: $validateResponse")
+      val onewayResponse = Await.result(service.oneway(controlCommand), 5.seconds)
+      log.info(s"Response from oneway command to ${connection.componentId.name}: $onewayResponse")
+      val commandResponse = Await.result(service.submit(makeTestCommand()), 5.seconds)
+      log.info(s"Response from submit command to ${connection.componentId.name}: $commandResponse")
       commandResponse
     } catch {
       case e: Exception =>
