@@ -1,18 +1,13 @@
 package csw.qa.location
 
 import akka.actor.typed.{ActorSystem, Behavior}
-import akka.actor.typed.scaladsl.{
-  AbstractBehavior,
-  ActorContext,
-  Behaviors,
-  TimerScheduler
-}
+import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
 import csw.framework.scaladsl.RegistrationFactory
-import csw.location.api.codecs.LocationCodecs
-import csw.location.api.models.Connection.{AkkaConnection, HttpConnection}
-import csw.location.api.models.{ComponentId, ComponentType}
 import csw.location.api.scaladsl.LocationService
 import csw.location.client.HttpCodecs
+import csw.location.model.codecs.LocationCodecs
+import csw.location.model.scaladsl.Connection.{AkkaConnection, HttpConnection}
+import csw.location.model.scaladsl.{ComponentId, ComponentType}
 import csw.logging.client.scaladsl.GenericLoggerFactory
 import csw.params.core.models.Prefix
 

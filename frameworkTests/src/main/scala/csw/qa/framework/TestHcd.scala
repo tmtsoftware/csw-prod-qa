@@ -9,18 +9,17 @@ import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.api.models.Connection.HttpConnection
-import csw.location.api.models.{ComponentId, ComponentType, TrackingEvent}
-import csw.params.commands.CommandResponse.{
-  Error,
-  SubmitResponse,
-  ValidateCommandResponse
-}
-import csw.params.commands.{CommandResponse, ControlCommand}
-import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.Id
+import csw.location.model.scaladsl.{ComponentId, ComponentType, TrackingEvent}
+import csw.location.model.scaladsl.Connection.HttpConnection
+import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.events.{Event, EventName, SystemEvent}
+import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
 import csw.time.core.models.UTCTime
+import csw.params.core.generics.{Key, KeyType}
+import csw.params.core.models.Coords.EqFrame.FK5
+import csw.params.core.models.Coords.SolarSystemObject.Venus
+import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -58,6 +57,64 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private val service =
     HttpCommandService(ctx.system, cswCtx.locationService, connection)
 
+  // Dummy test command
+  private def makeTestCommand(): ControlCommand = {
+    import Angle._
+    import Coords._
+
+    val pm = ProperMotion(0.5, 2.33)
+    val eqCoord = EqCoord(
+      ra = "12:13:14.15",
+      dec = "-30:31:32.3",
+      frame = FK5,
+      pmx = pm.pmx,
+      pmy = pm.pmy
+    )
+    val solarSystemCoord = SolarSystemCoord(Tag("BASE"), Venus)
+    val minorPlanetCoord = MinorPlanetCoord(
+      Tag("GUIDER1"),
+      2000,
+      90.degree,
+      2.degree,
+      100.degree,
+      1.4,
+      0.234,
+      220.degree
+    )
+    val cometCoord = CometCoord(
+      Tag("BASE"),
+      2000.0,
+      90.degree,
+      2.degree,
+      100.degree,
+      1.4,
+      0.234
+    )
+    val altAzCoord = AltAzCoord(Tag("BASE"), 301.degree, 42.5.degree)
+    val posParam = basePosKey.set(
+      eqCoord,
+      solarSystemCoord,
+      minorPlanetCoord,
+      cometCoord,
+      altAzCoord
+    )
+
+    Setup(componentInfo.prefix, CommandName("testCommand"), None)
+      .add(posParam)
+      .add(eventKey1b.set(1.0f, 2.0f, 3.0f))
+      .add(
+        eventKey2b.set(
+          Struct()
+            .add(eventKey1.set(1.0f))
+            .add(eventKey3.set(1, 2, 3)),
+          Struct()
+            .add(eventKey1.set(2.0f))
+            .add(eventKey3.set(4, 5, 6))
+            .add(eventKey4.set(9.toByte, 10.toByte))
+        )
+      )
+  }
+
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
     startPublishingEvents()
@@ -73,13 +130,15 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     log.debug(s"onSubmit called: $controlCommand")
 
     try {
+      // Test sending a command to a python based HTTP service
+      // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
+      val testCommand = makeTestCommand()
       val commandResponse =
-        Await.result(service.submit(controlCommand), 5.seconds)
+        Await.result(service.submit(testCommand), 5.seconds)
       log.info(
         s"Response from command to ${connection.componentId.name}: $commandResponse"
       )
-      // XXX TODO FIXME
-      commandResponse.asInstanceOf[SubmitResponse]
+      commandResponse
     } catch {
       case e: Exception =>
         log.error(
@@ -96,7 +155,8 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onOneway(controlCommand: ControlCommand): Unit = {
     log.debug(s"onOneway called: $controlCommand")
     try {
-      val onewayResponse = Await.result(service.oneway(controlCommand), 5.seconds)
+      val onewayResponse =
+        Await.result(service.oneway(controlCommand), 5.seconds)
       log.info(
         s"Response from oneway command to ${connection.componentId.name}: $onewayResponse"
       )

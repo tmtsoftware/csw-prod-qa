@@ -3,10 +3,9 @@ package csw.qa.location
 import akka.stream.Materializer
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
-import csw.location.api.extensions.URIExtension.RichURI
-import csw.location.api.models.Connection.AkkaConnection
-import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.location.api.scaladsl.LocationService
+import csw.location.model.scaladsl.Connection.AkkaConnection
+import csw.location.model.scaladsl.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.logging.client.scaladsl.GenericLoggerFactory
 
 object TestServiceClient {
@@ -36,6 +35,8 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
   }
 
   override def onMessage(msg: ServiceClientMessageType): Behavior[ServiceClientMessageType] = {
+//    import csw.location.api.extensions.URIExtension.RichURI
+
     msg match {
       // Receive a location from the location service and if it is an akka location, send it a message
       case TrackingEventMessage(LocationUpdated(loc)) =>

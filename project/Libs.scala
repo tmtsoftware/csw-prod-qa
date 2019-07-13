@@ -1,8 +1,8 @@
 import sbt._
 
 object Libs {
-  val `scopt` = "com.github.scopt" %% "scopt" % "3.7.0" //MIT License
-  val `scalaTest` = "org.scalatest" %% "scalatest" % "3.0.5" // ApacheV2
+  val `scopt` = "com.github.scopt" %% "scopt" % "3.7.1" //MIT License
+  val `scalaTest` = "org.scalatest" %% "scalatest" % "3.0.8" // ApacheV2
   val `junit-interface` = "com.novocode" % "junit-interface" % "0.11"
   val `slf4j-api` = "org.slf4j" % "slf4j-api" % "1.7.25"
 

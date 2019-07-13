@@ -13,10 +13,10 @@ import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
 import csw.event.client.EventServiceFactory
-import csw.location.api.models.ComponentType.Assembly
-import csw.location.api.models.Connection.AkkaConnection
-import csw.location.api.models._
 import csw.location.client.scaladsl.HttpLocationServiceFactory
+import csw.location.model.scaladsl.{AkkaLocation, ComponentId, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.model.scaladsl.ComponentType.Assembly
+import csw.location.model.scaladsl.Connection.AkkaConnection
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.{CommandName, Setup}
 import csw.params.core.generics.KeyType
@@ -24,7 +24,7 @@ import csw.params.core.models.{ObsId, Prefix}
 import csw.params.events.{Event, EventKey, SystemEvent}
 import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
 
-import scala.concurrent.{Await, ExecutionContextExecutor}
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -46,8 +46,8 @@ object TestAssemblyClient extends App {
   implicit val timeout: Timeout = Timeout(10.seconds)
 
   // Key for events from assembly
-  private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
-  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
+//  private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
+//  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
   private val assemblyEventName = TestAssemblyWorker.eventName
   private val assemblyPrefix = Prefix("test.assembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))

@@ -6,7 +6,7 @@ import com.typesafe.sbt.packager.Keys._
 // Defines the global build settings so they don't need to be edited everywhere
 object Settings {
   val Version = "0.1-SNAPSHOT"
-  val ScalaVersion = "2.12.8"
+  val ScalaVersion = "2.13.0"
 
   val buildSettings = Seq(
     organization := "org.tmt",

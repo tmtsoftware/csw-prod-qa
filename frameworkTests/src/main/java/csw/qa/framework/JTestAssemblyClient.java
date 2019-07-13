@@ -16,9 +16,9 @@ import csw.event.api.javadsl.IEventSubscriber;
 import csw.event.client.EventServiceFactory;
 import csw.location.api.javadsl.ILocationService;
 import csw.location.api.javadsl.JComponentType;
-import csw.location.api.models.*;
 import csw.location.client.ActorSystemFactory;
 import csw.location.client.javadsl.JHttpLocationServiceFactory;
+import csw.location.model.scaladsl.*;
 import csw.logging.api.javadsl.ILogger;
 import csw.logging.client.javadsl.JGenericLoggerFactory;
 import csw.logging.client.scaladsl.LoggingSystemFactory;
@@ -145,7 +145,7 @@ public class JTestAssemblyClient {
     for (int i = 1; i <= 10; i++) {
       setups.add(makeSetup(i, "filter" + i));
       try {
-        List<CommandResponse.SubmitResponse> responses = assembly.submitAll(setups, timeout).get();
+        List<CommandResponse.SubmitResponse> responses = assembly.submitAllAndWait(setups, timeout).get();
         System.out.println("Test Passed: Responses = " + responses);
       } catch(Exception ex) {
         System.out.println("Test Failed: " + ex);
