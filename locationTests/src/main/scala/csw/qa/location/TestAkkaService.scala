@@ -5,9 +5,9 @@ import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, Tim
 import csw.framework.scaladsl.RegistrationFactory
 import csw.location.api.scaladsl.LocationService
 import csw.location.client.HttpCodecs
-import csw.location.model.codecs.LocationCodecs
-import csw.location.model.scaladsl.Connection.{AkkaConnection, HttpConnection}
-import csw.location.model.scaladsl.{ComponentId, ComponentType}
+import csw.location.models.Connection.{AkkaConnection, HttpConnection}
+import csw.location.models.codecs.LocationCodecs
+import csw.location.models.{ComponentId, ComponentType}
 import csw.logging.client.scaladsl.GenericLoggerFactory
 import csw.params.core.models.Prefix
 
@@ -22,7 +22,7 @@ object TestAkkaService {
     Behaviors.withTimers(
       timers =>
         Behaviors.setup[ServiceMessageType](
-          ctx ⇒ new TestAkkaService(ctx, timers, i, options, locationService)
+          ctx => new TestAkkaService(ctx, timers, i, options, locationService)
       )
     )
 
@@ -105,7 +105,7 @@ object TestAkkaService2 {
     Behaviors.withTimers(
       timers =>
         Behaviors.setup[ServiceMessageType](
-          ctx ⇒ new TestAkkaService2(ctx, timers, i, options, locationService)
+          ctx => new TestAkkaService2(ctx, timers, i, options, locationService)
       )
     )
 

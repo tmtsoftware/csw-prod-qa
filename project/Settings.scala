@@ -19,7 +19,25 @@ object Settings {
     fork := true,
     resolvers += "jitpack" at "https://jitpack.io",
     resolvers += "bintray" at "http://jcenter.bintray.com",
-    updateOptions := updateOptions.value.withLatestSnapshots(false)
+    updateOptions := updateOptions.value.withLatestSnapshots(false),
+    scalacOptions ++= Seq(
+      "-encoding",
+      "UTF-8",
+      "-feature",
+      "-unchecked",
+      "-deprecation",
+//      "-Xfatal-warnings",
+      "-Xlint:_,-missing-interpolator",
+      "-Ywarn-dead-code",
+//      s"-P:silencer:sourceRoots=${baseDirectory.value.getCanonicalPath}"
+    ),
+    javacOptions in (Compile, doc) ++= Seq("-Xdoclint:none"),
+    javacOptions in doc ++= Seq("--ignore-source-errors"),
+    testOptions in Test ++= Seq(
+      // show full stack traces and test case durations
+      Tests.Argument("-oDF")
+    ),
+
   )
 
   lazy val appSettings = buildSettings ++ Seq(

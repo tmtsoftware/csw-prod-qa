@@ -11,7 +11,7 @@ import csw.command.client.CommandServiceFactory
 import csw.database.DatabaseServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
-import csw.location.model.scaladsl.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
 import csw.logging.api.scaladsl.Logger
 import csw.params.commands.CommandResponse.Error
 import csw.params.commands.{CommandName, ControlCommand, Setup}
@@ -23,8 +23,6 @@ import csw.params.core.models.{Angle, Coords, Id, ObsId, Prefix, ProperMotion, S
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
 import org.jooq.DSLContext
-import play.api.libs.json.Json
-import csw.params.core.formats.JsonSupport._
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -47,7 +45,7 @@ object TestAssemblyWorker {
   case class SetDatabase(dsl: DSLContext) extends TestAssemblyWorkerMsg
 
   def make(cswCtx: CswContext): Behavior[TestAssemblyWorkerMsg] = {
-    Behaviors.setup(ctx ⇒ new TestAssemblyWorker(ctx, cswCtx))
+    Behaviors.setup(ctx => new TestAssemblyWorker(ctx, cswCtx))
   }
 
   private val dbName = "postgres"

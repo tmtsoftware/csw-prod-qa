@@ -18,7 +18,7 @@ import csw.location.api.javadsl.ILocationService;
 import csw.location.api.javadsl.JComponentType;
 import csw.location.client.ActorSystemFactory;
 import csw.location.client.javadsl.JHttpLocationServiceFactory;
-import csw.location.model.scaladsl.*;
+import csw.location.models.*;
 import csw.logging.api.javadsl.ILogger;
 import csw.logging.client.javadsl.JGenericLoggerFactory;
 import csw.logging.client.scaladsl.LoggingSystemFactory;

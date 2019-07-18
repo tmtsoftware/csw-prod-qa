@@ -14,9 +14,9 @@ import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
 import csw.event.client.EventServiceFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
-import csw.location.model.scaladsl.{AkkaLocation, ComponentId, LocationRemoved, LocationUpdated, TrackingEvent}
-import csw.location.model.scaladsl.ComponentType.Assembly
-import csw.location.model.scaladsl.Connection.AkkaConnection
+import csw.location.models.{AkkaLocation, ComponentId, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.models.ComponentType.Assembly
+import csw.location.models.Connection.AkkaConnection
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.{CommandName, Setup}
 import csw.params.core.generics.KeyType
@@ -68,7 +68,7 @@ object TestAssemblyClient extends App {
   object EventHandler {
     def make(): Behavior[Event] = {
       log.info("Starting event handler")
-      Behaviors.setup(ctx ⇒ new EventHandler(ctx))
+      Behaviors.setup(ctx => new EventHandler(ctx))
     }
   }
 

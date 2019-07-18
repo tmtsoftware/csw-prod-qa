@@ -10,9 +10,9 @@ import csw.location.api.javadsl.IRegistrationResult;
 import csw.location.api.javadsl.JComponentType;
 import csw.location.client.ActorSystemFactory;
 import csw.location.client.javadsl.JHttpLocationServiceFactory;
-import csw.location.model.scaladsl.AkkaRegistration;
-import csw.location.model.scaladsl.ComponentId;
-import csw.location.model.scaladsl.Connection;
+import csw.location.models.AkkaRegistration;
+import csw.location.models.ComponentId;
+import csw.location.models.Connection;
 import csw.logging.api.javadsl.ILogger;
 import csw.logging.client.commons.AkkaTypedExtension;
 import csw.logging.client.javadsl.JGenericLoggerFactory;
@@ -51,7 +51,7 @@ public class JTestAkkaService extends AbstractBehavior<ClientMessage> {
   private JTestAkkaService(ActorContext<ClientMessage> context, int i, ILocationService locationService) {
     log = JGenericLoggerFactory.getLogger(context, getClass());
 
-    URI actorRefURI = ActorExtension.RichActor(context.getSelf()).toURI(context.getSystem());
+    URI actorRefURI = ActorExtension.RichActor(context.getSelf()).toURI();
     AkkaRegistration registration = AkkaRegistration.apply(JTestAkkaService.connection(i), new Prefix("test.prefix"), actorRefURI);
     try {
       IRegistrationResult regResult = locationService.register(registration).get();

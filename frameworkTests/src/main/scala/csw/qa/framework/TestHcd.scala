@@ -2,6 +2,7 @@ package csw.qa.framework
 
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.ActorContext
+import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import csw.command.client.HttpCommandService
 import csw.command.client.messages.TopLevelActorMessage
@@ -9,9 +10,9 @@ import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.model.scaladsl.{ComponentId, ComponentType, TrackingEvent}
-import csw.location.model.scaladsl.Connection.HttpConnection
-import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
+import csw.location.models.{ComponentId, ComponentType, TrackingEvent}
+import csw.location.models.Connection.HttpConnection
+import csw.params.commands.CommandResponse.{Accepted, Error, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
@@ -20,6 +21,8 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
+import play.api.libs.json.Json
+import csw.params.core.formats.JsonSupport._
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -128,6 +131,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
     log.debug(s"onSubmit called: $controlCommand")
+    implicit def timeout: Timeout = new Timeout(20.seconds)
 
     try {
       // Test sending a command to a python based HTTP service
@@ -136,8 +140,13 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
       log.info(s"Response from validate command to ${connection.componentId.name}: $validateResponse")
       val onewayResponse = Await.result(service.oneway(controlCommand), 5.seconds)
       log.info(s"Response from oneway command to ${connection.componentId.name}: $onewayResponse")
-      val commandResponse = Await.result(service.submit(makeTestCommand()), 5.seconds)
+
+      val testCommand = makeTestCommand()
+      val firstCommandResponse = Await.result(service.submit(testCommand), 5.seconds)
+      log.info(s"Response from submit command to ${connection.componentId.name}: $firstCommandResponse")
+      val commandResponse = Await.result(service.queryFinal(testCommand.runId), 20.seconds)
       log.info(s"Response from submit command to ${connection.componentId.name}: $commandResponse")
+
       commandResponse
     } catch {
       case e: Exception =>

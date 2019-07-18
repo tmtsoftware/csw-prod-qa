@@ -11,7 +11,7 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.params.commands.CommandResponse.{SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand}
 import akka.actor.typed.scaladsl.AskPattern._
-import csw.location.model.scaladsl.TrackingEvent
+import csw.location.models.TrackingEvent
 
 import scala.concurrent.duration._
 import scala.async.Async._
