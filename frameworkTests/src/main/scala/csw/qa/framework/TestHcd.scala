@@ -21,8 +21,6 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
-import play.api.libs.json.Json
-import csw.params.core.formats.JsonSupport._
 
 import scala.concurrent.duration._
 import scala.async.Async._

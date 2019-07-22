@@ -5,7 +5,7 @@ import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import TestAssemblyWorker._
 import akka.actor.Scheduler
 import akka.util.Timeout
-import csw.alarm.api.models.Key.AlarmKey
+import csw.alarm.models.Key.AlarmKey
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
 import csw.database.DatabaseServiceFactory
