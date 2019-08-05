@@ -52,7 +52,7 @@ public class JTestAkkaService extends AbstractBehavior<ClientMessage> {
     log = JGenericLoggerFactory.getLogger(context, getClass());
 
     URI actorRefURI = ActorExtension.RichActor(context.getSelf()).toURI();
-    AkkaRegistration registration = AkkaRegistration.apply(JTestAkkaService.connection(i), new Prefix("test.prefix"), actorRefURI);
+    AkkaRegistration registration = AkkaRegistration.apply(JTestAkkaService.connection(i), new Prefix("csw.prefix"), actorRefURI);
     try {
       IRegistrationResult regResult = locationService.register(registration).get();
       log.info("Registered " + registration + " with result: " + regResult);

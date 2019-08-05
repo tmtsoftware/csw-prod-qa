@@ -49,7 +49,7 @@ object TestAssemblyClient extends App {
 //  private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
 //  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
   private val assemblyEventName = TestAssemblyWorker.eventName
-  private val assemblyPrefix = Prefix("test.assembly")
+  private val assemblyPrefix = Prefix("csw.assembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val assemblyEventKey = EventKey(assemblyPrefix, assemblyEventName)
 

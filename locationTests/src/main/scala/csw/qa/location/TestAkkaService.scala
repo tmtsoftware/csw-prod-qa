@@ -60,7 +60,7 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
     locationService.register(
       registrationFactory.akkaTyped(
         TestAkkaService.connection(i),
-        Prefix("test.prefix"),
+        Prefix("csw.prefix"),
         ctx.self
       )
     ),
@@ -140,7 +140,7 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
     locationService.register(
       registrationFactory.akkaTyped(
         TestAkkaService2.connection(i),
-        Prefix("test.prefix"),
+        Prefix("csw.prefix"),
         ctx.self
       )
     ),

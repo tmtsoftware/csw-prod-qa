@@ -58,7 +58,7 @@ public class JTestAssembly {
   // Key for HCD events
   private static final Key<Integer> hcdEventValueKey = JKeyType.IntKey().make("hcdEventValue");
   private static final EventName hcdEventName = new EventName("myHcdEvent");
-  private static final Prefix hcdPrefix = new Prefix("test.hcd");
+  private static final Prefix hcdPrefix = new Prefix("csw.hcd");
 
   // Dummy key for publishing events from assembly
   private static final Key<Integer> eventKey = JKeyType.IntKey().make("assemblyEventValue");

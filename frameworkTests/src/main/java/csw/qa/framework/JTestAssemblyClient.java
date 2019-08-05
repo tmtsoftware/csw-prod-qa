@@ -54,7 +54,7 @@ public class JTestAssemblyClient {
   // Key for events from assembly
   private static final Key<Integer> assemblyEventValueKey = JKeyType.IntKey().make("assemblyEventValue");
   private static final EventName assemblyEventName = new EventName("myAssemblyEvent");
-  private static final Prefix assemblyPrefix = new Prefix("test.assembly");
+  private static final Prefix assemblyPrefix = new Prefix("csw.assembly");
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private static final EventKey assemblyEventKey = new EventKey(assemblyPrefix, assemblyEventName);
 

@@ -55,7 +55,7 @@ object TestAssemblyWorker {
   // Key for HCD events
   private val hcdEventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val hcdEventName = EventName("myHcdEvent")
-  private val hcdPrefix = Prefix("test.hcd")
+  private val hcdPrefix = Prefix("csw.hcd")
 
   // Keys for publishing events from assembly
   private[framework] val eventKey1: Key[Float] =
@@ -81,11 +81,11 @@ object TestAssemblyWorker {
     import Coords._
     Behaviors.receive { (_, msg) =>
       msg match {
-        case e: SystemEvent =>
-          e.get(hcdEventValueKey)
+        case event: SystemEvent =>
+          event.get(hcdEventValueKey)
             .foreach { p =>
               val eventValue = p.head
-              log.info(s"Received event with value: $eventValue")
+              log.info(s"Received event with event time: ${event.eventTime} with value: $eventValue")
               // fire a new event from the assembly based on the one from the HCD
 
               val pm = ProperMotion(0.5, 2.33)
@@ -149,7 +149,7 @@ object TestAssemblyWorker {
   }
 
   // --- Alarms ---
-  val alarmKey = AlarmKey(Subsystem.TEST, "testComponent", "testAlarm")
+  val alarmKey = AlarmKey(Subsystem.CSW, "testComponent", "testAlarm")
 }
 
 class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
