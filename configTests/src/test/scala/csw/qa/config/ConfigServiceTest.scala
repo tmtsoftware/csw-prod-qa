@@ -13,8 +13,7 @@ import akka.stream.typed.scaladsl.ActorMaterializer
 import csw.aas.installed.InstalledAppAuthAdapterFactory
 import csw.aas.installed.api.InstalledAppAuthAdapter
 import csw.aas.installed.scaladsl.FileAuthStore
-import csw.config.api.TokenFactory
-import csw.config.api.models.ConfigData
+import csw.config.api.{ConfigData, TokenFactory}
 import csw.config.api.scaladsl.{ConfigClientService, ConfigService}
 import csw.config.client.scaladsl.ConfigClientFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
@@ -43,7 +42,7 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   private val comment3 = "update 2 comment"
 
   private val host = InetAddress.getLocalHost.getHostName
-  val typedSystem = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
+  val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
   implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
   implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
   implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
@@ -72,7 +71,7 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   val configService: ConfigService =
     ConfigClientFactory.adminApi(typedSystem, locationService, tokenFactory)
 
-  override def afterAll() {}
+  override def afterAll(): Unit = {}
 
   test("Run Tests") {
     runTests(configService, annex = false)

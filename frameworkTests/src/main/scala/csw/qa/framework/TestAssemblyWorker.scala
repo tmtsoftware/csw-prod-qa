@@ -8,7 +8,7 @@ import akka.util.Timeout
 import csw.alarm.models.Key.AlarmKey
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
-import csw.database.DatabaseServiceFactory
+//import csw.database.DatabaseServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
 import csw.location.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
@@ -24,10 +24,11 @@ import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
 import org.jooq.DSLContext
 
-import scala.async.Async.{async, await}
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.async.Async.async
+import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
+//noinspection DuplicatedCode
 object TestAssemblyWorker {
 
   sealed trait TestAssemblyWorkerMsg
@@ -48,7 +49,7 @@ object TestAssemblyWorker {
     Behaviors.setup(ctx => new TestAssemblyWorker(ctx, cswCtx))
   }
 
-  private val dbName = "postgres"
+//  private val dbName = "postgres"
 
   // --- Events ---
 
@@ -149,9 +150,10 @@ object TestAssemblyWorker {
   }
 
   // --- Alarms ---
-  val alarmKey = AlarmKey(Subsystem.CSW, "testComponent", "testAlarm")
+  val alarmKey: AlarmKey = AlarmKey(Subsystem.CSW, "testComponent", "testAlarm")
 }
 
+//noinspection DuplicatedCode
 class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
                          cswCtx: CswContext)
     extends AbstractBehavior[TestAssemblyWorkerMsg] {
@@ -170,7 +172,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   private var testHcd: Option[CommandService] = None
 
   // Set when the database has been located
-  private var database: Option[DSLContext] = None
+//  private var database: Option[DSLContext] = None
 
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val hcdEventKey = EventKey(hcdPrefix, hcdEventName)
@@ -204,8 +206,8 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
           case Success(_)  => log.info("Initialized")
           case Failure(ex) => log.error("Initialize failed", ex = ex)
         }
-      case SetDatabase(dsl) =>
-        database = Some(dsl)
+//      case SetDatabase(dsl) =>
+//        database = Some(dsl)
       case Submit(controlCommand) =>
         forwardCommandToHcd(controlCommand)
       case Location(trackingEvent) =>
@@ -243,7 +245,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   // For testing, forward command to HCD and complete this command when it completes
   private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
     import scala.concurrent.duration._
-    implicit val scheduler: Scheduler = ctx.system.scheduler
+//    implicit val scheduler: Scheduler = ctx.system.scheduler
     implicit val timeout: Timeout = Timeout(3.seconds)
     log.info(s"Forward command to hcd: $testHcd")
     testHcd.map { hcd =>
@@ -276,10 +278,10 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     ctx.scheduleOnce(1.seconds, ctx.self, RefreshAlarms)
   }
 
-  private def initDatabaseTable(): Future[DSLContext] = async {
-    val dbFactory = new DatabaseServiceFactory(ctx.system)
-    val dsl = await(dbFactory.makeDsl(locationService, dbName))
-    dsl
-  }
+//  private def initDatabaseTable(): Future[DSLContext] = async {
+//    val dbFactory = new DatabaseServiceFactory(ctx.system)
+//    val dsl = await(dbFactory.makeDsl(locationService, dbName))
+//    dsl
+//  }
 
 }
