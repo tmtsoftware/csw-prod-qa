@@ -14,11 +14,11 @@ object Settings {
     organizationHomepage := Some(url("http://www.tmt.org")),
     version := Version,
     scalaVersion := ScalaVersion,
-//    crossPaths := true,
     parallelExecution in Test := false,
     fork := true,
-    resolvers += "jitpack" at "https://jitpack.io",
+    resolvers += Resolver.bintrayRepo("twtmt", "maven"),
     resolvers += "bintray" at "http://jcenter.bintray.com",
+    resolvers += "jitpack" at "https://jitpack.io",
     updateOptions := updateOptions.value.withLatestSnapshots(false),
     scalacOptions ++= Seq(
       "-encoding",
@@ -26,18 +26,15 @@ object Settings {
       "-feature",
       "-unchecked",
       "-deprecation",
-//      "-Xfatal-warnings",
       "-Xlint:_,-missing-interpolator",
-      "-Ywarn-dead-code",
-//      s"-P:silencer:sourceRoots=${baseDirectory.value.getCanonicalPath}"
+      "-Ywarn-dead-code"
     ),
     javacOptions in (Compile, doc) ++= Seq("-Xdoclint:none"),
     javacOptions in doc ++= Seq("--ignore-source-errors"),
     testOptions in Test ++= Seq(
       // show full stack traces and test case durations
       Tests.Argument("-oDF")
-    ),
-
+    )
   )
 
   lazy val appSettings = buildSettings ++ Seq(
