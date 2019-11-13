@@ -22,7 +22,7 @@ import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ObsId, Prefix, ProperMotion, Struct, Subsystem}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
-import org.jooq.DSLContext
+//import org.jooq.DSLContext
 
 import scala.async.Async.async
 import scala.concurrent.ExecutionContextExecutor
@@ -43,7 +43,7 @@ object TestAssemblyWorker {
 
   case object RefreshAlarms extends TestAssemblyWorkerMsg
 
-  case class SetDatabase(dsl: DSLContext) extends TestAssemblyWorkerMsg
+//  case class SetDatabase(dsl: DSLContext) extends TestAssemblyWorkerMsg
 
   def make(cswCtx: CswContext): Behavior[TestAssemblyWorkerMsg] = {
     Behaviors.setup(ctx => new TestAssemblyWorker(ctx, cswCtx))

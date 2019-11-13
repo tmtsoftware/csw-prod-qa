@@ -12,7 +12,7 @@ import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.models.{ComponentId, ComponentType, TrackingEvent}
 import csw.location.models.Connection.HttpConnection
-import csw.params.commands.CommandResponse.{Accepted, Error, SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
@@ -33,6 +33,7 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
     new TestHcdHandlers(ctx, cswServices)
 }
 
+//noinspection DuplicatedCode
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
                               cswCtx: CswContext)
     extends ComponentHandlers(ctx, cswCtx) {
@@ -221,6 +222,9 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
       ex = publishFailure.cause
     )
 
+  override def onDiagnosticMode(startTime: UTCTime, hint: String): Unit = {}
+
+  override def onOperationsMode(): Unit = {}
 }
 
 object TestHcdApp extends App {

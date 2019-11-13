@@ -30,6 +30,7 @@ import csw.params.core.generics.Key;
 import csw.params.core.models.Prefix;
 import csw.params.events.*;
 import csw.params.javadsl.JKeyType;
+import csw.time.core.models.UTCTime;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -171,6 +172,14 @@ public class JTestAssembly {
         AkkaLocation location = (AkkaLocation) ((LocationUpdated) trackingEvent).location();
         testHcd = Optional.of(CommandServiceFactory.jMake(location, ctx.getSystem()));
       } else testHcd = Optional.empty();
+    }
+
+    @Override
+    public void onDiagnosticMode(UTCTime startTime, String hint) {
+    }
+
+    @Override
+    public void onOperationsMode() {
     }
 
     private CompletableFuture<IEventSubscription> startSubscribingToEvents() {

@@ -12,6 +12,7 @@ import csw.params.commands.CommandResponse.{SubmitResponse, ValidateCommandRespo
 import csw.params.commands.{CommandResponse, ControlCommand}
 import akka.actor.typed.scaladsl.AskPattern._
 import csw.location.models.TrackingEvent
+import csw.time.core.models.UTCTime
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -70,6 +71,9 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     worker ! TestAssemblyWorker.Location(trackingEvent)
   }
 
+  override def onDiagnosticMode(startTime: UTCTime, hint: String): Unit = {}
+
+  override def onOperationsMode(): Unit = {}
 }
 
 // Start assembly from the command line using TestAssembly.conf resource file

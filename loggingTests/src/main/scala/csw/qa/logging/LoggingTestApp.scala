@@ -6,7 +6,7 @@ import akka.actor
 import akka.actor._
 import akka.actor.typed.{ActorSystem, SpawnProtocol}
 import akka.stream.Materializer
-import akka.stream.typed.scaladsl.ActorMaterializer
+import akka.stream.Materializer
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 
 import csw.location.client.scaladsl.HttpLocationServiceFactory
@@ -22,7 +22,7 @@ object LoggingTestApp extends App {
   private val host = InetAddress.getLocalHost.getHostName
   val typedSystem = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
   implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
-  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+  implicit val mat: Materializer   = Materializer(typedSystem)
   implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
 
   LoggingSystemFactory.start("LoggingTestApp", "0.1", host, typedSystem)

@@ -20,6 +20,7 @@ import csw.params.events.Event;
 import csw.params.events.EventName;
 import csw.params.events.SystemEvent;
 import csw.params.javadsl.JKeyType;
+import csw.time.core.models.UTCTime;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -107,6 +108,14 @@ public class JTestHcd {
     @Override
     public void onGoOnline() {
       log.debug("onGoOnline called");
+    }
+
+    @Override
+    public void onDiagnosticMode(UTCTime startTime, String hint) {
+    }
+
+    @Override
+    public void onOperationsMode() {
     }
 
     private void startPublishingEvents() {
