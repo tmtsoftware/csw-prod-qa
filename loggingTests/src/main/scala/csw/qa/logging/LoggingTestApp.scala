@@ -6,7 +6,6 @@ import akka.actor
 import akka.actor._
 import akka.actor.typed.{ActorSystem, SpawnProtocol}
 import akka.stream.Materializer
-import akka.stream.Materializer
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 
 import csw.location.client.scaladsl.HttpLocationServiceFactory
@@ -16,25 +15,23 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 /**
-  * An test application that uses the logging service
-  */
+ * An test application that uses the logging service
+ */
 object LoggingTestApp extends App {
-  private val host = InetAddress.getLocalHost.getHostName
-  val typedSystem = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
-  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
-  implicit val mat: Materializer   = Materializer(typedSystem)
-  implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
+  private val host                                   = InetAddress.getLocalHost.getHostName
+  val typedSystem                                    = ActorSystem(SpawnProtocol(), "DatabaseTest")
+  implicit lazy val untypedSystem: actor.ActorSystem = typedSystem.toClassic
+  implicit val mat: Materializer                     = Materializer(typedSystem)
+  implicit lazy val ec: ExecutionContextExecutor     = untypedSystem.dispatcher
 
   LoggingSystemFactory.start("LoggingTestApp", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
 
-  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
+  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem)
 
   log.debug("Started LoggingTestApp")
 
-
-  case class Options(numActors: Int = 1, autostop: Int = 0, autoshutdown: Int = 0,
-                     delay: Int = 1000)
+  case class Options(numActors: Int = 1, autostop: Int = 0, autoshutdown: Int = 0, delay: Int = 1000)
 
   // Parses the command line options
   private val parser = new scopt.OptionParser[Options]("logging-test-app") {
@@ -76,15 +73,17 @@ object LoggingTestApp extends App {
   private def run(options: Options): Unit = {
     import options._
     if (options.autoshutdown != 0)
-      typedSystem.scheduler.scheduleOnce(autoshutdown.seconds) {
-        log.info(s"Auto-shutdown starting after $autoshutdown seconds")
-        for {
-        //          _ <- loggingSystem.stop
-          _ <- untypedSystem.terminate()
-        } {
-          println("Shutdown complete")
+      typedSystem.scheduler.scheduleOnce(
+        autoshutdown.seconds,
+        () => {
+          log.info(s"Auto-shutdown starting after $autoshutdown seconds")
+          for {
+            _ <- untypedSystem.terminate()
+          } {
+            println("Shutdown complete")
+          }
         }
-      }
+      )
 
     for (i <- 0 until numActors) {
       untypedSystem.actorOf(LoggingTest.props(i, options))
@@ -109,8 +108,8 @@ object LoggingTest {
 }
 
 /**
-  * A dummy akka test actor
-  */
+ * A dummy akka test actor
+ */
 class LoggingTest(i: Int, options: LoggingTestApp.Options) extends Actor {
 
   import context.dispatcher
@@ -123,7 +122,7 @@ class LoggingTest(i: Int, options: LoggingTestApp.Options) extends Actor {
     context.system.scheduler.scheduleOnce(autostop.seconds, self, LoggingTest.Quit)
 
   private val logMsgTimer = context.system.scheduler.schedule(delay.millis, delay.millis, self, LoggingTest.LogMessages)
-  private val log4j2Test = new Slf4jTest()
+  private val log4j2Test  = new Slf4jTest()
 
   override def receive: Receive = {
     case LoggingTest.LogMessages =>

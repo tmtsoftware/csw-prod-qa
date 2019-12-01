@@ -16,6 +16,7 @@ import csw.logging.client.javadsl.JLoggerFactory;
 import csw.params.commands.CommandResponse;
 import csw.params.commands.ControlCommand;
 import csw.params.core.generics.Key;
+import csw.params.core.models.Id;
 import csw.params.events.Event;
 import csw.params.events.EventName;
 import csw.params.events.SystemEvent;
@@ -85,18 +86,18 @@ public class JTestHcd {
     }
 
     @Override
-    public CommandResponse.ValidateCommandResponse validateCommand(ControlCommand controlCommand) {
-      return new CommandResponse.Accepted(controlCommand.runId());
+    public CommandResponse.ValidateCommandResponse validateCommand(Id runId, ControlCommand controlCommand) {
+      return new CommandResponse.Accepted(runId);
     }
 
     @Override
-    public CommandResponse.SubmitResponse onSubmit(ControlCommand controlCommand) {
+    public CommandResponse.SubmitResponse onSubmit(Id runId, ControlCommand controlCommand) {
       log.debug("onSubmit called: " + controlCommand);
-      return new CommandResponse.Completed(controlCommand.runId());
+      return new CommandResponse.Completed(runId);
     }
 
     @Override
-    public void onOneway(ControlCommand controlCommand) {
+    public void onOneway(Id runId, ControlCommand controlCommand) {
       log.debug("onOneway called: " + controlCommand);
     }
 

@@ -1,6 +1,6 @@
 package csw.qa.framework
 
-import akka.actor.Scheduler
+import akka.actor.typed
 import akka.actor.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -12,6 +12,7 @@ import csw.params.commands.CommandResponse.{SubmitResponse, ValidateCommandRespo
 import csw.params.commands.{CommandResponse, ControlCommand}
 import akka.actor.typed.scaladsl.AskPattern._
 import csw.location.models.TrackingEvent
+import csw.params.core.models.Id
 import csw.time.core.models.UTCTime
 
 import scala.concurrent.duration._
@@ -33,7 +34,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   implicit val timeout: Timeout = Timeout(3.seconds)
-  implicit val sched: Scheduler = ctx.system.scheduler
+  implicit val sched: typed.Scheduler = ctx.system.scheduler
 
   private val log = loggerFactory.getLogger
 
@@ -44,18 +45,18 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     worker ? (ref => TestAssemblyWorker.Initialize(ref))
   }
 
-  override def validateCommand(
-                                controlCommand: ControlCommand): ValidateCommandResponse = {
-    CommandResponse.Accepted(controlCommand.runId)
+  override def validateCommand(runId: Id,
+                               controlCommand: ControlCommand): ValidateCommandResponse = {
+    CommandResponse.Accepted(runId)
   }
 
-  override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
+  override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = {
     log.info(s"Received submit: $controlCommand")
-    worker ! TestAssemblyWorker.Submit(controlCommand)
-    CommandResponse.Started(controlCommand.runId)
+    worker ! TestAssemblyWorker.Submit(runId, controlCommand)
+    CommandResponse.Started(runId)
   }
 
-  override def onOneway(controlCommand: ControlCommand): Unit = {
+  override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {
     log.debug("onOneway called")
   }
 

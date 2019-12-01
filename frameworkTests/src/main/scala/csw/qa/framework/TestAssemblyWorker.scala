@@ -3,7 +3,7 @@ package csw.qa.framework
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import TestAssemblyWorker._
-import akka.actor.Scheduler
+import akka.actor.typed
 import akka.util.Timeout
 import csw.alarm.models.Key.AlarmKey
 import csw.command.api.scaladsl.CommandService
@@ -22,7 +22,6 @@ import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ObsId, Prefix, ProperMotion, Struct, Subsystem}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.time.core.models.UTCTime
-//import org.jooq.DSLContext
 
 import scala.async.Async.async
 import scala.concurrent.ExecutionContextExecutor
@@ -35,7 +34,7 @@ object TestAssemblyWorker {
 
   case class Initialize(replyTo: ActorRef[Unit]) extends TestAssemblyWorkerMsg
 
-  case class Submit(controlCommand: ControlCommand)
+  case class Submit(runId: Id, controlCommand: ControlCommand)
       extends TestAssemblyWorkerMsg
 
   case class Location(trackingEvent: TrackingEvent)
@@ -153,10 +152,10 @@ object TestAssemblyWorker {
   val alarmKey: AlarmKey = AlarmKey(Subsystem.CSW, "testComponent", "testAlarm")
 }
 
-//noinspection DuplicatedCode
+//noinspection DuplicatedCode,SameParameterValue
 class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
                          cswCtx: CswContext)
-    extends AbstractBehavior[TestAssemblyWorkerMsg] {
+    extends AbstractBehavior[TestAssemblyWorkerMsg](ctx) {
 
   import cswCtx._
   import TestAssemblyWorker._
@@ -164,7 +163,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   implicit val timeout: Timeout = Timeout(3.seconds)
-  implicit val sched: Scheduler = ctx.system.scheduler
+  implicit val sched: typed.Scheduler = ctx.system.scheduler
 
   private val log = loggerFactory.getLogger
 
@@ -208,8 +207,8 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
         }
 //      case SetDatabase(dsl) =>
 //        database = Some(dsl)
-      case Submit(controlCommand) =>
-        forwardCommandToHcd(controlCommand)
+      case Submit(runId, controlCommand) =>
+        forwardCommandToHcd(runId, controlCommand)
       case Location(trackingEvent) =>
         log.info(s"Location updated: $trackingEvent")
         trackingEvent match {
@@ -243,32 +242,22 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   }
 
   // For testing, forward command to HCD and complete this command when it completes
-  private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
-    import scala.concurrent.duration._
-//    implicit val scheduler: Scheduler = ctx.system.scheduler
-    implicit val timeout: Timeout = Timeout(3.seconds)
+  private def forwardCommandToHcd(runId: Id, controlCommand: ControlCommand): Unit = {
+//    import scala.concurrent.duration._
+//    implicit val timeout: Timeout = Timeout(3.seconds)
     log.info(s"Forward command to hcd: $testHcd")
-    testHcd.map { hcd =>
-      val setup = Setup(
-        controlCommand.source,
-        controlCommand.commandName,
-        controlCommand.maybeObsId,
-        controlCommand.paramSet
-      )
-      cswCtx.commandResponseManager
-        .addSubCommand(controlCommand.runId, setup.runId)
-
+    testHcd.foreach { hcd =>
       val f = for {
-        onewayResponse <-hcd.oneway(setup)
-        response <- hcd.submit(setup)
+        onewayResponse <-hcd.oneway(controlCommand)
+        response <- hcd.submit(controlCommand)
       } yield {
         log.info(s"oneway response = $onewayResponse, submit response = $response")
-        commandResponseManager.updateSubCommand(response)
+        commandResponseManager.updateCommand(response)
       }
       f.recover {
         case ex =>
-          val cmdStatus = Error(setup.runId, ex.toString)
-          commandResponseManager.updateSubCommand(cmdStatus)
+          val cmdStatus = Error(runId, ex.toString)
+          commandResponseManager.updateCommand(cmdStatus)
       }
     }
   }

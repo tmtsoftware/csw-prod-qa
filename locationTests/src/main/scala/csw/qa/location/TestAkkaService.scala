@@ -10,6 +10,7 @@ import csw.location.models.codecs.LocationCodecs
 import csw.location.models.{ComponentId, ComponentType}
 import csw.logging.client.scaladsl.GenericLoggerFactory
 import csw.params.core.models.Prefix
+import csw.params.core.models.Subsystem.CSW
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -27,8 +28,8 @@ object TestAkkaService {
     )
 
   // Component ID of the ith service
-  def componentId(i: Int) =
-    ComponentId(s"TestAkkaService_$i", ComponentType.Service)
+  def componentId(i: Int): ComponentId =
+    ComponentId(Prefix(CSW, s"TestAkkaService_$i"), ComponentType.Service)
 
   // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
@@ -45,7 +46,7 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       i: Int,
                       options: TestAkkaServiceApp.Options,
                       locationService: LocationService)
-    extends AbstractBehavior[ServiceMessageType]
+    extends AbstractBehavior[ServiceMessageType](ctx)
     with HttpCodecs
     with LocationCodecs {
 
@@ -60,7 +61,6 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
     locationService.register(
       registrationFactory.akkaTyped(
         TestAkkaService.connection(i),
-        Prefix("csw.prefix"),
         ctx.self
       )
     ),
@@ -74,8 +74,8 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
   if (autostop != 0)
     timers.startSingleTimer(TestAkkaService.TimerKey, Quit, autostop.seconds)
 
-  val componentId = ComponentId("rmyservice", ComponentType.Service)
-  val connection = HttpConnection(componentId)
+  val componentId: ComponentId = ComponentId(Prefix(CSW, "myservice"), ComponentType.Service)
+  val connection: HttpConnection = HttpConnection(componentId)
 
   override def onMessage(
     msg: ServiceMessageType
@@ -85,12 +85,12 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
       case ClientMessage(replyTo) =>
         if (logMessages)
           log.debug(s"Received scala client message from: $replyTo")
-        Behavior.same
+        Behaviors.same
 
       case Quit =>
         log.info(s"Actor $i is shutting down after $autostop seconds")
         Await.result(reg.unregister(), 10.seconds)
-        Behavior.stopped
+        Behaviors.stopped
     }
   }
 }
@@ -110,8 +110,8 @@ object TestAkkaService2 {
     )
 
   // Component ID of the ith service
-  def componentId(i: Int) =
-    ComponentId(s"TestAkkaService2_$i", ComponentType.Service)
+  def componentId(i: Int): ComponentId =
+    ComponentId(Prefix(CSW, s"TestAkkaService2_$i"), ComponentType.Service)
 
   // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
@@ -127,7 +127,7 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        i: Int,
                        options: TestAkkaServiceApp.Options,
                        locationService: LocationService)
-    extends AbstractBehavior[ServiceMessageType] {
+    extends AbstractBehavior[ServiceMessageType](ctx) {
 
   import options._
 
@@ -140,7 +140,6 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
     locationService.register(
       registrationFactory.akkaTyped(
         TestAkkaService2.connection(i),
-        Prefix("csw.prefix"),
         ctx.self
       )
     ),
@@ -167,7 +166,7 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
       case Quit =>
         log.info(s"Actor $i is shutting down after $autostop seconds")
         Await.result(reg.unregister(), 10.seconds)
-        Behavior.stopped
+        Behaviors.stopped
     }
   }
 }

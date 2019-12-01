@@ -6,8 +6,6 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.SpawnProtocol;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.stream.Materializer;
-import akka.stream.typed.javadsl.ActorMaterializerFactory;
 import akka.util.Timeout;
 import csw.command.api.javadsl.ICommandService;
 import csw.command.client.CommandServiceFactory;
@@ -44,6 +42,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static csw.params.javadsl.JSubsystem.CSW;
+
 
 // A client to test locating and communicating with the Test assembly
 public class JTestAssemblyClient {
@@ -54,28 +54,27 @@ public class JTestAssemblyClient {
   // Key for events from assembly
   private static final Key<Integer> assemblyEventValueKey = JKeyType.IntKey().make("assemblyEventValue");
   private static final EventName assemblyEventName = new EventName("myAssemblyEvent");
-  private static final Prefix assemblyPrefix = new Prefix("csw.assembly");
+  private static final Prefix assemblyPrefix = new Prefix(CSW, "assembly");
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private static final EventKey assemblyEventKey = new EventKey(assemblyPrefix, assemblyEventName);
 
   private static final ObsId obsId = new ObsId("2023-Q22-4-33");
   private static final Key<Integer> encoderKey = JKeyType.IntKey().make("encoder");
   private static final Key<String> filterKey = JKeyType.StringKey().make("filter");
-  private static final Prefix prefix = new Prefix("wfos.blue.filter");
+  private static final Prefix prefix = new Prefix(CSW, "wfos.blue.filter");
   private static final CommandName command = new CommandName("myCommand");
-  private static final ComponentId componentId = new ComponentId("TestAssembly", JComponentType.Assembly);
+  private static final ComponentId componentId = new ComponentId(new Prefix(CSW, "TestAssembly"), JComponentType.Assembly());
   private static final Connection.AkkaConnection connection = new Connection.AkkaConnection(componentId);
 
-  private final ActorSystem<SpawnProtocol> typedSystem = ActorSystemFactory.remote(SpawnProtocol.behavior(), "JTestAssemblyClient");
-  private final Materializer mat = ActorMaterializerFactory.create(typedSystem);
-  private ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem, mat);
+  private final ActorSystem<SpawnProtocol.Command> typedSystem = ActorSystemFactory.remote(SpawnProtocol.create(), "JTestAssemblyClient");
+  private ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem);
   private final ILogger log = JGenericLoggerFactory.getLogger(JTestAssemblyClient.class);
   private final IEventService eventService = (new EventServiceFactory()).jMake(locationService, typedSystem);
 
   // Actor to receive HCD events
   private Behavior<Event> eventHandler() {
     return Behaviors.receive(Event.class)
-        .onMessage(SystemEvent.class, (ctx, e) -> {
+        .onMessage(SystemEvent.class, e -> {
           log.info("XXX Got an event " + e);
           e.jGet(assemblyEventValueKey)
               .ifPresent(p -> {
@@ -83,7 +82,7 @@ public class JTestAssemblyClient {
                 log.info("Received event with value: " + eventValue);
               });
           return Behaviors.same();
-        }).onMessage(Event.class, (ctx, o) -> {
+        }).onMessage(Event.class, e -> {
           throw new RuntimeException("Expected SystemEvent");
         }).build();
   }
@@ -124,10 +123,10 @@ public class JTestAssemblyClient {
 
   private Behavior<TrackingEvent> subscriberBehavior() {
     return Behaviors.receive(TrackingEvent.class)
-        .onMessage(LocationUpdated.class, (ctx, msg) -> {
+        .onMessage(LocationUpdated.class, msg -> {
           Location loc = msg.location();
           log.info("LocationUpdated: " + loc);
-          interact(ctx, CommandServiceFactory.jMake((AkkaLocation)loc, typedSystem));
+          interact(CommandServiceFactory.jMake(loc, typedSystem));
           return Behaviors.same();
         }).build();
   }
@@ -140,7 +139,7 @@ public class JTestAssemblyClient {
   }
 
   @SuppressWarnings("unused")
-  private void interact(ActorContext<TrackingEvent> ctx, ICommandService assembly) {
+  private void interact(ICommandService assembly) {
     List<ControlCommand> setups = new ArrayList<>();
     for (int i = 1; i <= 10; i++) {
       setups.add(makeSetup(i, "filter" + i));

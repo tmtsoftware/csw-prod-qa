@@ -1,12 +1,9 @@
 package csw.qa.location
 
-
 import java.net.InetAddress
 
 import akka.actor
 import akka.actor.typed.{ActorSystem, SpawnProtocol}
-import akka.stream.Materializer
-import akka.stream.typed.scaladsl.ActorMaterializer
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
@@ -16,20 +13,20 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 /**
-  * A location service test client application that attempts to resolve one or more
-  * akka services.
-  *
-  * Type test-akka-service-app --help (or see below) for a description of the command line options.
-  *
-  * The client and service applications can be run on the same or different hosts.
-  */
+ * A location service test client application that attempts to resolve one or more
+ * akka services.
+ *
+ * Type test-akka-service-app --help (or see below) for a description of the command line options.
+ *
+ * The client and service applications can be run on the same or different hosts.
+ */
+//noinspection DuplicatedCode
 object TestServiceClientApp extends App {
-  private val host = InetAddress.getLocalHost.getHostName
-  implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "TestAkkaServiceApp")
-  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
-  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
-  implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
-  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
+  private val host                                     = InetAddress.getLocalHost.getHostName
+  implicit val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "TestAkkaServiceApp")
+  lazy val untypedSystem: actor.ActorSystem   = typedSystem.toClassic
+  implicit lazy val ec: ExecutionContextExecutor       = untypedSystem.dispatcher
+  val locationService                                  = HttpLocationServiceFactory.makeLocalClient(typedSystem)
 
   LoggingSystemFactory.start("TestServiceClientApp", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
@@ -81,16 +78,18 @@ object TestServiceClientApp extends App {
   private def autoShutdown(options: Options): Unit = {
     import options._
     if (options.autoshutdown != 0) {
-      typedSystem.scheduler.scheduleOnce(autoshutdown.seconds) {
-        log.info(s"Auto-shutdown starting after $autoshutdown seconds")
-        for {
-          _ <- untypedSystem.terminate()
-        } {
-          println("Shutdown complete")
+      typedSystem.scheduler.scheduleOnce(
+        autoshutdown.seconds,
+        () => {
+          log.info(s"Auto-shutdown starting after $autoshutdown seconds")
+          for {
+            _ <- untypedSystem.terminate()
+          } {
+            println("Shutdown complete")
+          }
         }
-      }
+      )
     }
   }
 
 }
-

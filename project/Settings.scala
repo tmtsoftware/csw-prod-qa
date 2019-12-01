@@ -17,8 +17,8 @@ object Settings {
     parallelExecution in Test := false,
     fork := true,
     resolvers += Resolver.bintrayRepo("twtmt", "maven"),
-    resolvers += "bintray" at "http://jcenter.bintray.com",
     resolvers += "jitpack" at "https://jitpack.io",
+    resolvers += "bintray" at "https://jcenter.bintray.com",
     updateOptions := updateOptions.value.withLatestSnapshots(false),
     scalacOptions ++= Seq(
       "-encoding",

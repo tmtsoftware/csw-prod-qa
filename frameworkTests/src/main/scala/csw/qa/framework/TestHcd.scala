@@ -20,7 +20,8 @@ import csw.time.core.models.UTCTime
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
-import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
+import csw.params.core.models.Subsystem.CSW
+import csw.params.core.models.{Angle, Coords, Id, Prefix, ProperMotion, Struct}
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -54,7 +55,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   private val baseEvent3 = SystemEvent(componentInfo.prefix, eventName3)
 
   private val connection = HttpConnection(
-    ComponentId("pycswTest", ComponentType.Service)
+    ComponentId(Prefix(CSW, "pycswTest"), ComponentType.Service)
   )
   private val service =
     HttpCommandService(ctx.system, cswCtx.locationService, connection)
@@ -122,13 +123,13 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     startPublishingEvents()
   }
 
-  override def validateCommand(
+  override def validateCommand(runId: Id,
     controlCommand: ControlCommand
   ): ValidateCommandResponse = {
-    CommandResponse.Accepted(controlCommand.runId)
+    CommandResponse.Accepted(runId)
   }
 
-  override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
+  override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = {
     log.debug(s"onSubmit called: $controlCommand")
     implicit def timeout: Timeout = new Timeout(20.seconds)
 
@@ -136,42 +137,42 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
       // Test sending a command to a python based HTTP service
       // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
       val validateResponse = Await.result(service.validate(controlCommand), 5.seconds)
-      log.info(s"Response from validate command to ${connection.componentId.name}: $validateResponse")
+      log.info(s"Response from validate command to ${connection.componentId.fullName}: $validateResponse")
       val onewayResponse = Await.result(service.oneway(controlCommand), 5.seconds)
-      log.info(s"Response from oneway command to ${connection.componentId.name}: $onewayResponse")
+      log.info(s"Response from oneway command to ${connection.componentId.fullName}: $onewayResponse")
 
       val testCommand = makeTestCommand()
       val firstCommandResponse = Await.result(service.submit(testCommand), 5.seconds)
-      log.info(s"Response from submit command to ${connection.componentId.name}: $firstCommandResponse")
-      val commandResponse = Await.result(service.queryFinal(testCommand.runId), 20.seconds)
-      log.info(s"Response from submit command to ${connection.componentId.name}: $commandResponse")
+      log.info(s"Response from submit command to ${connection.componentId.fullName}: $firstCommandResponse")
+      val commandResponse = Await.result(service.queryFinal(firstCommandResponse.runId), 20.seconds)
+      log.info(s"Response from submit command to ${connection.componentId.fullName}: $commandResponse")
 
       commandResponse
     } catch {
       case e: Exception =>
         log.error(
-          s"Error sending command to ${service.connection.componentId.name}: $e",
+          s"Error sending command to ${service.connection.componentId.fullName}: $e",
           ex = e
         )
         Error(
-          controlCommand.runId,
-          s"Error sending command to ${service.connection.componentId.name}: $e"
+          runId,
+          s"Error sending command to ${service.connection.componentId.fullName}: $e"
         )
     }
   }
 
-  override def onOneway(controlCommand: ControlCommand): Unit = {
+  override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {
     log.debug(s"onOneway called: $controlCommand")
     try {
       val onewayResponse =
         Await.result(service.oneway(controlCommand), 5.seconds)
       log.info(
-        s"Response from oneway command to ${connection.componentId.name}: $onewayResponse"
+        s"Response from oneway command to ${connection.componentId.fullName}: $onewayResponse"
       )
     } catch {
       case e: Exception =>
         log.error(
-          s"Error sending oneway command to ${service.connection.componentId.name}: $e",
+          s"Error sending oneway command to ${service.connection.componentId.fullName}: $e",
           ex = e
         )
     }

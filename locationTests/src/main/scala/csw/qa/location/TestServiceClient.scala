@@ -20,7 +20,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
                         timers: TimerScheduler[ServiceClientMessageType],
                         options: TestServiceClientApp.Options,
                         locationService: LocationService)(implicit mat: Materializer)
-  extends AbstractBehavior[ServiceClientMessageType] {
+  extends AbstractBehavior[ServiceClientMessageType](ctx) {
 
   import options._
   implicit def actorSystem: ActorSystem[Nothing] = ctx.system
@@ -53,7 +53,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
       case TrackingEventMessage(LocationRemoved(conn)) =>
         log.debug(s"Location removed ${conn.name}")
     }
-    Behavior.same
+    Behaviors.same
   }
 }
 

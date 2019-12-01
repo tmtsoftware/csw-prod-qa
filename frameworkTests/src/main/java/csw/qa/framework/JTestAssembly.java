@@ -27,11 +27,13 @@ import csw.params.commands.CommandResponse;
 import csw.params.commands.ControlCommand;
 import csw.params.commands.Setup;
 import csw.params.core.generics.Key;
+import csw.params.core.models.Id;
 import csw.params.core.models.Prefix;
 import csw.params.events.*;
 import csw.params.javadsl.JKeyType;
 import csw.time.core.models.UTCTime;
 
+import static csw.params.javadsl.JSubsystem.CSW;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import java.util.Collections;
@@ -59,7 +61,7 @@ public class JTestAssembly {
   // Key for HCD events
   private static final Key<Integer> hcdEventValueKey = JKeyType.IntKey().make("hcdEventValue");
   private static final EventName hcdEventName = new EventName("myHcdEvent");
-  private static final Prefix hcdPrefix = new Prefix("csw.hcd");
+  private static final Prefix hcdPrefix = new Prefix(CSW, "hcd");
 
   // Dummy key for publishing events from assembly
   private static final Key<Integer> eventKey = JKeyType.IntKey().make("assemblyEventValue");
@@ -68,7 +70,7 @@ public class JTestAssembly {
   // Actor to receive HCD events
   private static Behavior<Event> eventHandler(ILogger log, IEventPublisher publisher, SystemEvent baseEvent) {
     return Behaviors.receive(Event.class)
-        .onMessage(SystemEvent.class, (ctx, e) -> {
+        .onMessage(SystemEvent.class, e -> {
           e.jGet(hcdEventValueKey)
               .ifPresent(p -> {
                 Integer eventValue = p.head();
@@ -79,7 +81,7 @@ public class JTestAssembly {
                 publisher.publish(se);
               });
           return Behaviors.same();
-        }).onMessage(Event.class, (ctx, o) -> {
+        }).onMessage(Event.class, e -> {
           throw new RuntimeException("Expected SystemEvent");
         }).build();
   }
@@ -121,37 +123,37 @@ public class JTestAssembly {
     }
 
     @Override
-    public CommandResponse.ValidateCommandResponse validateCommand(ControlCommand controlCommand) {
-      return new CommandResponse.Accepted(controlCommand.runId());
+    public CommandResponse.ValidateCommandResponse validateCommand(Id runId, ControlCommand controlCommand) {
+      return new CommandResponse.Accepted(runId);
     }
 
     @Override
-    public CommandResponse.SubmitResponse onSubmit(ControlCommand controlCommand) {
+    public CommandResponse.SubmitResponse onSubmit(Id runId, ControlCommand controlCommand) {
       log.debug("onSubmit called: " + controlCommand);
-      forwardCommandToHcd(controlCommand);
-      return new CommandResponse.Started(controlCommand.runId());
+      forwardCommandToHcd(runId, controlCommand);
+      return new CommandResponse.Started(runId);
     }
 
     // For testing, forward command to HCD and complete this command when it completes
-    private void forwardCommandToHcd(ControlCommand controlCommand) {
+    private void forwardCommandToHcd(Id runId, ControlCommand controlCommand) {
       CommandResponseManager commandResponseManager = cswServices.commandResponseManager();
       testHcd.ifPresent(hcd -> {
         Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
         Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
-        commandResponseManager.addSubCommand(controlCommand.runId(), setup.runId());
+//        commandResponseManager.addSubCommand(controlCommand.runId(), setup.runId());
         try {
-          CommandResponse.SubmitResponse response = hcd.submit(setup, timeout).get();
+          CommandResponse.SubmitResponse response = hcd.submit(setup).get();
           log.info("response = " + response);
-          commandResponseManager.updateSubCommand(response);
+//          commandResponseManager.updateSubCommand(response);
         } catch (Exception ex) {
-          commandResponseManager.updateSubCommand(new CommandResponse.Error(setup.runId(), ex.toString()));
+//          commandResponseManager.updateSubCommand(new CommandResponse.Error(setup.runId(), ex.toString()));
         }
       });
     }
 
 
     @Override
-    public void onOneway(ControlCommand controlCommand) {
+    public void onOneway(Id runId, ControlCommand controlCommand) {
       log.debug("onOneway called: " + controlCommand);
     }
 

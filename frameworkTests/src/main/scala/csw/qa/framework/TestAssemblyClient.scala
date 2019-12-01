@@ -6,8 +6,6 @@ import akka.actor
 import akka.actor.typed.{ActorSystem, Behavior, SpawnProtocol}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter._
-import akka.stream.Materializer
-import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.util.Timeout
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
@@ -23,25 +21,26 @@ import csw.params.core.generics.KeyType
 import csw.params.core.models.{ObsId, Prefix}
 import csw.params.events.{Event, EventKey, SystemEvent}
 import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
+import csw.params.core.models.Subsystem.CSW
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
+//noinspection DuplicatedCode,SameParameterValue
 // A client to test locating and communicating with the Test assembly
 object TestAssemblyClient extends App {
 
   private val host = InetAddress.getLocalHost.getHostName
-  implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "TestAssemblyClient")
-  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
-  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+  implicit val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "TestAssemblyClient")
+  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toClassic
   implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
 
   LoggingSystemFactory.start("TestAssemblyClient", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
   log.info("Starting TestAssemblyClient")
 
-  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
+  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem)
 
   implicit val timeout: Timeout = Timeout(10.seconds)
 
@@ -59,7 +58,7 @@ object TestAssemblyClient extends App {
   private val prefix = Prefix("wfos.blue.filter")
   private val command = CommandName("myCommand")
 
-  val connection = AkkaConnection(ComponentId("TestAssembly", Assembly))
+  val connection = AkkaConnection(ComponentId(Prefix(CSW, "TestAssembly"), Assembly))
 
   lazy val eventService: EventService =
     new EventServiceFactory().make(locationService)
@@ -72,7 +71,7 @@ object TestAssemblyClient extends App {
     }
   }
 
-  private class EventHandler(ctx: ActorContext[Event]) extends AbstractBehavior[Event] {
+  private class EventHandler(ctx: ActorContext[Event]) extends AbstractBehavior[Event](ctx) {
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
         case e: SystemEvent =>

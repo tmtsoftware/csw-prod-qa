@@ -42,15 +42,15 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   private val comment3 = "update 2 comment"
 
   private val host = InetAddress.getLocalHost.getHostName
-  val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "DatabaseTest")
-  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toUntyped
+  val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "DatabaseTest")
+  implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toClassic
   implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
   implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
 
   LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, typedSystem)
   private val log = GenericLoggerFactory.getLogger
 
-  private val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
+  private val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem)
 
 
   private val `auth-store-dir` = "/tmp/config-cli/auth"
