@@ -28,12 +28,12 @@ import csw.params.commands.ControlCommand;
 import csw.params.commands.Setup;
 import csw.params.core.generics.Key;
 import csw.params.core.models.Id;
-import csw.params.core.models.Prefix;
 import csw.params.events.*;
 import csw.params.javadsl.JKeyType;
+import csw.prefix.javadsl.JSubsystem;
+import csw.prefix.models.Prefix;
 import csw.time.core.models.UTCTime;
 
-import static csw.params.javadsl.JSubsystem.CSW;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import java.util.Collections;
@@ -61,7 +61,7 @@ public class JTestAssembly {
   // Key for HCD events
   private static final Key<Integer> hcdEventValueKey = JKeyType.IntKey().make("hcdEventValue");
   private static final EventName hcdEventName = new EventName("myHcdEvent");
-  private static final Prefix hcdPrefix = new Prefix(CSW, "hcd");
+  private static final Prefix hcdPrefix = new Prefix(JSubsystem.CSW(), "hcd");
 
   // Dummy key for publishing events from assembly
   private static final Key<Integer> eventKey = JKeyType.IntKey().make("assemblyEventValue");
@@ -102,7 +102,7 @@ public class JTestAssembly {
                           JCswContext cswServices) {
       super(ctx, cswServices);
 
-      this.log = new JLoggerFactory(cswServices.componentInfo().name()).getLogger(getClass());
+      this.log = cswServices.loggerFactory().getLogger(this.getClass());
       this.ctx = ctx;
       this.cswServices = cswServices;
       log.debug("Starting Test Assembly");
@@ -142,7 +142,7 @@ public class JTestAssembly {
         Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
 //        commandResponseManager.addSubCommand(controlCommand.runId(), setup.runId());
         try {
-          CommandResponse.SubmitResponse response = hcd.submit(setup).get();
+          CommandResponse.SubmitResponse response = hcd.submitAndWait(setup, timeout).get();
           log.info("response = " + response);
 //          commandResponseManager.updateSubCommand(response);
         } catch (Exception ex) {
@@ -197,6 +197,6 @@ public class JTestAssembly {
   public static void main(String[] args) {
 //    Async.init(); // required for Java ea-async: See https://github.com/electronicarts/ea-async
     Config defaultConfig = ConfigFactory.load("JTestAssembly.conf");
-    JContainerCmd.start("TestAssembly", args, Optional.of(defaultConfig));
+    JContainerCmd.start("TestAssembly", JSubsystem.CSW(), args, Optional.of(defaultConfig));
   }
 }

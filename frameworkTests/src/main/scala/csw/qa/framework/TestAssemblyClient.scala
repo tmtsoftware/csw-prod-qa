@@ -18,10 +18,11 @@ import csw.location.models.Connection.AkkaConnection
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.{CommandName, Setup}
 import csw.params.core.generics.KeyType
-import csw.params.core.models.{ObsId, Prefix}
+import csw.params.core.models.ObsId
 import csw.params.events.{Event, EventKey, SystemEvent}
 import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
-import csw.params.core.models.Subsystem.CSW
+import csw.prefix.models.Prefix
+import csw.prefix.models.Subsystem.CSW
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -48,7 +49,7 @@ object TestAssemblyClient extends App {
 //  private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
 //  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
   private val assemblyEventName = TestAssemblyWorker.eventName
-  private val assemblyPrefix = Prefix("csw.assembly")
+  private val assemblyPrefix = Prefix(CSW, "assembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val assemblyEventKey = EventKey(assemblyPrefix, assemblyEventName)
 
@@ -137,7 +138,7 @@ object TestAssemblyClient extends App {
   }
 
   private def interact(ctx: ActorContext[TrackingEvent], assembly: CommandService): Unit = {
-    assembly.submit(makeSetup(0, s"filter0")).onComplete {
+    assembly.submitAndWait(makeSetup(0, s"filter0")).onComplete {
       case Success(responses) => log.info(s"Single Submit Test Passed: Responses = $responses")
       case Failure(ex)        => log.info(s"Single Submit Test Failed: $ex")
     }

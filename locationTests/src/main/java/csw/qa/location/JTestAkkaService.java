@@ -15,13 +15,12 @@ import csw.logging.api.javadsl.ILogger;
 import csw.logging.client.commons.AkkaTypedExtension;
 import csw.logging.client.javadsl.JGenericLoggerFactory;
 import csw.logging.client.scaladsl.LoggingSystemFactory;
-import csw.params.core.models.Prefix;
+import csw.prefix.javadsl.JSubsystem;
+import csw.prefix.models.Prefix;
 
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-
-import static csw.params.javadsl.JSubsystem.CSW;
 
 /**
  * Starts one or more akka services in order to test the location service.
@@ -39,7 +38,7 @@ public class JTestAkkaService extends AbstractBehavior<ClientMessage> {
 
   // Component id for the ith service
   static ComponentId componentId(int i) {
-    return new ComponentId(new Prefix(CSW, "TestAkkaService_" + i), JComponentType.Assembly());
+    return new ComponentId(new Prefix(JSubsystem.CSW(), "TestAkkaService_" + i), JComponentType.Assembly());
   }
 
   // Connection for the ith service

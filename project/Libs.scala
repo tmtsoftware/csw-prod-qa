@@ -22,4 +22,5 @@ private val Version = "0.1-SNAPSHOT"
   val `csw-framework` = Org %% "csw-framework" % Version
   val `csw-event-client` = Org %% "csw-event-client" % Version
   val `csw-database` = Org %% "csw-database" % Version
+  val `csw-prefix` = Org %% "csw-prefix" % Version
 }

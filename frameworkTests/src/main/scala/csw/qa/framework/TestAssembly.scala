@@ -13,6 +13,7 @@ import csw.params.commands.{CommandResponse, ControlCommand}
 import akka.actor.typed.scaladsl.AskPattern._
 import csw.location.models.TrackingEvent
 import csw.params.core.models.Id
+import csw.prefix.models.Subsystem.CSW
 import csw.time.core.models.UTCTime
 
 import scala.concurrent.duration._
@@ -80,5 +81,5 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
 // Start assembly from the command line using TestAssembly.conf resource file
 object TestAssemblyApp extends App {
   val defaultConfig = ConfigFactory.load("TestAssembly.conf")
-  ContainerCmd.start("TestAssembly", args, Some(defaultConfig))
+  ContainerCmd.start("TestAssembly", CSW, args, Some(defaultConfig))
 }

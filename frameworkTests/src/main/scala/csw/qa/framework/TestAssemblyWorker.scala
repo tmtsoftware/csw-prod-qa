@@ -8,7 +8,6 @@ import akka.util.Timeout
 import csw.alarm.models.Key.AlarmKey
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
-//import csw.database.DatabaseServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
 import csw.location.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
@@ -19,8 +18,10 @@ import csw.params.core.generics.KeyType.CoordKey
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
-import csw.params.core.models.{Angle, Coords, Id, ObsId, Prefix, ProperMotion, Struct, Subsystem}
+import csw.params.core.models.{Angle, Coords, Id, ObsId, ProperMotion, Struct}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
+import csw.prefix.models.{Prefix, Subsystem}
+import csw.prefix.models.Subsystem.{CSW, WFOS}
 import csw.time.core.models.UTCTime
 
 import scala.async.Async.async
@@ -55,7 +56,7 @@ object TestAssemblyWorker {
   // Key for HCD events
   private val hcdEventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val hcdEventName = EventName("myHcdEvent")
-  private val hcdPrefix = Prefix("csw.hcd")
+  private val hcdPrefix = Prefix(CSW, "hcd")
 
   // Keys for publishing events from assembly
   private[framework] val eventKey1: Key[Float] =
@@ -179,7 +180,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   private val obsId = ObsId("2023-Q22-4-33")
   private val encoderKey = KeyType.IntKey.make("encoder")
   private val filterKey = KeyType.StringKey.make("filter")
-  private val prefix = Prefix("wfos.blue.filter")
+  private val prefix = Prefix(WFOS, "blue.filter")
   private val command = CommandName("myCommand")
 
   private def makeSetup(encoder: Int, filter: String): Setup = {
@@ -219,8 +220,9 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
               case Success(responses) => log.info(s"Initial Submit Test Passed: Responses = $responses")
               case Failure(ex)        => log.info(s"Initial Submit Test Failed: $ex")
             }
-          case LocationRemoved(_) =>
-            testHcd = None
+          case LocationRemoved(location) =>
+              log.info(s"Location removed: $location")
+//            testHcd = None
         }
       case RefreshAlarms =>
         refreshAlarms()
@@ -243,8 +245,6 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
 
   // For testing, forward command to HCD and complete this command when it completes
   private def forwardCommandToHcd(runId: Id, controlCommand: ControlCommand): Unit = {
-//    import scala.concurrent.duration._
-//    implicit val timeout: Timeout = Timeout(3.seconds)
     log.info(s"Forward command to hcd: $testHcd")
     testHcd.foreach { hcd =>
       val f = for {

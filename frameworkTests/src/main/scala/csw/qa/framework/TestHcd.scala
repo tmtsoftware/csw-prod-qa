@@ -12,7 +12,7 @@ import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.models.{ComponentId, ComponentType, TrackingEvent}
 import csw.location.models.Connection.HttpConnection
-import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.CommandResponse.{Completed, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
@@ -20,8 +20,9 @@ import csw.time.core.models.UTCTime
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
-import csw.params.core.models.Subsystem.CSW
-import csw.params.core.models.{Angle, Coords, Id, Prefix, ProperMotion, Struct}
+import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
+import csw.prefix.models.Prefix
+import csw.prefix.models.Subsystem.CSW
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -133,32 +134,35 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
     log.debug(s"onSubmit called: $controlCommand")
     implicit def timeout: Timeout = new Timeout(20.seconds)
 
-    try {
-      // Test sending a command to a python based HTTP service
-      // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
-      val validateResponse = Await.result(service.validate(controlCommand), 5.seconds)
-      log.info(s"Response from validate command to ${connection.componentId.fullName}: $validateResponse")
-      val onewayResponse = Await.result(service.oneway(controlCommand), 5.seconds)
-      log.info(s"Response from oneway command to ${connection.componentId.fullName}: $onewayResponse")
-
-      val testCommand = makeTestCommand()
-      val firstCommandResponse = Await.result(service.submit(testCommand), 5.seconds)
-      log.info(s"Response from submit command to ${connection.componentId.fullName}: $firstCommandResponse")
-      val commandResponse = Await.result(service.queryFinal(firstCommandResponse.runId), 20.seconds)
-      log.info(s"Response from submit command to ${connection.componentId.fullName}: $commandResponse")
-
-      commandResponse
-    } catch {
-      case e: Exception =>
-        log.error(
-          s"Error sending command to ${service.connection.componentId.fullName}: $e",
-          ex = e
-        )
-        Error(
-          runId,
-          s"Error sending command to ${service.connection.componentId.fullName}: $e"
-        )
-    }
+//    try {
+//      // Test sending a command to a python based HTTP service
+//      // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
+//      val validateResponse = Await.result(service.validate(controlCommand), 5.seconds)
+//      log.info(s"Response from validate command to ${connection.componentId.fullName}: $validateResponse")
+//      val onewayResponse = Await.result(service.oneway(controlCommand), 5.seconds)
+//      log.info(s"Response from oneway command to ${connection.componentId.fullName}: $onewayResponse")
+//
+//      val testCommand = makeTestCommand()
+//      val firstCommandResponse = Await.result(service.submit(testCommand), 5.seconds)
+//      log.info(s"Response from submit command to ${connection.componentId.fullName}: $firstCommandResponse")
+//      val commandResponse = Await.result(service.queryFinal(firstCommandResponse.runId), 20.seconds)
+//      log.info(s"Response from submit command to ${connection.componentId.fullName}: $commandResponse")
+//
+//      commandResponse
+//    } catch {
+//      case e: Exception =>
+//        log.error(
+//          s"Error sending command to ${service.connection.componentId.fullName}: $e",
+//          ex = e
+//        )
+//        Error(
+//          runId,
+//          s"Error sending command to ${service.connection.componentId.fullName}: $e"
+//        )
+//    }
+    // XXX TODO FIXME
+    log.info(s"XXX HCD returning completed for $controlCommand")
+    Completed(runId)
   }
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {
@@ -230,5 +234,5 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
 
 object TestHcdApp extends App {
   val defaultConfig = ConfigFactory.load("TestHcd.conf")
-  ContainerCmd.start("TestHcd", args, Some(defaultConfig))
+  ContainerCmd.start("TestHcd", CSW, args, Some(defaultConfig))
 }

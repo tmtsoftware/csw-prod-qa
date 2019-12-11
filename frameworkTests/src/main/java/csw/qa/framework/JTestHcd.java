@@ -21,6 +21,7 @@ import csw.params.events.Event;
 import csw.params.events.EventName;
 import csw.params.events.SystemEvent;
 import csw.params.javadsl.JKeyType;
+import csw.prefix.javadsl.JSubsystem;
 import csw.time.core.models.UTCTime;
 
 import java.time.Duration;
@@ -59,7 +60,7 @@ public class JTestHcd {
     JTestHcdHandlers(ActorContext<TopLevelActorMessage> ctx,
                      JCswContext cswServices) {
       super(ctx, cswServices);
-      this.log = new JLoggerFactory(cswServices.componentInfo().name()).getLogger(getClass());
+      this.log = cswServices.loggerFactory().getLogger(this.getClass());
       this.eventService = cswServices.eventService();
       this.baseEvent = (new SystemEvent(cswServices.componentInfo().prefix(), eventName)).add(eventValueKey.set(eventValues.nextInt()));
       log.debug("Starting Test HCD");
@@ -136,6 +137,6 @@ public class JTestHcd {
 
   public static void main(String[] args) {
     Config defaultConfig = ConfigFactory.load("JTestHcd.conf");
-    JContainerCmd.start("TestHcd", args, Optional.of(defaultConfig));
+    JContainerCmd.start("TestHcd", JSubsystem.CSW(), args, Optional.of(defaultConfig));
   }
 }
