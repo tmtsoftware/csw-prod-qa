@@ -163,7 +163,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   import scala.concurrent.duration._
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
-  implicit val timeout: Timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = Timeout(5.seconds)
   implicit val sched: typed.Scheduler = ctx.system.scheduler
 
   private val log = loggerFactory.getLogger
