@@ -19,6 +19,7 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ObsId, ProperMotion, Struct}
+import csw.params.core.states.StateName
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.{Prefix, Subsystem}
 import csw.prefix.models.Subsystem.{CSW, WFOS}
@@ -56,7 +57,7 @@ object TestAssemblyWorker {
   // Key for HCD events
   private val hcdEventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val hcdEventName = EventName("myHcdEvent")
-  private val hcdPrefix = Prefix(CSW, "hcd")
+  private val hcdPrefix = Prefix(CSW, "TestHcd")
 
   // Keys for publishing events from assembly
   private[framework] val eventKey1: Key[Float] =
@@ -83,10 +84,11 @@ object TestAssemblyWorker {
     Behaviors.receive { (_, msg) =>
       msg match {
         case event: SystemEvent =>
+          log.debug(s"received event: $event")
           event.get(hcdEventValueKey)
             .foreach { p =>
               val eventValue = p.head
-              log.info(s"Received event with event time: ${event.eventTime} with value: $eventValue")
+              log.debug(s"Received event with event time: ${event.eventTime} with value: $eventValue")
               // fire a new event from the assembly based on the one from the HCD
 
               val pm = ProperMotion(0.5, 2.33)
@@ -144,7 +146,9 @@ object TestAssemblyWorker {
               publisher.publish(e)
             }
           Behaviors.same
-        case _ => throw new RuntimeException("Expected SystemEvent")
+        case x =>
+          log.error(s"Unexpected message: $x")
+          Behaviors.same
       }
     }
   }
@@ -215,6 +219,9 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
         trackingEvent match {
           case LocationUpdated(location) =>
             testHcd = Some(CommandServiceFactory.make(location.asInstanceOf[AkkaLocation])(ctx.system))
+            testHcd.get.subscribeCurrentState({ cs =>
+              log.debug(s"Received current state from TestHcd: $cs")
+            })
             val setup = makeSetup(0, "None")
             testHcd.get.submit(setup).onComplete {
               case Success(responses) => log.info(s"Initial Submit Test Passed: Responses = $responses")
@@ -234,7 +241,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     val subscriber = eventService.defaultSubscriber
     val publisher = eventService.defaultPublisher
     val baseEvent =
-      SystemEvent(componentInfo.prefix, eventName)
+      SystemEvent(hcdPrefix, eventName)
         .add(eventKey1.set(0))
         .add(eventKey2.set(Struct().add(eventKey1.set(0)).add(eventKey3.set(0))))
 
@@ -249,7 +256,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     testHcd.foreach { hcd =>
       val f = for {
         onewayResponse <-hcd.oneway(controlCommand)
-        response <- hcd.submit(controlCommand)
+        response <- hcd.submitAndWait(controlCommand)
       } yield {
         log.info(s"oneway response = $onewayResponse, submit response = $response")
         commandResponseManager.updateCommand(response)

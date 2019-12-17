@@ -1,6 +1,5 @@
 package csw.qa.framework
 
-import akka.actor.Cancellable
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.ActorContext
 import akka.util.Timeout
@@ -22,6 +21,7 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
+import csw.params.core.states.{CurrentState, StateName}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.CSW
 
@@ -59,7 +59,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
   private val pythonConnection = HttpConnection(ComponentId(Prefix(CSW, "pycswTest"), ComponentType.Service))
 
   // Dummy test command
-  private def makeTestCommand(): ControlCommand = {
+  private def makeTestCommand(commandName: String): ControlCommand = {
     import Angle._
     import Coords._
 
@@ -100,7 +100,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
       altAzCoord
     )
 
-    Setup(componentInfo.prefix, CommandName("testCommand"), None)
+    Setup(componentInfo.prefix, CommandName(commandName), None)
       .add(posParam)
       .add(eventKey1b.set(1.0f, 2.0f, 3.0f))
       .add(
@@ -119,6 +119,17 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
     startPublishingEvents()
+//    startPublishingCurrentState()
+
+    val maybeLocation = Await.result(locationService.find(pythonConnection), timeout.duration)
+    if (maybeLocation.isEmpty) {
+      log.error(s"Error locating $pythonConnection")
+    } else {
+      val pythonService = CommandServiceFactory.make(maybeLocation.get)
+      pythonService.subscribeCurrentState(Set(StateName("PyCswState")), { cs =>
+        log.debug(s"Received current state from python based component: $cs")
+      })
+    }
   }
 
   override def validateCommand(runId: Id, controlCommand: ControlCommand): ValidateCommandResponse = {
@@ -140,13 +151,21 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
         val onewayResponse = Await.result(pythonService.oneway(controlCommand), 5.seconds)
         log.info(s"Response from oneway command to ${pythonConnection.componentId.fullName}: $onewayResponse")
 
-        val testCommand          = makeTestCommand()
-        val firstCommandResponse = Await.result(pythonService.submit(testCommand), 5.seconds)
-        log.info(s"Response from submit command to ${pythonConnection.componentId.fullName}: $firstCommandResponse")
-        val commandResponse = Await.result(pythonService.queryFinal(firstCommandResponse.runId), 20.seconds)
-        log.info(s"Response from submit command to ${pythonConnection.componentId.fullName}: $commandResponse")
+        val longRunningCommand          = makeTestCommand("LongRunningCommand")
+        val firstCommandResponse = Await.result(pythonService.submit(longRunningCommand), 5.seconds)
+        log.info(s"Initial response from submit of long running command to ${pythonConnection.componentId.fullName}: $firstCommandResponse")
+        val finalCommandResponse = Await.result(pythonService.queryFinal(firstCommandResponse.runId), 20.seconds)
+        log.info(s"Final response from submit of long running command to ${pythonConnection.componentId.fullName}: $finalCommandResponse")
 
-        commandResponse
+        val simpleCommand          = makeTestCommand("SimpleCommand")
+        val simpleCommandResponse = Await.result(pythonService.submit(simpleCommand), 5.seconds)
+        log.info(s"Response from simple submit to ${pythonConnection.componentId.fullName}: $simpleCommandResponse")
+
+        val resultCommand          = makeTestCommand("ResultCommand")
+        val resultCommandResponse = Await.result(pythonService.submit(resultCommand), 5.seconds)
+        log.info(s"Response with result from submit to ${pythonConnection.componentId.fullName}: $resultCommandResponse")
+
+        finalCommandResponse
       }
     } catch {
       case e: Exception =>
@@ -190,11 +209,19 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit =
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
 
-  private def startPublishingEvents(): Cancellable = {
+  private def startPublishingEvents(): Unit = {
     val publisher = eventService.defaultPublisher
     publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
     publisher.publish(eventGenerator2(), 50.millis, p => onError(p))
     publisher.publish(eventGenerator3(), 5.seconds, p => onError(p))
+  }
+
+  private def startPublishingCurrentState(): Unit = {
+    system.scheduler.scheduleAtFixedRate(1.second, 2.seconds) { () =>
+      val params = makeTestCommand("ignore").paramSet
+      val currentState = CurrentState(cswCtx.componentInfo.prefix, StateName("TestHcdState"), params)
+      currentStatePublisher.publish(currentState)
+    }
   }
 
   // this holds the logic for event generation, could be based on some computation or current state of HCD
