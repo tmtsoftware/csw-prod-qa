@@ -59,7 +59,7 @@ object TestAssemblyClient extends App {
   private val prefix = Prefix("wfos.blue.filter")
   private val command = CommandName("myCommand")
 
-  val connection = AkkaConnection(ComponentId(Prefix(CSW, "TestAssembly"), Assembly))
+  val connection = AkkaConnection(ComponentId(Prefix(CSW, "testassembly"), Assembly))
 
   lazy val eventService: EventService =
     new EventServiceFactory().make(locationService)

@@ -19,7 +19,6 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ObsId, ProperMotion, Struct}
-import csw.params.core.states.StateName
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.{Prefix, Subsystem}
 import csw.prefix.models.Subsystem.{CSW, WFOS}
@@ -57,7 +56,7 @@ object TestAssemblyWorker {
   // Key for HCD events
   private val hcdEventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val hcdEventName = EventName("myHcdEvent")
-  private val hcdPrefix = Prefix(CSW, "TestHcd")
+  private val hcdPrefix = Prefix(CSW, "testhcd")
 
   // Keys for publishing events from assembly
   private[framework] val eventKey1: Key[Float] =
@@ -154,7 +153,7 @@ object TestAssemblyWorker {
   }
 
   // --- Alarms ---
-  val alarmKey: AlarmKey = AlarmKey(Subsystem.CSW, "testComponent", "testAlarm")
+  val alarmKey: AlarmKey = AlarmKey(Prefix(Subsystem.CSW, "testComponent"), "testAlarm")
 }
 
 //noinspection DuplicatedCode,SameParameterValue

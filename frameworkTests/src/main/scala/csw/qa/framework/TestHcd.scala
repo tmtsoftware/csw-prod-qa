@@ -143,6 +143,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
       if (maybeLocation.isEmpty) {
         Error(runId, s"Error locating $pythonConnection")
       } else {
+        log.info(s"XXX python based service is locatied: ${maybeLocation.get}")
         val pythonService = CommandServiceFactory.make(maybeLocation.get)
         // Test sending a command to a python based HTTP service
         // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
@@ -211,13 +212,13 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
 
   private def startPublishingEvents(): Unit = {
     val publisher = eventService.defaultPublisher
-    publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
-    publisher.publish(eventGenerator2(), 50.millis, p => onError(p))
-    publisher.publish(eventGenerator3(), 5.seconds, p => onError(p))
+//    publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
+//    publisher.publish(eventGenerator2(), 50.millis, p => onError(p))
+//    publisher.publish(eventGenerator3(), 5.seconds, p => onError(p))
   }
 
   private def startPublishingCurrentState(): Unit = {
-    system.scheduler.scheduleAtFixedRate(1.second, 2.seconds) { () =>
+    system.scheduler.scheduleAtFixedRate(1.second, 10.seconds) { () =>
       val params = makeTestCommand("ignore").paramSet
       val currentState = CurrentState(cswCtx.componentInfo.prefix, StateName("TestHcdState"), params)
       currentStatePublisher.publish(currentState)
@@ -258,5 +259,5 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
 
 object TestHcdApp extends App {
   val defaultConfig = ConfigFactory.load("TestHcd.conf")
-  ContainerCmd.start("TestHcd", CSW, args, Some(defaultConfig))
+  ContainerCmd.start("testhcd", CSW, args, Some(defaultConfig))
 }

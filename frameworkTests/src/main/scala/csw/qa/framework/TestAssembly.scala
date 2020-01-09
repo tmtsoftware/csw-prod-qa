@@ -70,6 +70,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onGoOnline(): Unit = log.debug("onGoOnline called")
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit = {
+    log.info(s"XXX onLocationTrackingEvent $trackingEvent")
     worker ! TestAssemblyWorker.Location(trackingEvent)
   }
 
@@ -81,5 +82,5 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
 // Start assembly from the command line using TestAssembly.conf resource file
 object TestAssemblyApp extends App {
   val defaultConfig = ConfigFactory.load("TestAssembly.conf")
-  ContainerCmd.start("TestAssembly", CSW, args, Some(defaultConfig))
+  ContainerCmd.start("testassembly", CSW, args, Some(defaultConfig))
 }

@@ -38,7 +38,7 @@ public class JTestAkkaService extends AbstractBehavior<ClientMessage> {
 
   // Component id for the ith service
   static ComponentId componentId(int i) {
-    return new ComponentId(new Prefix(JSubsystem.CSW(), "TestAkkaService_" + i), JComponentType.Assembly());
+    return new ComponentId(Prefix.apply(JSubsystem.CSW(), "TestAkkaService_" + i), JComponentType.Assembly());
   }
 
   // Connection for the ith service

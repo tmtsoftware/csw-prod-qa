@@ -53,16 +53,16 @@ public class JTestAssemblyClient {
   // Key for events from assembly
   private static final Key<Integer> assemblyEventValueKey = JKeyType.IntKey().make("assemblyEventValue");
   private static final EventName assemblyEventName = new EventName("myAssemblyEvent");
-  private static final Prefix assemblyPrefix = new Prefix(JSubsystem.CSW(), "assembly");
+  private static final Prefix assemblyPrefix = Prefix.apply(JSubsystem.CSW(), "assembly");
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private static final EventKey assemblyEventKey = new EventKey(assemblyPrefix, assemblyEventName);
 
   private static final ObsId obsId = new ObsId("2023-Q22-4-33");
   private static final Key<Integer> encoderKey = JKeyType.IntKey().make("encoder");
   private static final Key<String> filterKey = JKeyType.StringKey().make("filter");
-  private static final Prefix prefix = new Prefix(JSubsystem.CSW(), "wfos.blue.filter");
+  private static final Prefix prefix = Prefix.apply(JSubsystem.CSW(), "wfos.blue.filter");
   private static final CommandName command = new CommandName("myCommand");
-  private static final ComponentId componentId = new ComponentId(new Prefix(JSubsystem.CSW(), "TestAssembly"), JComponentType.Assembly());
+  private static final ComponentId componentId = new ComponentId(Prefix.apply(JSubsystem.CSW(), "testassembly"), JComponentType.Assembly());
   private static final Connection.AkkaConnection connection = new Connection.AkkaConnection(componentId);
 
   private final ActorSystem<SpawnProtocol.Command> typedSystem = ActorSystemFactory.remote(SpawnProtocol.create(), "JTestAssemblyClient");

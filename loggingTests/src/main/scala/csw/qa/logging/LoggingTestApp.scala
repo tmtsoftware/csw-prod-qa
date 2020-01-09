@@ -121,7 +121,7 @@ class LoggingTest(i: Int, options: LoggingTestApp.Options) extends Actor {
   if (autostop != 0)
     context.system.scheduler.scheduleOnce(autostop.seconds, self, LoggingTest.Quit)
 
-  private val logMsgTimer = context.system.scheduler.schedule(delay.millis, delay.millis, self, LoggingTest.LogMessages)
+  private val logMsgTimer = context.system.scheduler.scheduleWithFixedDelay(delay.millis, delay.millis, self, LoggingTest.LogMessages)
   private val log4j2Test  = new Slf4jTest()
 
   override def receive: Receive = {
