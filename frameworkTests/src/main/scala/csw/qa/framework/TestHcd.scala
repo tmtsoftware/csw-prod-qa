@@ -12,8 +12,9 @@ import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.models.{ComponentId, ComponentType, TrackingEvent}
 import csw.location.models.Connection.HttpConnection
-import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
-import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
+import csw.params.commands.CommandResponse.{Completed, Error, SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Result, Setup}
+import csw.params.core.formats.ParamCodecs
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
 import csw.time.core.models.UTCTime
@@ -24,6 +25,7 @@ import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
 import csw.params.core.states.{CurrentState, StateName}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.CSW
+import io.bullet.borer.Json
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -37,7 +39,7 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
 
 //noinspection DuplicatedCode
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext)
-    extends ComponentHandlers(ctx, cswCtx) {
+    extends ComponentHandlers(ctx, cswCtx) with ParamCodecs {
 
   import cswCtx._
 
@@ -119,7 +121,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
   override def initialize(): Future[Unit] = async {
     log.debug("Initialize called")
     startPublishingEvents()
-//    startPublishingCurrentState()
+    startPublishingCurrentState()
 
     val maybeLocation = Await.result(locationService.find(pythonConnection), timeout.duration)
     if (maybeLocation.isEmpty) {
@@ -143,7 +145,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
       if (maybeLocation.isEmpty) {
         Error(runId, s"Error locating $pythonConnection")
       } else {
-        log.info(s"XXX python based service is locatied: ${maybeLocation.get}")
+        log.info(s"XXX python based service is located: ${maybeLocation.get}")
         val pythonService = CommandServiceFactory.make(maybeLocation.get)
         // Test sending a command to a python based HTTP service
         // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
@@ -166,7 +168,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
         val resultCommandResponse = Await.result(pythonService.submit(resultCommand), 5.seconds)
         log.info(s"Response with result from submit to ${pythonConnection.componentId.fullName}: $resultCommandResponse")
 
-        finalCommandResponse
+        resultCommandResponse
       }
     } catch {
       case e: Exception =>
@@ -212,7 +214,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
 
   private def startPublishingEvents(): Unit = {
     val publisher = eventService.defaultPublisher
-//    publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
+    publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
 //    publisher.publish(eventGenerator2(), 50.millis, p => onError(p))
 //    publisher.publish(eventGenerator3(), 5.seconds, p => onError(p))
   }
