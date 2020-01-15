@@ -71,6 +71,7 @@ object TestAssemblyWorker {
     KeyType.IntKey.make("assemblyEventStructValue3")
   private[framework] val eventKey4: Key[Byte] =
     KeyType.ByteKey.make("assemblyEventStructValue4")
+  private val assemblyPrefix = Prefix(CSW, "testassembly")
   private[framework] val eventName = EventName("myAssemblyEvent")
   private[framework] val basePosKey = CoordKey.make("BasePosition")
 
@@ -240,7 +241,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     val subscriber = eventService.defaultSubscriber
     val publisher = eventService.defaultPublisher
     val baseEvent =
-      SystemEvent(hcdPrefix, eventName)
+      SystemEvent(assemblyPrefix, eventName)
         .add(eventKey1.set(0))
         .add(eventKey2.set(Struct().add(eventKey1.set(0)).add(eventKey3.set(0))))
 
