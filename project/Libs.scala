@@ -18,6 +18,7 @@ object CSW {
   val `csw-location-client` = Org %% "csw-location-client" % Version
   val `csw-location-api` = Org %% "csw-location-api" % Version
   val `csw-config-client` = Org %% "csw-config-client" % Version
+  val `csw-config-cli` = Org %% "csw-config-cli" % Version
   val `csw-aas-installed` = Org %% "csw-aas-installed" % Version
   val `csw-framework` = Org %% "csw-framework" % Version
   val `csw-event-client` = Org %% "csw-event-client" % Version

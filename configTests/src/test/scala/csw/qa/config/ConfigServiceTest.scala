@@ -9,7 +9,6 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import TestFutureExtension.RichFuture
 import akka.actor
 import akka.actor.typed.{ActorSystem, SpawnProtocol}
-import akka.stream.typed.scaladsl.ActorMaterializer
 import csw.aas.installed.InstalledAppAuthAdapterFactory
 import csw.aas.installed.api.InstalledAppAuthAdapter
 import csw.aas.installed.scaladsl.FileAuthStore
@@ -20,6 +19,7 @@ import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import akka.actor.typed.scaladsl.adapter._
 import akka.stream.Materializer
+import csw.config.cli.CliTokenFactory
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -28,6 +28,8 @@ import scala.concurrent.ExecutionContextExecutor
   *
   * Note: This test assumes that the location and config services are running and that the necessary
   * csw cluster environment variables or system properties are defined.
+ *
+ * XXX TODO FIXME: Auth issues
   */
 class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   private val path1 = new File(s"some/test1/TestConfig1").toPath
@@ -42,9 +44,9 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   private val comment3 = "update 2 comment"
 
   private val host = InetAddress.getLocalHost.getHostName
-  val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "DatabaseTest")
+  implicit val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "DatabaseTest")
   implicit lazy val untypedSystem: actor.ActorSystem        = typedSystem.toClassic
-  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+  implicit lazy val mat: Materializer = Materializer(typedSystem)
   implicit lazy val ec: ExecutionContextExecutor            = untypedSystem.dispatcher
 
   LoggingSystemFactory.start("ConfigServiceTest", "0.1", host, typedSystem)
@@ -59,15 +61,7 @@ class ConfigServiceTest extends FunSuite with BeforeAndAfterAll {
   val installedAuthAdapter: InstalledAppAuthAdapter =
     InstalledAppAuthAdapterFactory.make(locationService, authStore)
 
-  class CliTokenFactory extends TokenFactory {
-    override def getToken: String =
-      installedAuthAdapter
-        .getAccessTokenString()
-        .getOrElse(throw new RuntimeException(
-          "Missing access token, You must login before executing this command."))
-  }
-
-  val tokenFactory: TokenFactory = new CliTokenFactory
+  val tokenFactory: TokenFactory = new CliTokenFactory(installedAuthAdapter)
   val configService: ConfigService =
     ConfigClientFactory.adminApi(typedSystem, locationService, tokenFactory)
 
