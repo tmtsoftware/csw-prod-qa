@@ -10,7 +10,7 @@ import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
-import csw.location.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
 import csw.logging.api.scaladsl.Logger
 import csw.params.commands.CommandResponse.Error
 import csw.params.commands.{CommandName, ControlCommand, Setup}

@@ -4,10 +4,10 @@ import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
 import csw.config.client.HttpCodecs
 import csw.framework.scaladsl.RegistrationFactory
+import csw.location.api.codec.LocationCodecs
+import csw.location.api.models.Connection.{AkkaConnection, HttpConnection}
+import csw.location.api.models.{ComponentId, ComponentType}
 import csw.location.api.scaladsl.LocationService
-import csw.location.models.Connection.{AkkaConnection, HttpConnection}
-import csw.location.models.codecs.LocationCodecs
-import csw.location.models.{ComponentId, ComponentType}
 import csw.logging.client.scaladsl.GenericLoggerFactory
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.CSW
@@ -41,6 +41,7 @@ object TestAkkaService {
 /**
   * A dummy akka test service that registers with the location service
   */
+//noinspection DuplicatedCode
 class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       timers: TimerScheduler[ServiceMessageType],
                       i: Int,
@@ -122,6 +123,7 @@ object TestAkkaService2 {
 /**
   * A dummy akka test service that registers with the location service
   */
+//noinspection DuplicatedCode
 class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        timers: TimerScheduler[ServiceMessageType],
                        i: Int,

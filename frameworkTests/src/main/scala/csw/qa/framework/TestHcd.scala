@@ -10,10 +10,10 @@ import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.models.{ComponentId, ComponentType, TrackingEvent}
-import csw.location.models.Connection.HttpConnection
-import csw.params.commands.CommandResponse.{Completed, Error, SubmitResponse, ValidateCommandResponse}
-import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Result, Setup}
+import csw.location.api.models.{ComponentId, ComponentType, TrackingEvent}
+import csw.location.api.models.Connection.HttpConnection
+import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.core.formats.ParamCodecs
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
@@ -25,7 +25,6 @@ import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
 import csw.params.core.states.{CurrentState, StateName}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.CSW
-import io.bullet.borer.Json
 
 import scala.concurrent.duration._
 import scala.async.Async._
@@ -51,12 +50,12 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
   // Dummy key for publishing events
   private val eventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val eventName               = EventName("myHcdEvent")
-  private val eventName2              = EventName("myHcdEvent2")
-  private val eventName3              = EventName("myHcdEvent3")
+//  private val eventName2              = EventName("myHcdEvent2")
+//  private val eventName3              = EventName("myHcdEvent3")
   private val eventValues             = Random
   private val baseEvent               = SystemEvent(componentInfo.prefix, eventName)
-  private val baseEvent2              = SystemEvent(componentInfo.prefix, eventName2)
-  private val baseEvent3              = SystemEvent(componentInfo.prefix, eventName3)
+//  private val baseEvent2              = SystemEvent(componentInfo.prefix, eventName2)
+//  private val baseEvent3              = SystemEvent(componentInfo.prefix, eventName3)
 
   private val pythonConnection = HttpConnection(ComponentId(Prefix(CSW, "pycswTest"), ComponentType.Service))
 
@@ -234,19 +233,19 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
       .add(eventValueKey.set(eventValues.nextInt(100)))
     Some(event)
   }
-  private def eventGenerator2(): Option[Event] = {
-    val event = baseEvent2
-      .copy(eventId = Id(), eventTime = UTCTime.now())
-      .add(eventValueKey.set(eventValues.nextInt(1000)))
-    Some(event)
-  }
-
-  private def eventGenerator3(): Option[Event] = {
-    val event = baseEvent3
-      .copy(eventId = Id(), eventTime = UTCTime.now())
-      .add(eventValueKey.set(eventValues.nextInt(10000)))
-    Some(event)
-  }
+//  private def eventGenerator2(): Option[Event] = {
+//    val event = baseEvent2
+//      .copy(eventId = Id(), eventTime = UTCTime.now())
+//      .add(eventValueKey.set(eventValues.nextInt(1000)))
+//    Some(event)
+//  }
+//
+//  private def eventGenerator3(): Option[Event] = {
+//    val event = baseEvent3
+//      .copy(eventId = Id(), eventTime = UTCTime.now())
+//      .add(eventValueKey.set(eventValues.nextInt(10000)))
+//    Some(event)
+//  }
 
   private def onError(publishFailure: PublishFailure): Unit =
     log.error(

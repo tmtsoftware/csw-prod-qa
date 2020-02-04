@@ -11,10 +11,10 @@ import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
 import csw.event.client.EventServiceFactory
+import csw.location.api.models.{AkkaLocation, ComponentId, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.api.models.ComponentType.Assembly
+import csw.location.api.models.Connection.AkkaConnection
 import csw.location.client.scaladsl.HttpLocationServiceFactory
-import csw.location.models.{AkkaLocation, ComponentId, LocationRemoved, LocationUpdated, TrackingEvent}
-import csw.location.models.ComponentType.Assembly
-import csw.location.models.Connection.AkkaConnection
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.{CommandName, Setup}
 import csw.params.core.generics.KeyType
@@ -46,17 +46,17 @@ object TestAssemblyClient extends App {
   implicit val timeout: Timeout = Timeout(10.seconds)
 
   // Key for events from assembly
-//  private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
-//  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
+  private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
+  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
   private val assemblyEventName = TestAssemblyWorker.eventName
-  private val assemblyPrefix = Prefix(CSW, "assembly")
+  private val assemblyPrefix = Prefix(CSW, "testassembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val assemblyEventKey = EventKey(assemblyPrefix, assemblyEventName)
 
   private val obsId = ObsId("2023-Q22-4-33")
   private val encoderKey = KeyType.IntKey.make("encoder")
   private val filterKey = KeyType.StringKey.make("filter")
-  private val prefix = Prefix("wfos.blue.filter")
+  private val prefix = Prefix("WFOS.blue.filter")
   private val command = CommandName("myCommand")
 
   val connection = AkkaConnection(ComponentId(Prefix(CSW, "testassembly"), Assembly))
@@ -81,16 +81,16 @@ object TestAssemblyClient extends App {
             log.info(s"Received parameter: $p")
 
           }
-//          e.get(assemblyEventValueKey)
-//            .foreach { p =>
-//              val eventValue = p.head
-//              log.info(s"Received event with value: $eventValue")
-//            }
-//          e.get(assemblyEventValueKey2)
-//            .foreach { p =>
-//              val eventValue = p.head
-//              log.info(s"Received event with struct value: ${eventValue.get(assemblyEventValueKey).head.head}")
-//            }
+          e.get(assemblyEventValueKey)
+            .foreach { p =>
+              val eventValue = p.head
+              log.info(s"Received event with value: $eventValue")
+            }
+          e.get(assemblyEventValueKey2)
+            .foreach { p =>
+              val eventValue = p.head
+              log.info(s"Received event with struct value: ${eventValue.get(assemblyEventValueKey).head.head}")
+            }
           Behaviors.same
         case _ => throw new RuntimeException("Expected SystemEvent")
       }

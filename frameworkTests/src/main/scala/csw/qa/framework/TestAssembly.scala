@@ -11,7 +11,7 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.params.commands.CommandResponse.{SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand}
 import akka.actor.typed.scaladsl.AskPattern._
-import csw.location.models.TrackingEvent
+import csw.location.api.models.TrackingEvent
 import csw.params.core.models.Id
 import csw.prefix.models.Subsystem.CSW
 import csw.time.core.models.UTCTime

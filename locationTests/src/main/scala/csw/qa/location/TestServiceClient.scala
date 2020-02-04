@@ -3,9 +3,9 @@ package csw.qa.location
 import akka.stream.Materializer
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
+import csw.location.api.models.Connection.AkkaConnection
+import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.location.api.scaladsl.LocationService
-import csw.location.models.Connection.AkkaConnection
-import csw.location.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.logging.client.scaladsl.GenericLoggerFactory
 
 object TestServiceClient {
