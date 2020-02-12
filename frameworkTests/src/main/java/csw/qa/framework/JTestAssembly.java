@@ -60,7 +60,7 @@ public class JTestAssembly {
   // Key for HCD events
   private static final Key<Integer> hcdEventValueKey = JKeyType.IntKey().make("hcdEventValue");
   private static final EventName hcdEventName = new EventName("myHcdEvent");
-  private static final Prefix hcdPrefix = Prefix.apply(JSubsystem.CSW(), "hcd");
+  private static final Prefix hcdPrefix = Prefix.apply(JSubsystem.CSW, "hcd");
 
   // Dummy key for publishing events from assembly
   private static final Key<Integer> eventKey = JKeyType.IntKey().make("assemblyEventValue");
@@ -196,6 +196,6 @@ public class JTestAssembly {
   public static void main(String[] args) {
 //    Async.init(); // required for Java ea-async: See https://github.com/electronicarts/ea-async
     Config defaultConfig = ConfigFactory.load("JTestAssembly.conf");
-    JContainerCmd.start("testassembly", JSubsystem.CSW(), args, Optional.of(defaultConfig));
+    JContainerCmd.start("testassembly", JSubsystem.CSW, args, Optional.of(defaultConfig));
   }
 }

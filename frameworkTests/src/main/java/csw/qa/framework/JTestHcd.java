@@ -136,6 +136,6 @@ public class JTestHcd {
 
   public static void main(String[] args) {
     Config defaultConfig = ConfigFactory.load("JTestHcd.conf");
-    JContainerCmd.start("testhcd", JSubsystem.CSW(), args, Optional.of(defaultConfig));
+    JContainerCmd.start("testhcd", JSubsystem.CSW, args, Optional.of(defaultConfig));
   }
 }
