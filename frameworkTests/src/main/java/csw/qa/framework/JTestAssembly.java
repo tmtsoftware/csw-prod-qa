@@ -110,7 +110,8 @@ public class JTestAssembly {
     @Override
     public CompletableFuture<Void> jInitialize() {
       log.debug("jInitialize called");
-      return completedFuture(startSubscribingToEvents()).thenAccept(x -> {
+      startSubscribingToEvents();
+      return CompletableFuture.runAsync(() -> {
       });
     }
 

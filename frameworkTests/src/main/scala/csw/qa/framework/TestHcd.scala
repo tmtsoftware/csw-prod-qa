@@ -4,15 +4,13 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import csw.command.client.CommandServiceFactory
 import csw.command.client.messages.TopLevelActorMessage
 import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.api.models.{ComponentId, ComponentType, TrackingEvent}
-import csw.location.api.models.Connection.HttpConnection
-import csw.params.commands.CommandResponse.{Error, SubmitResponse, ValidateCommandResponse}
+import csw.location.api.models.TrackingEvent
+import csw.params.commands.CommandResponse.{Completed, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.core.formats.ParamCodecs
 import csw.params.events.{Event, EventName, SystemEvent}
@@ -23,12 +21,11 @@ import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
 import csw.params.core.states.{CurrentState, StateName}
-import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.CSW
 
 import scala.concurrent.duration._
 import scala.async.Async._
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.Random
 
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
@@ -50,14 +47,8 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
   // Dummy key for publishing events
   private val eventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val eventName               = EventName("myHcdEvent")
-//  private val eventName2              = EventName("myHcdEvent2")
-//  private val eventName3              = EventName("myHcdEvent3")
   private val eventValues             = Random
   private val baseEvent               = SystemEvent(componentInfo.prefix, eventName)
-//  private val baseEvent2              = SystemEvent(componentInfo.prefix, eventName2)
-//  private val baseEvent3              = SystemEvent(componentInfo.prefix, eventName3)
-
-  private val pythonConnection = HttpConnection(ComponentId(Prefix(CSW, "pycswTest"), ComponentType.Service))
 
   // Dummy test command
   private def makeTestCommand(commandName: String): ControlCommand = {
@@ -121,16 +112,6 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
     log.debug("Initialize called")
     startPublishingEvents()
     startPublishingCurrentState()
-
-    val maybeLocation = Await.result(locationService.find(pythonConnection), timeout.duration)
-    if (maybeLocation.isEmpty) {
-      log.error(s"Error locating $pythonConnection")
-    } else {
-      val pythonService = CommandServiceFactory.make(maybeLocation.get)
-      pythonService.subscribeCurrentState(Set(StateName("PyCswState")), { cs =>
-        log.debug(s"Received current state from python based component: $cs")
-      })
-    }
   }
 
   override def validateCommand(runId: Id, controlCommand: ControlCommand): ValidateCommandResponse = {
@@ -139,65 +120,11 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
 
   override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = {
     log.debug(s"onSubmit called: $controlCommand")
-    try {
-      val maybeLocation = Await.result(locationService.find(pythonConnection), timeout.duration)
-      if (maybeLocation.isEmpty) {
-        Error(runId, s"Error locating $pythonConnection")
-      } else {
-        log.info(s"XXX python based service is located: ${maybeLocation.get}")
-        val pythonService = CommandServiceFactory.make(maybeLocation.get)
-        // Test sending a command to a python based HTTP service
-        // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
-        val validateResponse = Await.result(pythonService.validate(controlCommand), 5.seconds)
-        log.info(s"Response from validate command to ${pythonConnection.componentId.fullName}: $validateResponse")
-        val onewayResponse = Await.result(pythonService.oneway(controlCommand), 5.seconds)
-        log.info(s"Response from oneway command to ${pythonConnection.componentId.fullName}: $onewayResponse")
-
-        val longRunningCommand          = makeTestCommand("LongRunningCommand")
-        val firstCommandResponse = Await.result(pythonService.submit(longRunningCommand), 5.seconds)
-        log.info(s"Initial response from submit of long running command to ${pythonConnection.componentId.fullName}: $firstCommandResponse")
-        val finalCommandResponse = Await.result(pythonService.queryFinal(firstCommandResponse.runId), 20.seconds)
-        log.info(s"Final response from submit of long running command to ${pythonConnection.componentId.fullName}: $finalCommandResponse")
-
-        val simpleCommand          = makeTestCommand("SimpleCommand")
-        val simpleCommandResponse = Await.result(pythonService.submit(simpleCommand), 5.seconds)
-        log.info(s"Response from simple submit to ${pythonConnection.componentId.fullName}: $simpleCommandResponse")
-
-        val resultCommand          = makeTestCommand("ResultCommand")
-        val resultCommandResponse = Await.result(pythonService.submit(resultCommand), 5.seconds)
-        log.info(s"Response with result from submit to ${pythonConnection.componentId.fullName}: $resultCommandResponse")
-
-        resultCommandResponse
-      }
-    } catch {
-      case e: Exception =>
-        val response = Error(runId, s"Error sending command to ${pythonConnection.componentId.fullName}: $e")
-        log.error(response.message, ex = e)
-        response
-    }
+    Completed(runId)
   }
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {
     log.debug(s"onOneway called: $controlCommand")
-    try {
-      val maybeLocation = Await.result(locationService.find(pythonConnection), timeout.duration)
-      if (maybeLocation.isEmpty) {
-        Error(runId, s"Error locating $pythonConnection")
-      } else {
-        val pythonService = CommandServiceFactory.make(maybeLocation.get)
-        val onewayResponse =
-          Await.result(pythonService.oneway(controlCommand), 5.seconds)
-        log.info(
-          s"Response from oneway command to ${pythonConnection.componentId.fullName}: $onewayResponse"
-        )
-      }
-    } catch {
-      case e: Exception =>
-        log.error(
-          s"Error sending oneway command to ${pythonConnection.componentId.fullName}: $e",
-          ex = e
-        )
-    }
   }
 
   override def onShutdown(): Future[Unit] = async {
@@ -214,8 +141,6 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
   private def startPublishingEvents(): Unit = {
     val publisher = eventService.defaultPublisher
     publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
-//    publisher.publish(eventGenerator2(), 50.millis, p => onError(p))
-//    publisher.publish(eventGenerator3(), 5.seconds, p => onError(p))
   }
 
   private def startPublishingCurrentState(): Unit = {
@@ -233,19 +158,6 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
       .add(eventValueKey.set(eventValues.nextInt(100)))
     Some(event)
   }
-//  private def eventGenerator2(): Option[Event] = {
-//    val event = baseEvent2
-//      .copy(eventId = Id(), eventTime = UTCTime.now())
-//      .add(eventValueKey.set(eventValues.nextInt(1000)))
-//    Some(event)
-//  }
-//
-//  private def eventGenerator3(): Option[Event] = {
-//    val event = baseEvent3
-//      .copy(eventId = Id(), eventTime = UTCTime.now())
-//      .add(eventValueKey.set(eventValues.nextInt(10000)))
-//    Some(event)
-//  }
 
   private def onError(publishFailure: PublishFailure): Unit =
     log.error(

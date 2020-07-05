@@ -35,7 +35,6 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
   }
 
   override def onMessage(msg: ServiceClientMessageType): Behavior[ServiceClientMessageType] = {
-//    import csw.location.api.extensions.URIExtension.RichURI
 
     msg match {
       // Receive a location from the location service and if it is an akka location, send it a message
@@ -43,9 +42,6 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
         loc match {
           case loc:
             AkkaLocation => log.info(s"Received Akka Location: $loc")
-            // Note: Need to cast the actorRef.
-            // TODO: configure serialization: Search for "serialization-bindings" in the csw config files.
-//            loc.uri.toActorRef.unsafeUpcast[ServiceMessageType] ! ClientMessage(ctx.self)
           case x => log.error(s"Received unexpected location type: $x")
         }
 

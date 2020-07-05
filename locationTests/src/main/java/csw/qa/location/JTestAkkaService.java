@@ -2,6 +2,7 @@ package csw.qa.location;
 
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
+import csw.location.api.AkkaRegistrationFactory;
 import csw.location.api.extensions.ActorExtension;
 import csw.location.api.javadsl.ILocationService;
 import csw.location.api.javadsl.IRegistrationResult;
@@ -32,8 +33,8 @@ import java.net.UnknownHostException;
  */
 public class JTestAkkaService extends AbstractBehavior<ClientMessage> {
 
-  private static ActorSystem<SpawnProtocol.Command> typedSystem = ActorSystemFactory.remote(SpawnProtocol.create(), "JTestAkkaService");
-  private static AkkaTypedExtension.UserActorFactory userActorFactory = AkkaTypedExtension.UserActorFactory(typedSystem);
+  private static final ActorSystem<SpawnProtocol.Command> typedSystem = ActorSystemFactory.remote(SpawnProtocol.create(), "JTestAkkaService");
+  private static final AkkaTypedExtension.UserActorFactory userActorFactory = AkkaTypedExtension.UserActorFactory(typedSystem);
   private final ILogger log;
 
   // Component id for the ith service
@@ -51,7 +52,7 @@ public class JTestAkkaService extends AbstractBehavior<ClientMessage> {
     log = JGenericLoggerFactory.getLogger(context, getClass());
 
     URI actorRefURI = ActorExtension.RichActor(context.getSelf()).toURI();
-    AkkaRegistration registration = AkkaRegistration.apply(JTestAkkaService.connection(i), actorRefURI);
+    AkkaRegistration registration = AkkaRegistrationFactory.make(JTestAkkaService.connection(i), actorRefURI);
     try {
       IRegistrationResult regResult = locationService.register(registration).get();
       log.info("Registered " + registration + " with result: " + regResult);

@@ -187,6 +187,9 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   private val prefix = Prefix(WFOS, "blue.filter")
   private val command = CommandName("myCommand")
 
+  startSubscribingToEvents()
+  refreshAlarms()
+
   private def makeSetup(encoder: Int, filter: String): Setup = {
     val i1 = encoderKey.set(encoder)
     val i2 = filterKey.set(filter)
@@ -199,8 +202,6 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     msg match {
       case Initialize(replyTo) =>
         async {
-          startSubscribingToEvents()
-          refreshAlarms()
           //          log.info(s"getting database")
           //          val dsl = await(initDatabaseTable())
           //          log.info(s"database = $dsl")
