@@ -3,6 +3,7 @@ package csw.qa.location;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 import csw.location.api.AkkaRegistrationFactory;
+import csw.location.api.JAkkaRegistrationFactory;
 import csw.location.api.extensions.ActorExtension;
 import csw.location.api.javadsl.ILocationService;
 import csw.location.api.javadsl.IRegistrationResult;
@@ -51,8 +52,7 @@ public class JTestAkkaService extends AbstractBehavior<ClientMessage> {
     super(context);
     log = JGenericLoggerFactory.getLogger(context, getClass());
 
-    URI actorRefURI = ActorExtension.RichActor(context.getSelf()).toURI();
-    AkkaRegistration registration = AkkaRegistrationFactory.make(JTestAkkaService.connection(i), actorRefURI);
+    AkkaRegistration registration = JAkkaRegistrationFactory.make(JTestAkkaService.connection(i), context.getSelf());
     try {
       IRegistrationResult regResult = locationService.register(registration).get();
       log.info("Registered " + registration + " with result: " + regResult);

@@ -29,6 +29,7 @@ object Dependencies {
 
   val `frameworkTests-deps` = Seq(
     CSW.`csw-framework`,
+//    CSW.`csw-logging-client`,
     CSW.`csw-database`,
     CSW.`csw-prefix`,
     Libs.`junit-interface` % Test,
