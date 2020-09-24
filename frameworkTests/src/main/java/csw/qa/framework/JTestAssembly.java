@@ -108,18 +108,14 @@ public class JTestAssembly {
     }
 
     @Override
-    public CompletableFuture<Void> jInitialize() {
+    public void jInitialize() {
       log.debug("jInitialize called");
       startSubscribingToEvents();
-      return CompletableFuture.runAsync(() -> {
-      });
     }
 
     @Override
-    public CompletableFuture<Void> jOnShutdown() {
+    public void jOnShutdown() {
       log.debug("onShutdown called");
-      return CompletableFuture.runAsync(() -> {
-      });
     }
 
     @Override

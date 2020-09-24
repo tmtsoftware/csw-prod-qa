@@ -17,8 +17,7 @@ import csw.prefix.models.Subsystem.CSW
 import csw.time.core.models.UTCTime
 
 import scala.concurrent.duration._
-import scala.async.Async._
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.ExecutionContextExecutor
 
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
@@ -42,7 +41,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
   // A worker actor that holds the state and implements the assembly (Optional if the assembly has no mutable state)
   private val worker = ctx.spawn(TestAssemblyWorker.make(cswCtx), "testWorker")
 
-  override def initialize(): Future[Unit] = {
+  override def initialize(): Unit = {
     worker ? (ref => TestAssemblyWorker.Initialize(ref))
   }
 
@@ -61,7 +60,7 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
     log.debug("onOneway called")
   }
 
-  override def onShutdown(): Future[Unit] = async {
+  override def onShutdown(): Unit = {
     log.debug("onShutdown called")
   }
 

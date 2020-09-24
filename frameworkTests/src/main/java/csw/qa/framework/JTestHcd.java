@@ -26,7 +26,6 @@ import csw.time.core.models.UTCTime;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 
 public class JTestHcd {
 
@@ -66,18 +65,14 @@ public class JTestHcd {
     }
 
     @Override
-    public CompletableFuture<Void> jInitialize() {
+    public void jInitialize() {
       log.debug("jInitialize called");
       startPublishingEvents();
-      return CompletableFuture.runAsync(() -> {
-      });
     }
 
     @Override
-    public CompletableFuture<Void> jOnShutdown() {
+    public void jOnShutdown() {
       log.debug("onShutdown called");
-      return CompletableFuture.runAsync(() -> {
-      });
     }
 
     @Override
