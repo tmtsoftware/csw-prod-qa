@@ -11,9 +11,7 @@ object Dependencies {
 
   val `loggingTests-deps` = Seq(
     CSW.`csw-logging-client`,
-    CSW.`csw-framework`,
-    CSW.`csw-commons`,
-    CSW.`csw-prefix`,
+    CSW.`csw-location-client`,
     Libs.`scopt`,
     Libs.`slf4j-api`
   )
@@ -37,7 +35,8 @@ object Dependencies {
   )
 
   val `databaseTests-deps` = Seq(
-    CSW.`csw-framework`,
+//    CSW.`csw-framework`,
+    CSW.`csw-location-client`,
     CSW.`csw-database`,
     CSW.`csw-prefix`,
     Libs.`junit-interface` % Test,

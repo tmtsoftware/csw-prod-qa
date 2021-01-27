@@ -57,7 +57,7 @@ public class JTestAssemblyClient {
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private static final EventKey assemblyEventKey = new EventKey(assemblyPrefix, assemblyEventName);
 
-  private static final ObsId obsId = new ObsId("2023-Q22-4-33");
+  private static final ObsId obsId = ObsId.apply("2023-Q22-4-33");
   private static final Key<Integer> encoderKey = JKeyType.IntKey().make("encoder");
   private static final Key<String> filterKey = JKeyType.StringKey().make("filter");
   private static final Prefix prefix = Prefix.apply(JSubsystem.CSW, "wfos.blue.filter");
