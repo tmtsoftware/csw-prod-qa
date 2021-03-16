@@ -3,15 +3,14 @@ package csw.qa.framework
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import TestAssemblyWorker._
-import akka.actor.Scheduler
+import akka.actor.typed
 import akka.util.Timeout
 import csw.alarm.models.Key.AlarmKey
 import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
-//import csw.database.DatabaseServiceFactory
 import csw.event.api.scaladsl.EventPublisher
 import csw.framework.models.CswContext
-import csw.location.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
 import csw.logging.api.scaladsl.Logger
 import csw.params.commands.CommandResponse.Error
 import csw.params.commands.{CommandName, ControlCommand, Setup}
@@ -19,10 +18,11 @@ import csw.params.core.generics.KeyType.CoordKey
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
-import csw.params.core.models.{Angle, Coords, Id, ObsId, Prefix, ProperMotion, Struct, Subsystem}
+import csw.params.core.models.{Angle, Coords, Id, ObsId, ProperMotion, Struct}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
+import csw.prefix.models.{Prefix, Subsystem}
+import csw.prefix.models.Subsystem.{CSW, WFOS}
 import csw.time.core.models.UTCTime
-import org.jooq.DSLContext
 
 import scala.async.Async.async
 import scala.concurrent.ExecutionContextExecutor
@@ -35,7 +35,7 @@ object TestAssemblyWorker {
 
   case class Initialize(replyTo: ActorRef[Unit]) extends TestAssemblyWorkerMsg
 
-  case class Submit(controlCommand: ControlCommand)
+  case class Submit(runId: Id, controlCommand: ControlCommand)
       extends TestAssemblyWorkerMsg
 
   case class Location(trackingEvent: TrackingEvent)
@@ -43,7 +43,7 @@ object TestAssemblyWorker {
 
   case object RefreshAlarms extends TestAssemblyWorkerMsg
 
-  case class SetDatabase(dsl: DSLContext) extends TestAssemblyWorkerMsg
+//  case class SetDatabase(dsl: DSLContext) extends TestAssemblyWorkerMsg
 
   def make(cswCtx: CswContext): Behavior[TestAssemblyWorkerMsg] = {
     Behaviors.setup(ctx => new TestAssemblyWorker(ctx, cswCtx))
@@ -56,7 +56,7 @@ object TestAssemblyWorker {
   // Key for HCD events
   private val hcdEventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
   private val hcdEventName = EventName("myHcdEvent")
-  private val hcdPrefix = Prefix("csw.hcd")
+  private val hcdPrefix = Prefix(CSW, "testhcd")
 
   // Keys for publishing events from assembly
   private[framework] val eventKey1: Key[Float] =
@@ -71,6 +71,7 @@ object TestAssemblyWorker {
     KeyType.IntKey.make("assemblyEventStructValue3")
   private[framework] val eventKey4: Key[Byte] =
     KeyType.ByteKey.make("assemblyEventStructValue4")
+  private val assemblyPrefix = Prefix(CSW, "testassembly")
   private[framework] val eventName = EventName("myAssemblyEvent")
   private[framework] val basePosKey = CoordKey.make("BasePosition")
 
@@ -83,10 +84,11 @@ object TestAssemblyWorker {
     Behaviors.receive { (_, msg) =>
       msg match {
         case event: SystemEvent =>
+          log.debug(s"received event: $event")
           event.get(hcdEventValueKey)
             .foreach { p =>
               val eventValue = p.head
-              log.info(s"Received event with event time: ${event.eventTime} with value: $eventValue")
+              log.debug(s"Received event with event time: ${event.eventTime} with value: $eventValue")
               // fire a new event from the assembly based on the one from the HCD
 
               val pm = ProperMotion(0.5, 2.33)
@@ -144,27 +146,29 @@ object TestAssemblyWorker {
               publisher.publish(e)
             }
           Behaviors.same
-        case _ => throw new RuntimeException("Expected SystemEvent")
+        case x =>
+          log.error(s"Unexpected message: $x")
+          Behaviors.same
       }
     }
   }
 
   // --- Alarms ---
-  val alarmKey: AlarmKey = AlarmKey(Subsystem.CSW, "testComponent", "testAlarm")
+  val alarmKey: AlarmKey = AlarmKey(Prefix(Subsystem.CSW, "testComponent"), "testAlarm")
 }
 
-//noinspection DuplicatedCode
+//noinspection DuplicatedCode,SameParameterValue
 class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
                          cswCtx: CswContext)
-    extends AbstractBehavior[TestAssemblyWorkerMsg] {
+    extends AbstractBehavior[TestAssemblyWorkerMsg](ctx) {
 
   import cswCtx._
   import TestAssemblyWorker._
   import scala.concurrent.duration._
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
-  implicit val timeout: Timeout = Timeout(3.seconds)
-  implicit val sched: Scheduler = ctx.system.scheduler
+  implicit val timeout: Timeout = Timeout(5.seconds)
+  implicit val sched: typed.Scheduler = ctx.system.scheduler
 
   private val log = loggerFactory.getLogger
 
@@ -180,8 +184,11 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   private val obsId = ObsId("2023-Q22-4-33")
   private val encoderKey = KeyType.IntKey.make("encoder")
   private val filterKey = KeyType.StringKey.make("filter")
-  private val prefix = Prefix("wfos.blue.filter")
+  private val prefix = Prefix(WFOS, "blue.filter")
   private val command = CommandName("myCommand")
+
+  startSubscribingToEvents()
+  refreshAlarms()
 
   private def makeSetup(encoder: Int, filter: String): Setup = {
     val i1 = encoderKey.set(encoder)
@@ -195,8 +202,6 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     msg match {
       case Initialize(replyTo) =>
         async {
-          startSubscribingToEvents()
-          refreshAlarms()
           //          log.info(s"getting database")
           //          val dsl = await(initDatabaseTable())
           //          log.info(s"database = $dsl")
@@ -208,20 +213,24 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
         }
 //      case SetDatabase(dsl) =>
 //        database = Some(dsl)
-      case Submit(controlCommand) =>
-        forwardCommandToHcd(controlCommand)
+      case Submit(runId, controlCommand) =>
+        forwardCommandToHcd(runId, controlCommand)
       case Location(trackingEvent) =>
         log.info(s"Location updated: $trackingEvent")
         trackingEvent match {
           case LocationUpdated(location) =>
             testHcd = Some(CommandServiceFactory.make(location.asInstanceOf[AkkaLocation])(ctx.system))
+            testHcd.get.subscribeCurrentState({ cs =>
+              log.debug(s"Received current state from TestHcd: $cs")
+            })
             val setup = makeSetup(0, "None")
             testHcd.get.submit(setup).onComplete {
               case Success(responses) => log.info(s"Initial Submit Test Passed: Responses = $responses")
               case Failure(ex)        => log.info(s"Initial Submit Test Failed: $ex")
             }
-          case LocationRemoved(_) =>
-            testHcd = None
+          case LocationRemoved(location) =>
+              log.info(s"Location removed: $location")
+//            testHcd = None
         }
       case RefreshAlarms =>
         refreshAlarms()
@@ -233,7 +242,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     val subscriber = eventService.defaultSubscriber
     val publisher = eventService.defaultPublisher
     val baseEvent =
-      SystemEvent(componentInfo.prefix, eventName)
+      SystemEvent(assemblyPrefix, eventName)
         .add(eventKey1.set(0))
         .add(eventKey2.set(Struct().add(eventKey1.set(0)).add(eventKey3.set(0))))
 
@@ -243,32 +252,20 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   }
 
   // For testing, forward command to HCD and complete this command when it completes
-  private def forwardCommandToHcd(controlCommand: ControlCommand): Unit = {
-    import scala.concurrent.duration._
-//    implicit val scheduler: Scheduler = ctx.system.scheduler
-    implicit val timeout: Timeout = Timeout(3.seconds)
+  private def forwardCommandToHcd(runId: Id, controlCommand: ControlCommand): Unit = {
     log.info(s"Forward command to hcd: $testHcd")
-    testHcd.map { hcd =>
-      val setup = Setup(
-        controlCommand.source,
-        controlCommand.commandName,
-        controlCommand.maybeObsId,
-        controlCommand.paramSet
-      )
-      cswCtx.commandResponseManager
-        .addSubCommand(controlCommand.runId, setup.runId)
-
+    testHcd.foreach { hcd =>
       val f = for {
-        onewayResponse <-hcd.oneway(setup)
-        response <- hcd.submit(setup)
+        onewayResponse <-hcd.oneway(controlCommand)
+        response <- hcd.submitAndWait(controlCommand)
       } yield {
         log.info(s"oneway response = $onewayResponse, submit response = $response")
-        commandResponseManager.updateSubCommand(response)
+        commandResponseManager.updateCommand(response)
       }
       f.recover {
         case ex =>
-          val cmdStatus = Error(setup.runId, ex.toString)
-          commandResponseManager.updateSubCommand(cmdStatus)
+          val cmdStatus = Error(runId, ex.toString)
+          commandResponseManager.updateCommand(cmdStatus)
       }
     }
   }

@@ -2,14 +2,15 @@ package csw.qa.location
 
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
+import csw.config.client.HttpCodecs
 import csw.framework.scaladsl.RegistrationFactory
+import csw.location.api.codec.LocationCodecs
+import csw.location.api.models.Connection.{AkkaConnection, HttpConnection}
+import csw.location.api.models.{ComponentId, ComponentType}
 import csw.location.api.scaladsl.LocationService
-import csw.location.client.HttpCodecs
-import csw.location.models.Connection.{AkkaConnection, HttpConnection}
-import csw.location.models.codecs.LocationCodecs
-import csw.location.models.{ComponentId, ComponentType}
 import csw.logging.client.scaladsl.GenericLoggerFactory
-import csw.params.core.models.Prefix
+import csw.prefix.models.Prefix
+import csw.prefix.models.Subsystem.CSW
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -27,8 +28,8 @@ object TestAkkaService {
     )
 
   // Component ID of the ith service
-  def componentId(i: Int) =
-    ComponentId(s"TestAkkaService_$i", ComponentType.Service)
+  def componentId(i: Int): ComponentId =
+    ComponentId(Prefix(CSW, s"TestAkkaService_$i"), ComponentType.Service)
 
   // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
@@ -40,12 +41,13 @@ object TestAkkaService {
 /**
   * A dummy akka test service that registers with the location service
   */
+//noinspection DuplicatedCode
 class TestAkkaService(ctx: ActorContext[ServiceMessageType],
                       timers: TimerScheduler[ServiceMessageType],
                       i: Int,
                       options: TestAkkaServiceApp.Options,
                       locationService: LocationService)
-    extends AbstractBehavior[ServiceMessageType]
+    extends AbstractBehavior[ServiceMessageType](ctx)
     with HttpCodecs
     with LocationCodecs {
 
@@ -60,7 +62,6 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
     locationService.register(
       registrationFactory.akkaTyped(
         TestAkkaService.connection(i),
-        Prefix("csw.prefix"),
         ctx.self
       )
     ),
@@ -74,8 +75,8 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
   if (autostop != 0)
     timers.startSingleTimer(TestAkkaService.TimerKey, Quit, autostop.seconds)
 
-  val componentId = ComponentId("rmyservice", ComponentType.Service)
-  val connection = HttpConnection(componentId)
+  val componentId: ComponentId = ComponentId(Prefix(CSW, "myservice"), ComponentType.Service)
+  val connection: HttpConnection = HttpConnection(componentId)
 
   override def onMessage(
     msg: ServiceMessageType
@@ -85,12 +86,12 @@ class TestAkkaService(ctx: ActorContext[ServiceMessageType],
       case ClientMessage(replyTo) =>
         if (logMessages)
           log.debug(s"Received scala client message from: $replyTo")
-        Behavior.same
+        Behaviors.same
 
       case Quit =>
         log.info(s"Actor $i is shutting down after $autostop seconds")
         Await.result(reg.unregister(), 10.seconds)
-        Behavior.stopped
+        Behaviors.stopped
     }
   }
 }
@@ -110,8 +111,8 @@ object TestAkkaService2 {
     )
 
   // Component ID of the ith service
-  def componentId(i: Int) =
-    ComponentId(s"TestAkkaService2_$i", ComponentType.Service)
+  def componentId(i: Int): ComponentId =
+    ComponentId(Prefix(CSW, s"TestAkkaService2_$i"), ComponentType.Service)
 
   // Connection for the ith service
   def connection(i: Int): AkkaConnection = AkkaConnection(componentId(i))
@@ -122,12 +123,13 @@ object TestAkkaService2 {
 /**
   * A dummy akka test service that registers with the location service
   */
+//noinspection DuplicatedCode
 class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
                        timers: TimerScheduler[ServiceMessageType],
                        i: Int,
                        options: TestAkkaServiceApp.Options,
                        locationService: LocationService)
-    extends AbstractBehavior[ServiceMessageType] {
+    extends AbstractBehavior[ServiceMessageType](ctx) {
 
   import options._
 
@@ -140,7 +142,6 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
     locationService.register(
       registrationFactory.akkaTyped(
         TestAkkaService2.connection(i),
-        Prefix("csw.prefix"),
         ctx.self
       )
     ),
@@ -167,7 +168,7 @@ class TestAkkaService2(ctx: ActorContext[ServiceMessageType],
       case Quit =>
         log.info(s"Actor $i is shutting down after $autostop seconds")
         Await.result(reg.unregister(), 10.seconds)
-        Behavior.stopped
+        Behaviors.stopped
     }
   }
 }

@@ -12,11 +12,12 @@ For example:
     setenv DB_READ_PASSWORD myPassword
 
 You can use a command like this to set the password the first time. 
-(Note: Temporarily replace `password` with `trust` in the installed version of `pg_hba.conf` under csw/target/universal/stage/conf):
+(Note: Temporarily replace `password` with `trust` in csw/csw-services/src/main/resources/database/pg_hba.conf and run `sbt stage`):
 
 ```
-> psql postgres -h localhost
-psql (10.6)
+> > psql postgres -h myHost -p 5432
+psql (12.4 (Ubuntu 12.4-0ubuntu0.20.04.1))
+
 Type "help" for help.
 
 postgres=# ALTER USER myName WITH PASSWORD 'myPassword';

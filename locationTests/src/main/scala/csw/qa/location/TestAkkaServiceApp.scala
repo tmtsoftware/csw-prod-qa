@@ -3,8 +3,6 @@ package csw.qa.location
 import java.net.InetAddress
 
 import akka.actor.typed.{ActorSystem, SpawnProtocol}
-import akka.stream.Materializer
-import akka.stream.typed.scaladsl.ActorMaterializer
 
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
@@ -24,11 +22,12 @@ import scala.concurrent.duration._
   *
   * The client and service applications can be run on the same or different hosts.
   */
+//noinspection DuplicatedCode
 object TestAkkaServiceApp extends App {
 
   private val host = InetAddress.getLocalHost.getHostName
-  implicit val typedSystem: ActorSystem[SpawnProtocol] = ActorSystem(SpawnProtocol.behavior, "TestAkkaServiceApp")
-  implicit lazy val mat: Materializer = ActorMaterializer()(typedSystem)
+//  implicit val typedSystem: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "event-server")
+  implicit val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "TestAkkaServiceApp")
   implicit lazy val ec: ExecutionContextExecutor            = typedSystem.executionContext
 
   LoggingSystemFactory.start("TestAkkaServiceApp", "0.1", host, typedSystem)
@@ -37,7 +36,7 @@ object TestAkkaServiceApp extends App {
   log.debug("Started TestAkkaServiceApp")
 
 
-  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem, mat)
+  val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem)
 
   case class Options(numServices: Int = 1, firstService: Int = 1,
                      autostop: Int = 0, autoshutdown: Int = 0, delay: Int = 100,
@@ -108,10 +107,10 @@ object TestAkkaServiceApp extends App {
   private def autoShutdown(options: Options): Unit = {
     import options._
     if (options.autoshutdown != 0) {
-      typedSystem.scheduler.scheduleOnce(autoshutdown.seconds) {
+      typedSystem.scheduler.scheduleOnce(autoshutdown.seconds, () => {
         log.info(s"Auto-shutdown starting after $autoshutdown seconds")
         typedSystem.terminate()
-      }
+      })
     }
   }
 }

@@ -10,28 +10,29 @@ import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.framework.models.JCswContext;
-import csw.location.models.TrackingEvent;
+import csw.location.api.models.TrackingEvent;
 import csw.logging.api.javadsl.ILogger;
-import csw.logging.client.javadsl.JLoggerFactory;
 import csw.params.commands.CommandResponse;
 import csw.params.commands.ControlCommand;
 import csw.params.core.generics.Key;
+import csw.params.core.models.Id;
 import csw.params.events.Event;
 import csw.params.events.EventName;
 import csw.params.events.SystemEvent;
 import csw.params.javadsl.JKeyType;
+import csw.prefix.javadsl.JSubsystem;
+import csw.time.core.models.UTCTime;
 
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 
 public class JTestHcd {
 
   // Dummy key for publishing events
-  private static Key<Integer> eventValueKey = JKeyType.IntKey().make("hcdEventValue");
-  private static EventName eventName = new EventName("myHcdEvent");
-  private static Random eventValues = new Random();
+  private static final Key<Integer> eventValueKey = JKeyType.IntKey().make("hcdEventValue");
+  private static final EventName eventName = new EventName("myHcdEvent");
+  private static final Random eventValues = new Random();
 
 
   @SuppressWarnings("unused")
@@ -57,25 +58,21 @@ public class JTestHcd {
     JTestHcdHandlers(ActorContext<TopLevelActorMessage> ctx,
                      JCswContext cswServices) {
       super(ctx, cswServices);
-      this.log = new JLoggerFactory(cswServices.componentInfo().name()).getLogger(getClass());
+      this.log = cswServices.loggerFactory().getLogger(this.getClass());
       this.eventService = cswServices.eventService();
       this.baseEvent = (new SystemEvent(cswServices.componentInfo().prefix(), eventName)).add(eventValueKey.set(eventValues.nextInt()));
       log.debug("Starting Test HCD");
     }
 
     @Override
-    public CompletableFuture<Void> jInitialize() {
+    public void initialize() {
       log.debug("jInitialize called");
       startPublishingEvents();
-      return CompletableFuture.runAsync(() -> {
-      });
     }
 
     @Override
-    public CompletableFuture<Void> jOnShutdown() {
+    public void onShutdown() {
       log.debug("onShutdown called");
-      return CompletableFuture.runAsync(() -> {
-      });
     }
 
     @Override
@@ -84,18 +81,18 @@ public class JTestHcd {
     }
 
     @Override
-    public CommandResponse.ValidateCommandResponse validateCommand(ControlCommand controlCommand) {
-      return new CommandResponse.Accepted(controlCommand.runId());
+    public CommandResponse.ValidateCommandResponse validateCommand(Id runId, ControlCommand controlCommand) {
+      return new CommandResponse.Accepted(runId);
     }
 
     @Override
-    public CommandResponse.SubmitResponse onSubmit(ControlCommand controlCommand) {
+    public CommandResponse.SubmitResponse onSubmit(Id runId, ControlCommand controlCommand) {
       log.debug("onSubmit called: " + controlCommand);
-      return new CommandResponse.Completed(controlCommand.runId());
+      return new CommandResponse.Completed(runId);
     }
 
     @Override
-    public void onOneway(ControlCommand controlCommand) {
+    public void onOneway(Id runId, ControlCommand controlCommand) {
       log.debug("onOneway called: " + controlCommand);
     }
 
@@ -107,6 +104,14 @@ public class JTestHcd {
     @Override
     public void onGoOnline() {
       log.debug("onGoOnline called");
+    }
+
+    @Override
+    public void onDiagnosticMode(UTCTime startTime, String hint) {
+    }
+
+    @Override
+    public void onOperationsMode() {
     }
 
     private void startPublishingEvents() {
@@ -126,6 +131,6 @@ public class JTestHcd {
 
   public static void main(String[] args) {
     Config defaultConfig = ConfigFactory.load("JTestHcd.conf");
-    JContainerCmd.start("TestHcd", args, Optional.of(defaultConfig));
+    JContainerCmd.start("testhcd", JSubsystem.CSW, args, Optional.of(defaultConfig));
   }
 }

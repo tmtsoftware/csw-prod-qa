@@ -6,7 +6,7 @@ import com.typesafe.sbt.packager.Keys._
 // Defines the global build settings so they don't need to be edited everywhere
 object Settings {
   val Version = "0.1-SNAPSHOT"
-  val ScalaVersion = "2.13.0"
+  val ScalaVersion = "2.13.3"
 
   val buildSettings = Seq(
     organization := "org.tmt",
@@ -17,8 +17,8 @@ object Settings {
     parallelExecution in Test := false,
     fork := true,
     resolvers += Resolver.bintrayRepo("twtmt", "maven"),
-    resolvers += "bintray" at "http://jcenter.bintray.com",
     resolvers += "jitpack" at "https://jitpack.io",
+    resolvers += "bintray" at "https://jcenter.bintray.com",
     updateOptions := updateOptions.value.withLatestSnapshots(false),
     scalacOptions ++= Seq(
       "-encoding",
@@ -26,8 +26,13 @@ object Settings {
       "-feature",
       "-unchecked",
       "-deprecation",
+      //-W Options
+      "-Wdead-code",
+      //-X Options
       "-Xlint:_,-missing-interpolator",
-      "-Ywarn-dead-code"
+      "-Xsource:3",
+      "-Xcheckinit",
+      "-Xasync"
     ),
     javacOptions in (Compile, doc) ++= Seq("-Xdoclint:none"),
     javacOptions in doc ++= Seq("--ignore-source-errors"),

@@ -3,9 +3,9 @@ package csw.qa.location
 import akka.stream.Materializer
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors, TimerScheduler}
+import csw.location.api.models.Connection.AkkaConnection
+import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.location.api.scaladsl.LocationService
-import csw.location.models.Connection.AkkaConnection
-import csw.location.models.{AkkaLocation, LocationRemoved, LocationUpdated}
 import csw.logging.client.scaladsl.GenericLoggerFactory
 
 object TestServiceClient {
@@ -20,7 +20,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
                         timers: TimerScheduler[ServiceClientMessageType],
                         options: TestServiceClientApp.Options,
                         locationService: LocationService)(implicit mat: Materializer)
-  extends AbstractBehavior[ServiceClientMessageType] {
+  extends AbstractBehavior[ServiceClientMessageType](ctx) {
 
   import options._
   implicit def actorSystem: ActorSystem[Nothing] = ctx.system
@@ -35,7 +35,6 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
   }
 
   override def onMessage(msg: ServiceClientMessageType): Behavior[ServiceClientMessageType] = {
-//    import csw.location.api.extensions.URIExtension.RichURI
 
     msg match {
       // Receive a location from the location service and if it is an akka location, send it a message
@@ -43,9 +42,6 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
         loc match {
           case loc:
             AkkaLocation => log.info(s"Received Akka Location: $loc")
-            // Note: Need to cast the actorRef.
-            // TODO: configure serialization: Search for "serialization-bindings" in the csw config files.
-//            loc.uri.toActorRef.unsafeUpcast[ServiceMessageType] ! ClientMessage(ctx.self)
           case x => log.error(s"Received unexpected location type: $x")
         }
 
@@ -53,7 +49,7 @@ class TestServiceClient(ctx: ActorContext[ServiceClientMessageType],
       case TrackingEventMessage(LocationRemoved(conn)) =>
         log.debug(s"Location removed ${conn.name}")
     }
-    Behavior.same
+    Behaviors.same
   }
 }
 

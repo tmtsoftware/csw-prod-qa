@@ -1,3 +1,2 @@
 
-addSbtPlugin("com.typesafe.sbt"                  % "sbt-native-packager"    % "1.3.25")
-addSbtCoursier
+addSbtPlugin("com.typesafe.sbt"                  % "sbt-native-packager"       % "1.7.5")

@@ -1,19 +1,18 @@
 package csw.qa.framework
 
-import akka.actor.Cancellable
+import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import csw.command.client.HttpCommandService
 import csw.command.client.messages.TopLevelActorMessage
 import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
-import csw.location.models.{ComponentId, ComponentType, TrackingEvent}
-import csw.location.models.Connection.HttpConnection
-import csw.params.commands.CommandResponse.{Accepted, Error, SubmitResponse, ValidateCommandResponse}
+import csw.location.api.models.TrackingEvent
+import csw.params.commands.CommandResponse.{Completed, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
+import csw.params.core.formats.ParamCodecs
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
 import csw.time.core.models.UTCTime
@@ -21,45 +20,37 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
+import csw.params.core.states.{CurrentState, StateName}
+import csw.prefix.models.Subsystem.CSW
 
 import scala.concurrent.duration._
-import scala.async.Async._
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.ExecutionContextExecutor
 import scala.util.Random
 
 private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
-  override def handlers(ctx: ActorContext[TopLevelActorMessage],
-                        cswServices: CswContext): ComponentHandlers =
+  override def handlers(ctx: ActorContext[TopLevelActorMessage], cswServices: CswContext): ComponentHandlers =
     new TestHcdHandlers(ctx, cswServices)
 }
 
-private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
-                              cswCtx: CswContext)
-    extends ComponentHandlers(ctx, cswCtx) {
+//noinspection DuplicatedCode
+private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext)
+    extends ComponentHandlers(ctx, cswCtx) with ParamCodecs {
 
   import cswCtx._
 
-  private val log = loggerFactory.getLogger
+  private val log                           = loggerFactory.getLogger
+  implicit val system: ActorSystem[Nothing] = ctx.system
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
+  implicit def timeout: Timeout = new Timeout(20.seconds)
 
   // Dummy key for publishing events
   private val eventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
-  private val eventName = EventName("myHcdEvent")
-  private val eventName2 = EventName("myHcdEvent2")
-  private val eventName3 = EventName("myHcdEvent3")
-  private val eventValues = Random
-  private val baseEvent = SystemEvent(componentInfo.prefix, eventName)
-  private val baseEvent2 = SystemEvent(componentInfo.prefix, eventName2)
-  private val baseEvent3 = SystemEvent(componentInfo.prefix, eventName3)
-
-  private val connection = HttpConnection(
-    ComponentId("pycswTest", ComponentType.Service)
-  )
-  private val service =
-    HttpCommandService(ctx.system, cswCtx.locationService, connection)
+  private val eventName               = EventName("myHcdEvent")
+  private val eventValues             = Random
+  private val baseEvent               = SystemEvent(componentInfo.prefix, eventName)
 
   // Dummy test command
-  private def makeTestCommand(): ControlCommand = {
+  private def makeTestCommand(commandName: String): ControlCommand = {
     import Angle._
     import Coords._
 
@@ -100,7 +91,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
       altAzCoord
     )
 
-    Setup(componentInfo.prefix, CommandName("testCommand"), None)
+    Setup(componentInfo.prefix, CommandName(commandName), None)
       .add(posParam)
       .add(eventKey1b.set(1.0f, 2.0f, 3.0f))
       .add(
@@ -116,67 +107,26 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
       )
   }
 
-  override def initialize(): Future[Unit] = async {
+  override def initialize(): Unit = {
     log.debug("Initialize called")
     startPublishingEvents()
+    startPublishingCurrentState()
   }
 
-  override def validateCommand(
-    controlCommand: ControlCommand
-  ): ValidateCommandResponse = {
-    CommandResponse.Accepted(controlCommand.runId)
+  override def validateCommand(runId: Id, controlCommand: ControlCommand): ValidateCommandResponse = {
+    CommandResponse.Accepted(runId)
   }
 
-  override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
+  override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = {
     log.debug(s"onSubmit called: $controlCommand")
-    implicit def timeout: Timeout = new Timeout(20.seconds)
-
-    try {
-      // Test sending a command to a python based HTTP service
-      // (see pycsw project: Assumes pycsw's "TestCommandServer" is running)
-      val validateResponse = Await.result(service.validate(controlCommand), 5.seconds)
-      log.info(s"Response from validate command to ${connection.componentId.name}: $validateResponse")
-      val onewayResponse = Await.result(service.oneway(controlCommand), 5.seconds)
-      log.info(s"Response from oneway command to ${connection.componentId.name}: $onewayResponse")
-
-      val testCommand = makeTestCommand()
-      val firstCommandResponse = Await.result(service.submit(testCommand), 5.seconds)
-      log.info(s"Response from submit command to ${connection.componentId.name}: $firstCommandResponse")
-      val commandResponse = Await.result(service.queryFinal(testCommand.runId), 20.seconds)
-      log.info(s"Response from submit command to ${connection.componentId.name}: $commandResponse")
-
-      commandResponse
-    } catch {
-      case e: Exception =>
-        log.error(
-          s"Error sending command to ${service.connection.componentId.name}: $e",
-          ex = e
-        )
-        Error(
-          controlCommand.runId,
-          s"Error sending command to ${service.connection.componentId.name}: $e"
-        )
-    }
+    Completed(runId)
   }
 
-  override def onOneway(controlCommand: ControlCommand): Unit = {
+  override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {
     log.debug(s"onOneway called: $controlCommand")
-    try {
-      val onewayResponse =
-        Await.result(service.oneway(controlCommand), 5.seconds)
-      log.info(
-        s"Response from oneway command to ${connection.componentId.name}: $onewayResponse"
-      )
-    } catch {
-      case e: Exception =>
-        log.error(
-          s"Error sending oneway command to ${service.connection.componentId.name}: $e",
-          ex = e
-        )
-    }
   }
 
-  override def onShutdown(): Future[Unit] = async {
+  override def onShutdown(): Unit = {
     log.debug("onShutdown called")
   }
 
@@ -187,11 +137,17 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit =
     log.debug(s"onLocationTrackingEvent called: $trackingEvent")
 
-  private def startPublishingEvents(): Cancellable = {
+  private def startPublishingEvents(): Unit = {
     val publisher = eventService.defaultPublisher
     publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
-    publisher.publish(eventGenerator2(), 50.millis, p => onError(p))
-    publisher.publish(eventGenerator3(), 5.seconds, p => onError(p))
+  }
+
+  private def startPublishingCurrentState(): Unit = {
+    system.scheduler.scheduleAtFixedRate(1.second, 10.seconds) { () =>
+      val params = makeTestCommand("ignore").paramSet
+      val currentState = CurrentState(cswCtx.componentInfo.prefix, StateName("TestHcdState"), params)
+      currentStatePublisher.publish(currentState)
+    }
   }
 
   // this holds the logic for event generation, could be based on some computation or current state of HCD
@@ -201,19 +157,6 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
       .add(eventValueKey.set(eventValues.nextInt(100)))
     Some(event)
   }
-  private def eventGenerator2(): Option[Event] = {
-    val event = baseEvent2
-      .copy(eventId = Id(), eventTime = UTCTime.now())
-      .add(eventValueKey.set(eventValues.nextInt(1000)))
-    Some(event)
-  }
-
-  private def eventGenerator3(): Option[Event] = {
-    val event = baseEvent3
-      .copy(eventId = Id(), eventTime = UTCTime.now())
-      .add(eventValueKey.set(eventValues.nextInt(10000)))
-    Some(event)
-  }
 
   private def onError(publishFailure: PublishFailure): Unit =
     log.error(
@@ -221,9 +164,12 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage],
       ex = publishFailure.cause
     )
 
+  override def onDiagnosticMode(startTime: UTCTime, hint: String): Unit = {}
+
+  override def onOperationsMode(): Unit = {}
 }
 
 object TestHcdApp extends App {
   val defaultConfig = ConfigFactory.load("TestHcd.conf")
-  ContainerCmd.start("TestHcd", args, Some(defaultConfig))
+  ContainerCmd.start("testhcd", CSW, args, Some(defaultConfig))
 }

@@ -1,6 +1,6 @@
 package csw.qa.framework
 
-import akka.actor.Scheduler
+import akka.actor.typed
 import akka.actor.typed.scaladsl.ActorContext
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -11,11 +11,13 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.params.commands.CommandResponse.{SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand}
 import akka.actor.typed.scaladsl.AskPattern._
-import csw.location.models.TrackingEvent
+import csw.location.api.models.TrackingEvent
+import csw.params.core.models.Id
+import csw.prefix.models.Subsystem.CSW
+import csw.time.core.models.UTCTime
 
 import scala.concurrent.duration._
-import scala.async.Async._
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.ExecutionContextExecutor
 
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
   override def handlers(ctx: ActorContext[TopLevelActorMessage],
@@ -32,33 +34,33 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   implicit val timeout: Timeout = Timeout(3.seconds)
-  implicit val sched: Scheduler = ctx.system.scheduler
+  implicit val sched: typed.Scheduler = ctx.system.scheduler
 
   private val log = loggerFactory.getLogger
 
   // A worker actor that holds the state and implements the assembly (Optional if the assembly has no mutable state)
   private val worker = ctx.spawn(TestAssemblyWorker.make(cswCtx), "testWorker")
 
-  override def initialize(): Future[Unit] = {
+  override def initialize(): Unit = {
     worker ? (ref => TestAssemblyWorker.Initialize(ref))
   }
 
-  override def validateCommand(
-                                controlCommand: ControlCommand): ValidateCommandResponse = {
-    CommandResponse.Accepted(controlCommand.runId)
+  override def validateCommand(runId: Id,
+                               controlCommand: ControlCommand): ValidateCommandResponse = {
+    CommandResponse.Accepted(runId)
   }
 
-  override def onSubmit(controlCommand: ControlCommand): SubmitResponse = {
+  override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = {
     log.info(s"Received submit: $controlCommand")
-    worker ! TestAssemblyWorker.Submit(controlCommand)
-    CommandResponse.Started(controlCommand.runId)
+    worker ! TestAssemblyWorker.Submit(runId, controlCommand)
+    CommandResponse.Started(runId)
   }
 
-  override def onOneway(controlCommand: ControlCommand): Unit = {
+  override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {
     log.debug("onOneway called")
   }
 
-  override def onShutdown(): Future[Unit] = async {
+  override def onShutdown(): Unit = {
     log.debug("onShutdown called")
   }
 
@@ -67,13 +69,17 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
   override def onGoOnline(): Unit = log.debug("onGoOnline called")
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit = {
+    log.info(s"XXX onLocationTrackingEvent $trackingEvent")
     worker ! TestAssemblyWorker.Location(trackingEvent)
   }
 
+  override def onDiagnosticMode(startTime: UTCTime, hint: String): Unit = {}
+
+  override def onOperationsMode(): Unit = {}
 }
 
 // Start assembly from the command line using TestAssembly.conf resource file
 object TestAssemblyApp extends App {
   val defaultConfig = ConfigFactory.load("TestAssembly.conf")
-  ContainerCmd.start("TestAssembly", args, Some(defaultConfig))
+  ContainerCmd.start("testassembly", CSW, args, Some(defaultConfig))
 }
