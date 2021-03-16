@@ -108,13 +108,13 @@ public class JTestAssembly {
     }
 
     @Override
-    public void jInitialize() {
+    public void initialize() {
       log.debug("jInitialize called");
       startSubscribingToEvents();
     }
 
     @Override
-    public void jOnShutdown() {
+    public void onShutdown() {
       log.debug("onShutdown called");
     }
 

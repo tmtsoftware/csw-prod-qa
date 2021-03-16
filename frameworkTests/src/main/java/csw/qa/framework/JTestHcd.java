@@ -30,9 +30,9 @@ import java.util.Random;
 public class JTestHcd {
 
   // Dummy key for publishing events
-  private static Key<Integer> eventValueKey = JKeyType.IntKey().make("hcdEventValue");
-  private static EventName eventName = new EventName("myHcdEvent");
-  private static Random eventValues = new Random();
+  private static final Key<Integer> eventValueKey = JKeyType.IntKey().make("hcdEventValue");
+  private static final EventName eventName = new EventName("myHcdEvent");
+  private static final Random eventValues = new Random();
 
 
   @SuppressWarnings("unused")
@@ -65,13 +65,13 @@ public class JTestHcd {
     }
 
     @Override
-    public void jInitialize() {
+    public void initialize() {
       log.debug("jInitialize called");
       startPublishingEvents();
     }
 
     @Override
-    public void jOnShutdown() {
+    public void onShutdown() {
       log.debug("onShutdown called");
     }
 
