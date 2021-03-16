@@ -10,8 +10,8 @@ object Libs {
 
 object CSW {
   private val Org = "com.github.tmtsoftware.csw"
-//  private val Version = "1.0.0"
-  private val Version = "0.1.0-SNAPSHOT"
+  private val Version = "3.0.1"
+//  private val Version = "0.1.0-SNAPSHOT"
 
   val `csw-logging-client` = Org %% "csw-logging-client" % Version
   val `csw-commons` = Org %% "csw-commons" % Version
