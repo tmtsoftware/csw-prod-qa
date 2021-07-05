@@ -1,9 +1,6 @@
 package csw.qa.framework;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.ActorSystem;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.SpawnProtocol;
+import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.util.Timeout;
@@ -18,7 +15,9 @@ import csw.location.api.models.*;
 import csw.location.client.ActorSystemFactory;
 import csw.location.client.javadsl.JHttpLocationServiceFactory;
 import csw.logging.api.javadsl.ILogger;
+import csw.logging.client.commons.AkkaTypedExtension;
 import csw.logging.client.javadsl.JGenericLoggerFactory;
+import csw.logging.client.javadsl.JLoggingSystemFactory;
 import csw.logging.client.scaladsl.LoggingSystemFactory;
 import csw.params.commands.CommandName;
 import csw.params.commands.CommandResponse;
@@ -46,8 +45,6 @@ import java.util.concurrent.TimeUnit;
 
 // A client to test locating and communicating with the Test assembly
 public class JTestAssemblyClient {
-
-
   private static final Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
 
   // Key for events from assembly
@@ -57,7 +54,7 @@ public class JTestAssemblyClient {
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private static final EventKey assemblyEventKey = new EventKey(assemblyPrefix, assemblyEventName);
 
-  private static final ObsId obsId = ObsId.apply("2023-Q22-4-33");
+  private static final ObsId obsId = ObsId.apply("2020A-001-123");
   private static final Key<Integer> encoderKey = JKeyType.IntKey().make("encoder");
   private static final Key<String> filterKey = JKeyType.StringKey().make("filter");
   private static final Prefix prefix = Prefix.apply(JSubsystem.CSW, "wfos.blue.filter");
@@ -65,10 +62,10 @@ public class JTestAssemblyClient {
   private static final ComponentId componentId = new ComponentId(Prefix.apply(JSubsystem.CSW, "testassembly"), JComponentType.Assembly);
   private static final Connection.AkkaConnection connection = new Connection.AkkaConnection(componentId);
 
-  private final ActorSystem<SpawnProtocol.Command> typedSystem = ActorSystemFactory.remote(SpawnProtocol.create(), "JTestAssemblyClient");
-  private ILocationService locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem);
-  private final ILogger log = JGenericLoggerFactory.getLogger(JTestAssemblyClient.class);
-  private final IEventService eventService = (new EventServiceFactory()).jMake(locationService, typedSystem);
+  private final ActorSystem<SpawnProtocol.Command> typedSystem;
+  private final ILocationService locationService;
+  private final ILogger log;
+  private final IEventService eventService;
 
   // Actor to receive HCD events
   private Behavior<Event> eventHandler() {
@@ -87,20 +84,21 @@ public class JTestAssemblyClient {
   }
 
 
-  private JTestAssemblyClient() {
+  private JTestAssemblyClient(ActorSystem<SpawnProtocol.Command> typedSystem) {
+    this.typedSystem = typedSystem;
+    locationService = JHttpLocationServiceFactory.makeLocalClient(typedSystem);
+    log = JGenericLoggerFactory.getLogger(JTestAssemblyClient.class);
+    eventService = (new EventServiceFactory()).jMake(locationService, typedSystem);
   }
 
   private void start() throws UnknownHostException {
     // Start the logging service
     String host = InetAddress.getLocalHost().getHostName();
     LoggingSystemFactory.start("JTestAssemblyClient", "0.1", host, typedSystem);
+    log.info("Starting TestAssemblyClient");
 
-    Behaviors.setup(
-        context -> {
-          context.spawn(initialBehavior(), "TestAssemblyClient");
-          return Behaviors.same();
-        }
-    );
+    AkkaTypedExtension.UserActorFactory(typedSystem).spawn(initialBehavior(), "TestAssemblyClient",
+        Props.empty());
   }
 
   private void startSubscribingToEvents(ActorContext<TrackingEvent> ctx) {
@@ -110,7 +108,6 @@ public class JTestAssemblyClient {
     subscriber.subscribeActorRef(Collections.singleton(assemblyEventKey), eventHandler);
   }
 
-
   private Behavior<TrackingEvent> initialBehavior() {
     return Behaviors.setup((ActorContext<TrackingEvent> ctx) -> {
       locationService.subscribe(connection, loc -> ctx.getSelf().tell(loc));
@@ -118,7 +115,6 @@ public class JTestAssemblyClient {
       return subscriberBehavior();
     });
   }
-
 
   private Behavior<TrackingEvent> subscriberBehavior() {
     return Behaviors.receive(TrackingEvent.class)
@@ -142,19 +138,20 @@ public class JTestAssemblyClient {
     List<ControlCommand> setups = new ArrayList<>();
     for (int i = 1; i <= 10; i++) {
       setups.add(makeSetup(i, "filter" + i));
-      try {
-        List<CommandResponse.SubmitResponse> responses = assembly.submitAllAndWait(setups, timeout).get();
-        System.out.println("Test Passed: Responses = " + responses);
-      } catch(Exception ex) {
-        System.out.println("Test Failed: " + ex);
-      }
+    }
+    try {
+      List<CommandResponse.SubmitResponse> responses = assembly.submitAllAndWait(setups, timeout).get();
+      System.out.println("Test Passed: Responses = " + responses);
+    } catch (Exception ex) {
+      System.out.println("Test Failed: " + ex);
     }
   }
 
 
   // If a command line arg is given, it should be the number of services to resolve (default: 1).
   public static void main(String[] args) throws UnknownHostException {
-    JTestAssemblyClient client = new JTestAssemblyClient();
+    ActorSystem<SpawnProtocol.Command> typedSystem = ActorSystemFactory.remote(SpawnProtocol.create(), "JTestAssemblyClientSystem");
+    JTestAssemblyClient client = new JTestAssemblyClient(typedSystem);
     client.start();
   }
 }

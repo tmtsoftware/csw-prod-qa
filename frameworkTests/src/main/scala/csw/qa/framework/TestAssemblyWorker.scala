@@ -1,6 +1,6 @@
 package csw.qa.framework
 
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, Signal}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import TestAssemblyWorker._
 import akka.actor.typed
@@ -13,7 +13,7 @@ import csw.framework.models.CswContext
 import csw.location.api.models.{AkkaLocation, LocationRemoved, LocationUpdated, TrackingEvent}
 import csw.logging.api.scaladsl.Logger
 import csw.params.commands.CommandResponse.Error
-import csw.params.commands.{CommandName, ControlCommand, Setup}
+import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.core.generics.KeyType.CoordKey
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
@@ -21,10 +21,9 @@ import csw.params.core.models.Coords.SolarSystemObject.Venus
 import csw.params.core.models.{Angle, Coords, Id, ObsId, ProperMotion, Struct}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.{Prefix, Subsystem}
-import csw.prefix.models.Subsystem.{CSW, WFOS}
+import csw.prefix.models.Subsystem.CSW
 import csw.time.core.models.UTCTime
 
-import scala.async.Async.async
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
@@ -35,11 +34,9 @@ object TestAssemblyWorker {
 
   case class Initialize(replyTo: ActorRef[Unit]) extends TestAssemblyWorkerMsg
 
-  case class Submit(runId: Id, controlCommand: ControlCommand)
-      extends TestAssemblyWorkerMsg
+  case class Submit(runId: Id, controlCommand: ControlCommand) extends TestAssemblyWorkerMsg
 
-  case class Location(trackingEvent: TrackingEvent)
-      extends TestAssemblyWorkerMsg
+  case class Location(trackingEvent: TrackingEvent) extends TestAssemblyWorkerMsg
 
   case object RefreshAlarms extends TestAssemblyWorkerMsg
 
@@ -55,8 +52,8 @@ object TestAssemblyWorker {
 
   // Key for HCD events
   private val hcdEventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
-  private val hcdEventName = EventName("myHcdEvent")
-  private val hcdPrefix = Prefix(CSW, "testhcd")
+  private val hcdEventName               = EventName("myHcdEvent")
+  private val hcdPrefix                  = Prefix(CSW, "testhcd")
 
   // Keys for publishing events from assembly
   private[framework] val eventKey1: Key[Float] =
@@ -71,21 +68,20 @@ object TestAssemblyWorker {
     KeyType.IntKey.make("assemblyEventStructValue3")
   private[framework] val eventKey4: Key[Byte] =
     KeyType.ByteKey.make("assemblyEventStructValue4")
-  private val assemblyPrefix = Prefix(CSW, "testassembly")
-  private[framework] val eventName = EventName("myAssemblyEvent")
+  private val assemblyPrefix        = Prefix(CSW, "testassembly")
+  private[framework] val eventName  = EventName("myAssemblyEvent")
   private[framework] val basePosKey = CoordKey.make("BasePosition")
 
   // Actor to receive HCD events
-  private def eventHandler(log: Logger,
-                           publisher: EventPublisher,
-                           baseEvent: SystemEvent): Behavior[Event] = {
+  private def eventHandler(log: Logger, publisher: EventPublisher, baseEvent: SystemEvent): Behavior[Event] = {
     import Angle._
     import Coords._
     Behaviors.receive { (_, msg) =>
       msg match {
         case event: SystemEvent =>
           log.debug(s"received event: $event")
-          event.get(hcdEventValueKey)
+          event
+            .get(hcdEventValueKey)
             .foreach { p =>
               val eventValue = p.head
               log.debug(s"Received event with event time: ${event.eventTime} with value: $eventValue")
@@ -158,8 +154,7 @@ object TestAssemblyWorker {
 }
 
 //noinspection DuplicatedCode,SameParameterValue
-class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
-                         cswCtx: CswContext)
+class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg], cswCtx: CswContext)
     extends AbstractBehavior[TestAssemblyWorkerMsg](ctx) {
 
   import cswCtx._
@@ -167,25 +162,22 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   import scala.concurrent.duration._
 
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
-  implicit val timeout: Timeout = Timeout(5.seconds)
-  implicit val sched: typed.Scheduler = ctx.system.scheduler
+  implicit val timeout: Timeout             = Timeout(5.seconds)
+  implicit val sched: typed.Scheduler       = ctx.system.scheduler
 
   private val log = loggerFactory.getLogger
 
   // Set when the location is received from the location service (below)
   private var testHcd: Option[CommandService] = None
 
-  // Set when the database has been located
-//  private var database: Option[DSLContext] = None
-
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val hcdEventKey = EventKey(hcdPrefix, hcdEventName)
 
-  private val obsId = ObsId("2023-Q22-4-33")
+  private val obsId      = ObsId("2020A-001-123")
   private val encoderKey = KeyType.IntKey.make("encoder")
-  private val filterKey = KeyType.StringKey.make("filter")
-  private val prefix = Prefix(WFOS, "blue.filter")
-  private val command = CommandName("myCommand")
+  private val filterKey  = KeyType.StringKey.make("filter")
+  private val prefix     = Prefix(CSW, "blue.filter")
+  private val command    = CommandName("myCommand")
 
   startSubscribingToEvents()
   refreshAlarms()
@@ -199,21 +191,12 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
   override def onMessage(
       msg: TestAssemblyWorkerMsg
   ): Behavior[TestAssemblyWorkerMsg] = {
+    log.info(s"Received worker message: $msg")
     msg match {
       case Initialize(replyTo) =>
-        async {
-          //          log.info(s"getting database")
-          //          val dsl = await(initDatabaseTable())
-          //          log.info(s"database = $dsl")
-          //          ctx.self ! SetDatabase(dsl)
-          replyTo.tell(())
-        }.onComplete {
-          case Success(_)  => log.info("Initialized")
-          case Failure(ex) => log.error("Initialize failed", ex = ex)
-        }
-//      case SetDatabase(dsl) =>
-//        database = Some(dsl)
+        replyTo.tell(())
       case Submit(runId, controlCommand) =>
+        log.info(s"Received Submit($controlCommand)")
         forwardCommandToHcd(runId, controlCommand)
       case Location(trackingEvent) =>
         log.info(s"Location updated: $trackingEvent")
@@ -229,7 +212,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
               case Failure(ex)        => log.info(s"Initial Submit Test Failed: $ex")
             }
           case LocationRemoved(location) =>
-              log.info(s"Location removed: $location")
+            log.info(s"Location removed: $location")
 //            testHcd = None
         }
       case RefreshAlarms =>
@@ -238,9 +221,15 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     Behaviors.same
   }
 
+  override def onSignal: PartialFunction[Signal, Behavior[TestAssemblyWorkerMsg]] = {
+    case x =>
+      log.warn(s"Test worker received signal: $x")
+      this
+  }
+
   private def startSubscribingToEvents(): Unit = {
     val subscriber = eventService.defaultSubscriber
-    val publisher = eventService.defaultPublisher
+    val publisher  = eventService.defaultPublisher
     val baseEvent =
       SystemEvent(assemblyPrefix, eventName)
         .add(eventKey1.set(0))
@@ -256,11 +245,12 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
     log.info(s"Forward command to hcd: $testHcd")
     testHcd.foreach { hcd =>
       val f = for {
-        onewayResponse <-hcd.oneway(controlCommand)
-        response <- hcd.submitAndWait(controlCommand)
+//        onewayResponse <- hcd.oneway(controlCommand)
+        response       <- hcd.submitAndWait(controlCommand)
       } yield {
-        log.info(s"oneway response = $onewayResponse, submit response = $response")
-        commandResponseManager.updateCommand(response)
+//        log.info(s"oneway response = $onewayResponse, submit response = $response")
+        log.info(s"submit response = $response")
+        commandResponseManager.updateCommand(CommandResponse.Completed(runId))
       }
       f.recover {
         case ex =>
@@ -272,13 +262,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg],
 
   private def refreshAlarms(): Unit = {
     //    alarmService.setSeverity(alarmKey, Okay)
-    ctx.scheduleOnce(1.seconds, ctx.self, RefreshAlarms)
+//    ctx.scheduleOnce(1.seconds, ctx.self, RefreshAlarms)
   }
-
-//  private def initDatabaseTable(): Future[DSLContext] = async {
-//    val dbFactory = new DatabaseServiceFactory(ctx.system)
-//    val dsl = await(dbFactory.makeDsl(locationService, dbName))
-//    dsl
-//  }
 
 }
