@@ -8,7 +8,6 @@ import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import csw.command.api.javadsl.ICommandService;
-import csw.command.client.CommandResponseManager;
 import csw.command.client.CommandServiceFactory;
 import csw.command.client.messages.TopLevelActorMessage;
 import csw.event.api.javadsl.IEventPublisher;
@@ -89,7 +88,7 @@ public class JTestAssembly {
   static class JTestAssemblyHandlers extends JComponentHandlers {
     private final ILogger log;
     private final ActorContext<TopLevelActorMessage> ctx;
-    private final JCswContext cswServices;
+    private final JCswContext cswContext;
     // Set when the location is received from the location service (below)
     private Optional<ICommandService> testHcd = Optional.empty();
 
@@ -98,12 +97,12 @@ public class JTestAssembly {
 
 
     JTestAssemblyHandlers(ActorContext<TopLevelActorMessage> ctx,
-                          JCswContext cswServices) {
-      super(ctx, cswServices);
+                          JCswContext cswContext) {
+      super(ctx, cswContext);
 
-      this.log = cswServices.loggerFactory().getLogger(this.getClass());
+      this.log = cswContext.loggerFactory().getLogger(this.getClass());
       this.ctx = ctx;
-      this.cswServices = cswServices;
+      this.cswContext = cswContext;
       log.debug("Starting Test Assembly");
     }
 
@@ -125,28 +124,28 @@ public class JTestAssembly {
 
     @Override
     public CommandResponse.SubmitResponse onSubmit(Id runId, ControlCommand controlCommand) {
-      log.debug("onSubmit called: " + controlCommand);
+      log.info("onSubmit called: " + controlCommand);
       forwardCommandToHcd(runId, controlCommand);
       return new CommandResponse.Started(runId);
     }
 
     // For testing, forward command to HCD and complete this command when it completes
     private void forwardCommandToHcd(Id runId, ControlCommand controlCommand) {
-      CommandResponseManager commandResponseManager = cswServices.commandResponseManager();
       testHcd.ifPresent(hcd -> {
         Timeout timeout = new Timeout(3, TimeUnit.SECONDS);
         Setup setup = new Setup(controlCommand.source(), controlCommand.commandName(), controlCommand.jMaybeObsId());
-//        commandResponseManager.addSubCommand(controlCommand.runId(), setup.runId());
-        try {
-          CommandResponse.SubmitResponse response = hcd.submitAndWait(setup, timeout).get();
-          log.info("response = " + response);
-//          commandResponseManager.updateSubCommand(response);
-        } catch (Exception ex) {
-//          commandResponseManager.updateSubCommand(new CommandResponse.Error(setup.runId(), ex.toString()));
-        }
+        hcd.submitAndWait(setup, timeout).
+            thenAccept(commandResponse -> {
+              if (commandResponse instanceof CommandResponse.Completed) {
+                log.info("Command completed");
+                cswContext.commandResponseManager().updateCommand(new CommandResponse.Completed(runId));
+              } else {
+                log.error("Command failed");
+                cswContext.commandResponseManager().updateCommand(new CommandResponse.Error(runId, "HCD command failed"));
+              }
+            });
       });
     }
-
 
     @Override
     public void onOneway(Id runId, ControlCommand controlCommand) {
@@ -181,9 +180,9 @@ public class JTestAssembly {
     }
 
     private CompletableFuture<IEventSubscription> startSubscribingToEvents() {
-      IEventSubscriber subscriber = cswServices.eventService().defaultSubscriber();
-      IEventPublisher publisher = cswServices.eventService().defaultPublisher();
-      SystemEvent baseEvent = new SystemEvent(cswServices.componentInfo().prefix(), eventName).add(eventKey.set(0));
+      IEventSubscriber subscriber = cswContext.eventService().defaultSubscriber();
+      IEventPublisher publisher = cswContext.eventService().defaultPublisher();
+      SystemEvent baseEvent = new SystemEvent(cswContext.componentInfo().prefix(), eventName).add(eventKey.set(0));
       ActorRef<Event> eventHandlerActor = ctx.spawn(eventHandler(log, publisher, baseEvent), "eventHandlerActor");
       IEventSubscription subscription = subscriber.subscribeActorRef(Collections.singleton(hcdEventKey), eventHandlerActor);
       return completedFuture(subscription);

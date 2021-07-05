@@ -38,6 +38,6 @@ For the Java version:
     
     j-test-assembly --local frameworkTests/src/main/resources/JTestAssembly.conf
 
-    test-assembly-client
+    j-test-assembly-client
 
 

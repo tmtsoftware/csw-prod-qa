@@ -139,11 +139,11 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
 
   private def startPublishingEvents(): Unit = {
     val publisher = eventService.defaultPublisher
-    publisher.publish(eventGenerator(), 1.seconds, p => onError(p))
+    publisher.publish(eventGenerator(), 60.seconds, p => onError(p))
   }
 
   private def startPublishingCurrentState(): Unit = {
-    system.scheduler.scheduleAtFixedRate(1.second, 10.seconds) { () =>
+    system.scheduler.scheduleAtFixedRate(1.second, 60.seconds) { () =>
       val params = makeTestCommand("ignore").paramSet
       val currentState = CurrentState(cswCtx.componentInfo.prefix, StateName("TestHcdState"), params)
       currentStatePublisher.publish(currentState)
