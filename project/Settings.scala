@@ -18,7 +18,6 @@ object Settings {
     fork := true,
     resolvers += Resolver.bintrayRepo("twtmt", "maven"),
     resolvers += "jitpack" at "https://jitpack.io",
-    resolvers += "bintray" at "https://jcenter.bintray.com",
     updateOptions := updateOptions.value.withLatestSnapshots(false),
     scalacOptions ++= Seq(
       "-encoding",
