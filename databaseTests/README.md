@@ -3,7 +3,7 @@ Database Service Tests
 
 This project contains some code using the database service.
 
-The code depends on a running postgres database, which is started by csw-services.sh by default.
+The code depends on a running postgres database, which is started by csw-services by default.
 Make sure to set the necessary environment variables for the user name and password.
 For example:
 

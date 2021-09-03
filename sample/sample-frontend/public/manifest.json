@@ -1,0 +1,6 @@
+{
+  "short_name": "sample-frontend",
+  "name": "sample-frontend",
+  "start_url": "./index.html",
+  "display": "standalone"
+}
