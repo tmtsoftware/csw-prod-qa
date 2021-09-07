@@ -6,9 +6,10 @@ import org.tmt.sample.http.{JSampleImplWrapper, SampleRoute}
 
 class SampleWiring(val port: Option[Int]) extends ServerWiring {
   override val actorSystemName: String = "sample-actor-system"
+//  import actorRuntime.{ec, typedSystem}
 
   lazy val jSampleImpl: JSampleImpl = new JSampleImpl(jCswServices)
-  lazy val sampleImpl               = new SampleImpl(cswServices)
+  lazy val sampleImpl               = new SampleImpl(cswServices)(actorRuntime.ec)
   lazy val sampleImplWrapper        = new JSampleImplWrapper(jSampleImpl)
 
   import actorRuntime.ec
