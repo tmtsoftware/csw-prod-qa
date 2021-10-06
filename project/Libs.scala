@@ -10,7 +10,8 @@ object Libs {
 
 object CSW {
   private val Org = "com.github.tmtsoftware.csw"
-  private val Version = "4.0.0-M1"
+  private val Version = "4.0.0-RC2"
+//  private val Version = "4.0.0"
 //  private val Version = "0.1.0-SNAPSHOT"
 
   val `csw-logging-client` = Org %% "csw-logging-client" % Version
@@ -24,4 +25,14 @@ object CSW {
   val `csw-event-client` = Org %% "csw-event-client" % Version
   val `csw-database` = Org %% "csw-database" % Version
   val `csw-prefix` = Org %% "csw-prefix" % Version
+}
+
+object Akka {
+  val Version = "2.6.15" //all akka is Apache License 2.0
+  val `akka-actor`               = "com.typesafe.akka" %% "akka-actor"               % Version
+}
+
+object AkkaHttp {
+  val Version = "10.2.4"
+  val `akka-http`            = "com.typesafe.akka" %% "akka-http"            % Version //ApacheV2
 }

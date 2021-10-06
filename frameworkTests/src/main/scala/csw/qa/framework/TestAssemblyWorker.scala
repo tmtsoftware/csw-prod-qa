@@ -18,7 +18,7 @@ import csw.params.core.generics.KeyType.CoordKey
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
-import csw.params.core.models.{Angle, Coords, Id, ObsId, ProperMotion, Struct}
+import csw.params.core.models.{Angle, Coords, Id, ObsId, ProperMotion}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.{Prefix, Subsystem}
 import csw.prefix.models.Subsystem.CSW
@@ -56,18 +56,9 @@ object TestAssemblyWorker {
   private val hcdPrefix                  = Prefix(CSW, "testhcd")
 
   // Keys for publishing events from assembly
-  private[framework] val eventKey1: Key[Float] =
-    KeyType.FloatKey.make("assemblyEventValue")
-  private[framework] val eventKey1b: Key[Float] =
-    KeyType.FloatKey.make("assemblyEventValue")
-  private[framework] val eventKey2: Key[Struct] =
-    KeyType.StructKey.make("assemblyEventStructValue")
-  private[framework] val eventKey2b: Key[Struct] =
-    KeyType.StructKey.make("assemblyEventStructValueB")
-  private[framework] val eventKey3: Key[Int] =
-    KeyType.IntKey.make("assemblyEventStructValue3")
-  private[framework] val eventKey4: Key[Byte] =
-    KeyType.ByteKey.make("assemblyEventStructValue4")
+  private[framework] val eventKey1: Key[Float] = KeyType.FloatKey.make("assemblyEventValue")
+  private[framework] val eventKey1b: Key[Float] = KeyType.FloatKey.make("assemblyEventValue")
+
   private val assemblyPrefix        = Prefix(CSW, "testassembly")
   private[framework] val eventName  = EventName("myAssemblyEvent")
   private[framework] val basePosKey = CoordKey.make("BasePosition")
@@ -128,17 +119,6 @@ object TestAssemblyWorker {
                 .copy(eventId = Id(), eventTime = UTCTime.now())
                 .add(posParam)
                 .add(eventKey1b.set(1.0f / eventValue, 2.0f, 3.0f))
-                .add(
-                  eventKey2b.set(
-                    Struct()
-                      .add(eventKey1.set(1.0f / eventValue))
-                      .add(eventKey3.set(eventValue, 1, 2, 3)),
-                    Struct()
-                      .add(eventKey1.set(2.0f / eventValue))
-                      .add(eventKey3.set(eventValue, 4, 5, 6))
-                      .add(eventKey4.set(9.toByte, 10.toByte))
-                  )
-                )
               publisher.publish(e)
             }
           Behaviors.same
@@ -233,7 +213,6 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg], cswCtx: CswCo
     val baseEvent =
       SystemEvent(assemblyPrefix, eventName)
         .add(eventKey1.set(0))
-        .add(eventKey2.set(Struct().add(eventKey1.set(0)).add(eventKey3.set(0))))
 
     val eventHandlerActor =
       ctx.spawn(eventHandler(log, publisher, baseEvent), "eventHandlerActor")
@@ -246,7 +225,7 @@ class TestAssemblyWorker(ctx: ActorContext[TestAssemblyWorkerMsg], cswCtx: CswCo
     testHcd.foreach { hcd =>
       val f = for {
 //        onewayResponse <- hcd.oneway(controlCommand)
-        response       <- hcd.submitAndWait(controlCommand)
+        response <- hcd.submitAndWait(controlCommand)
       } yield {
 //        log.info(s"oneway response = $onewayResponse, submit response = $response")
         log.info(s"submit response = $response")

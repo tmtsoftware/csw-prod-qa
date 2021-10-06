@@ -28,3 +28,8 @@ lazy val databaseTests = project
   .enablePlugins(DeployApp)
   .settings(appSettings: _*)
   .settings(libraryDependencies ++= `databaseTests-deps`)
+
+lazy val socketServer = project
+  .enablePlugins(DeployApp)
+  .settings(appSettings: _*)
+  .settings(libraryDependencies ++= `socketServer-deps`)

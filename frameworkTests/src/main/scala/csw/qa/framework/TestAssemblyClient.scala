@@ -43,7 +43,6 @@ object TestAssemblyClient extends App {
 
   // Key for events from assembly
   private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
-  private val assemblyEventValueKey2 = TestAssemblyWorker.eventKey2
   private val assemblyEventName = TestAssemblyWorker.eventName
   private val assemblyPrefix = Prefix(CSW, "testassembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
@@ -82,11 +81,6 @@ object TestAssemblyClient extends App {
             .foreach { p =>
               val eventValue = p.head
               log.info(s"Received event with value: $eventValue")
-            }
-          e.get(assemblyEventValueKey2)
-            .foreach { p =>
-              val eventValue = p.head
-              log.info(s"Received event with struct value: ${eventValue.get(assemblyEventValueKey).head.head}")
             }
         case x =>
           log.error(s"Expected SystemEvent but got $x")

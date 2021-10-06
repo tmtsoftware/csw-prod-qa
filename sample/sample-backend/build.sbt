@@ -5,7 +5,7 @@ lazy val `sample-backend` = project
     inThisBuild(
       List(
         scalaVersion := "2.13.6",
-        version := "0.1.0"
+        version := "0.1.0-SNAPSHOT"
       )
     ),
     name := "sample-backend",

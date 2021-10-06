@@ -14,12 +14,12 @@ import csw.params.commands.CommandResponse.{Completed, SubmitResponse, ValidateC
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.core.formats.ParamCodecs
 import csw.params.events.{Event, EventName, SystemEvent}
-import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
+import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1b}
 import csw.time.core.models.UTCTime
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
-import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
+import csw.params.core.models.{Angle, Coords, Id, ProperMotion}
 import csw.params.core.states.{CurrentState, StateName}
 import csw.prefix.models.Subsystem.CSW
 
@@ -34,14 +34,15 @@ private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
 
 //noinspection DuplicatedCode
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext)
-    extends ComponentHandlers(ctx, cswCtx) with ParamCodecs {
+    extends ComponentHandlers(ctx, cswCtx)
+    with ParamCodecs {
 
   import cswCtx._
 
   private val log                           = loggerFactory.getLogger
   implicit val system: ActorSystem[Nothing] = ctx.system
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
-  implicit def timeout: Timeout = new Timeout(20.seconds)
+  implicit def timeout: Timeout             = new Timeout(20.seconds)
 
   // Dummy key for publishing events
   private val eventValueKey: Key[Int] = KeyType.IntKey.make("hcdEventValue")
@@ -49,6 +50,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
   private val eventValues             = Random
   private val baseEvent               = SystemEvent(componentInfo.prefix, eventName)
 
+  //noinspection SameParameterValue
   // Dummy test command
   private def makeTestCommand(commandName: String): ControlCommand = {
     import Angle._
@@ -94,17 +96,6 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
     Setup(componentInfo.prefix, CommandName(commandName), None)
       .add(posParam)
       .add(eventKey1b.set(1.0f, 2.0f, 3.0f))
-      .add(
-        eventKey2b.set(
-          Struct()
-            .add(eventKey1.set(1.0f))
-            .add(eventKey3.set(1, 2, 3)),
-          Struct()
-            .add(eventKey1.set(2.0f))
-            .add(eventKey3.set(4, 5, 6))
-            .add(eventKey4.set(9.toByte, 10.toByte))
-        )
-      )
   }
 
   override def initialize(): Unit = {
@@ -144,7 +135,7 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
 
   private def startPublishingCurrentState(): Unit = {
     system.scheduler.scheduleAtFixedRate(1.second, 60.seconds) { () =>
-      val params = makeTestCommand("ignore").paramSet
+      val params       = makeTestCommand("ignore").paramSet
       val currentState = CurrentState(cswCtx.componentInfo.prefix, StateName("TestHcdState"), params)
       currentStatePublisher.publish(currentState)
     }

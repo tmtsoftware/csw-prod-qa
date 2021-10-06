@@ -27,7 +27,6 @@ object Dependencies {
 
   val `frameworkTests-deps` = Seq(
     CSW.`csw-framework`,
-//    CSW.`csw-logging-client`,
     CSW.`csw-database`,
     CSW.`csw-prefix`,
     Libs.`junit-interface` % Test,
@@ -35,11 +34,14 @@ object Dependencies {
   )
 
   val `databaseTests-deps` = Seq(
-//    CSW.`csw-framework`,
     CSW.`csw-location-client`,
     CSW.`csw-database`,
     CSW.`csw-prefix`,
     Libs.`junit-interface` % Test,
     Libs.`scalaTest`       % Test
+  )
+
+  val `socketServer-deps` = Seq(
+    Akka.`akka-actor`
   )
 }

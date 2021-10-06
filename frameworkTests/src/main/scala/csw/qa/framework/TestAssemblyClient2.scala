@@ -65,6 +65,7 @@ object TestAssemblyClient2 extends App {
           interact(ctx, CommandServiceFactory.make(loc.asInstanceOf[AkkaLocation])(typedSystem))
         case LocationRemoved(loc) =>
           log.info(s"LocationRemoved: $loc")
+        case x =>
       }
       Behaviors.same
     }
