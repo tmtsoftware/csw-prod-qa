@@ -1,6 +1,8 @@
 package client
 
 import akka.actor.ActorSystem
+import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.stream.OverflowStrategy
 
 import java.util.concurrent.atomic.AtomicReference
@@ -12,6 +14,35 @@ import akka.stream.scaladsl.Framing
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import scala.io.StdIn.readLine
+import SocketClientActor.*
+
+import scala.collection.mutable
+
+private[client] object SocketClientActor {
+  sealed trait SocketClientActorMessage
+  // Queue command to server
+  case class Command(s: String) extends SocketClientActorMessage
+  // Get next command (replies with command string)
+  case class GetNextCommand(replyTo: ActorRef[String]) extends SocketClientActorMessage
+  // Response from server
+  case class Response(s: String) extends SocketClientActorMessage
+}
+
+private[client] class SocketClientActor(ctx: ActorContext[SocketClientActorMessage])
+    extends AbstractBehavior[SocketClientActorMessage](ctx) {
+  private val commandQueue = mutable.ArrayDeque.empty[String]
+  override def onMessage(msg: SocketClientActorMessage): Behavior[SocketClientActorMessage] = {
+    msg match {
+      case Command(s) =>
+        commandQueue += s
+      case GetNextCommand(replyTo) =>
+        if (commandQueue.nonEmpty)
+          replyTo ! commandQueue.removeHead()
+      case Response(s) =>
+    }
+    Behaviors.same
+  }
+}
 
 class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(implicit system: ActorSystem) {
   implicit val ec: ExecutionContext = system.dispatcher
@@ -19,9 +50,6 @@ class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
 
   private val parser =
     Flow[String].takeWhile(_ != "q").concat(Source.single("BYE")).map(elem => ByteString(s"$elem\n"))
-
-  private val sourceDecl = Source.queue[String](bufferSize = 2, OverflowStrategy.backpressure)
-  private val (queue, source) = sourceDecl.preMaterialize()
 
   private val flow = Flow[ByteString]
     .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
@@ -31,12 +59,6 @@ class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
     .via(parser)
 
   private val connectedFlow = connection.join(flow).run()
-
-//  private val queue = Source
-//    .queue[ByteString](100)
-//    .via(flow)
-//    .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
-//    .run()
 
   // Send message to server and return the response
   def send(msg: String): String = {
