@@ -42,6 +42,7 @@ object Dependencies {
   )
 
   val `socketServer-deps` = Seq(
+    CSW.`csw-logging-client`,
     Akka.`akka-actor`,
     Akka.`akka-stream`,
     Akka.`akka-stream-typed`,

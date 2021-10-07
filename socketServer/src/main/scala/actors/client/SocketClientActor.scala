@@ -1,4 +1,4 @@
-package client
+package actors.client
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.Tcp.Connected
