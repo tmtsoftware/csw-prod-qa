@@ -22,7 +22,7 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
           .takeWhile(_ != "BYE")
           .map { msg =>
             println(s"XXX got $msg")
-            s"OK $msg"
+            s"OK $msg\n"
           }
 
         val serverLogic = Flow[ByteString]
