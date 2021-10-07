@@ -33,7 +33,7 @@ class TCPConnectionHandler extends Actor {
   }
 }
 
-object SocketServer extends App {
+object SocketServerActor extends App {
   val system    = ActorSystem("SocketServer")
-  val tcpserver = system.actorOf(Props(classOf[TCPConnectionManager], "localhost", 8080), "socketServerActor")
+  val tcpserver = system.actorOf(Props(classOf[TCPConnectionManager], "127.0.0.1", 8888), "socketServerActor")
 }

@@ -42,6 +42,10 @@ object Dependencies {
   )
 
   val `socketServer-deps` = Seq(
-    Akka.`akka-actor`
+    Akka.`akka-actor`,
+    Akka.`akka-stream`,
+    Akka.`akka-stream-typed`,
+    Akka.`akka-testkit`,
+    Akka.`akka-stream-testkit`,
   )
 }

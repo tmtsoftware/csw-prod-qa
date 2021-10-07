@@ -9,9 +9,9 @@ import akka.util.{ByteString, Timeout}
 import java.net.InetSocketAddress
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
+import Tcp.*
 
-class SocketClient(remote: InetSocketAddress, listener: ActorRef) extends Actor {
-  import Tcp.*
+class SocketClientActor(remote: InetSocketAddress, listener: ActorRef) extends Actor {
   import context.system
 
   IO(Tcp) ! Connect(remote)
@@ -40,8 +40,8 @@ class SocketClient(remote: InetSocketAddress, listener: ActorRef) extends Actor 
       listener ! data
     case "close" =>
       connection ! Close
-    case _: ConnectionClosed =>
-      listener ! "connection closed"
+    case c: ConnectionClosed =>
+      listener ! c
       context.stop(self)
   }
 }
@@ -52,20 +52,28 @@ object ResponseHandler {
   object WhenConnected extends ResponseHandlerMessages
   // Send the given message to the given clientActor and then notify the sender when there is a response on the socket
   case class GetResponse(clientActor: ActorRef, message: String) extends ResponseHandlerMessages
+  // Terminate the connection
+  case class Terminate(clientActor: ActorRef) extends ResponseHandlerMessages
 }
 
 class ResponseHandler extends Actor {
   import ResponseHandler.*
+
+  val delim = "\n"
+
   def receive: Receive = {
     case Connected(_, _) =>
+      println(s"XXX receive: Connected")
       context.become(connectedState())
     case WhenConnected =>
+      println(s"XXX receive: WhenConnected")
       context.become(waitingForConnectionState(sender()))
     case x => println(s"XXX client received unexpected message $x")
   }
 
   def waitingForConnectionState(listener: ActorRef): Receive = {
     case Connected(_, _) =>
+      println(s"XXX waitingForConnectionState: Connected")
       listener ! WhenConnected
       context.become(connectedState())
     case x => println(s"XXX client received unexpected message while waiting for connection: $x")
@@ -73,12 +81,15 @@ class ResponseHandler extends Actor {
 
   def connectedState(): Receive = {
     case WhenConnected =>
+      println(s"XXX connectedState: WhenConnected")
       sender() ! WhenConnected
     case data: ByteString =>
       println(s"XXX connectedState: client received ${data.utf8String}")
     case GetResponse(clientActor, message) =>
-      clientActor ! ByteString(message)
+      clientActor ! ByteString(message + delim)
       context.become(waitingForResponse(sender()))
+    case Terminate(clientActor) =>
+      clientActor ! ByteString("BYE")
     case "connection closed" => context.stop(self)
     case x                   => println(s"XXX client received unexpected message in connected state: $x")
   }
@@ -90,22 +101,29 @@ class ResponseHandler extends Actor {
       context.become(connectedState())
     case x => println(s"XXX client received unexpected message in connected state: $x")
   }
+
+  def waitingForDisconnect(actorRef: ActorRef): Receive = {
+    case c: ConnectionClosed => actorRef ! c
+    case x => println(s"XXX client received unexpected message in waitingForDisconnect state: $x")
+  }
 }
 
-object SocketClient extends App {
+object SocketClientActor extends App {
   import ResponseHandler.*
   val system                    = ActorSystem("SocketClient")
   implicit val timeout: Timeout = Timeout(5.seconds)
-  val server                    = new InetSocketAddress("localhost", 8080)
+  val server                    = new InetSocketAddress("127.0.0.1", 8888)
   val responseHandler           = system.actorOf(Props(new ResponseHandler), "responseHandlerActor")
-  val clientActor               = system.actorOf(Props(new SocketClient(server, responseHandler)), "clientActor")
+  val clientActor               = system.actorOf(Props(new SocketClientActor(server, responseHandler)), "clientActor")
 
   // Wait for connection before sending a message
   Await.result(responseHandler ? ResponseHandler.WhenConnected, timeout.duration)
+  println(s"XXX main: must be connected now")
 
   // Send
   val resp1 = Await.result(responseHandler ? GetResponse(clientActor, "Hello"), timeout.duration)
   val resp2 = Await.result(responseHandler ? GetResponse(clientActor, "World"), timeout.duration)
   println(s"XXX Main responses: $resp1, $resp2")
-  clientActor ! "close"
+  responseHandler ! Terminate(clientActor)
+  system.terminate()
 }
