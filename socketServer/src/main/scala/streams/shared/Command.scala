@@ -6,4 +6,6 @@ object Command {
     val ar = cmd.split(" ", 2)
     (ar.head.toInt, ar(1))
   }
+
+  def make(id: Int, cmdStr: String): String = s"$id $cmdStr"
 }

@@ -46,7 +46,6 @@ object Dependencies {
     Akka.`akka-actor`,
     Akka.`akka-stream`,
     Akka.`akka-stream-typed`,
-    Akka.`akka-testkit`,
-    Akka.`akka-stream-testkit`,
+    Libs.`scalaTest` % Test
   )
 }

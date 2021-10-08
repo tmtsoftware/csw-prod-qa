@@ -19,7 +19,7 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
   // which just sleeps for that amount of time before replying with: "123 COMPLETED",
   // where 123 is the command id number.
   private def handleMessage(msg: String): Future[String] = {
-    println(s"XXX got $msg")
+//    println(s"XXX server received: $msg")
     val (id, command) = Command.parse(msg)
     val delayMs       = if (command.startsWith("DELAY ")) command.split(" ")(1).toInt else 0
     if (delayMs == 0)
