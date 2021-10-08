@@ -35,17 +35,19 @@ class SocketClientStreamTest extends AnyFunSuite {
     val f2 = client2.send(2, "DELAY 1000").map(showResult(2, _))
     val f3 = client3.send(3, "DELAY 500").map(showResult(3, _))
     val f4 = client1.send(4, "DELAY 200").map(showResult(4, _))
+    val f5 = client2.send(5, "IMMEDIATE").map(showResult(5, _))
 
     val f = for {
       resp1 <- f1
       resp2 <- f2
       resp3 <- f3
       resp4 <- f4
+      resp5 <- f5
     } yield {
       client1.terminate()
-      List(resp1, resp2, resp3, resp4)
+      List(resp1, resp2, resp3, resp4, resp5)
     }
     val list = Await.result(f, 3.seconds)
-    assert(list == List("1: COMPLETED", "2: COMPLETED", "3: COMPLETED", "4: COMPLETED"))
+    assert(list == List("1: COMPLETED", "2: COMPLETED", "3: COMPLETED", "4: COMPLETED", "5: COMPLETED"))
   }
 }
