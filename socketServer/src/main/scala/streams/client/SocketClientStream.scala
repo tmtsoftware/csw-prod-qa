@@ -23,11 +23,11 @@ private[client] object SocketClientActor {
   // Gets the response for the command with the given id
   case class GetResponse(id: Int, replyTo: ActorRef[String]) extends SocketClientActorMessage
 
-  def behavior(): Behavior[SocketClientActorMessage] =
-    Behaviors.setup[SocketClientActorMessage](new SocketClientActor(_))
+  def behavior(name: String): Behavior[SocketClientActorMessage] =
+    Behaviors.setup[SocketClientActorMessage](new SocketClientActor(name, _))
 }
 
-private[client] class SocketClientActor(ctx: ActorContext[SocketClientActorMessage])
+private[client] class SocketClientActor(name: String, ctx: ActorContext[SocketClientActorMessage])
     extends AbstractBehavior[SocketClientActorMessage](ctx) {
   // Maps command id to server response
   private var responseMap = Map.empty[Int, String]
@@ -55,7 +55,9 @@ private[client] class SocketClientActor(ctx: ActorContext[SocketClientActorMessa
   }
 }
 
-class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(implicit system: ActorSystem[SpawnProtocol.Command]) {
+class SocketClientStream(name: String, host: String = "127.0.0.1", port: Int = 8888)(
+    implicit system: ActorSystem[SpawnProtocol.Command]
+) {
   implicit val ec: ExecutionContext = system.executionContext
   private val connection            = Tcp()(system.toClassic).outgoingConnection(host, port)
 
@@ -63,7 +65,7 @@ class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
   private val (queue, source) = Source.queue[String](bufferSize = 2, OverflowStrategy.backpressure).preMaterialize()
 
   // An actor to manage the server responses and match them to command ids
-  private val clientActor = system.spawn(SocketClientActor.behavior(), "SocketClientActor")
+  private val clientActor = system.spawn(SocketClientActor.behavior(name), "SocketClientActor")
 
   // A sink for responses from the server
   private val sink = Sink.foreach[String] { s =>
