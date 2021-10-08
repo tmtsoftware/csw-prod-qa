@@ -8,6 +8,14 @@ import streams.shared.Command
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+ * A TCL socket server that listens on the given host:port for connections
+ * and accepts String messages in the format "id cmd". A reply is sent for
+ * each message: "id COMPLETED".
+ *
+ * Currently any command can be sent and COMPLETED is always returned.
+ * If the command is "DELAY ms" the reply is made after the giiven ms delay.
+ */
 class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit system: ActorSystem) {
   implicit val ec: ExecutionContext = system.dispatcher
 
@@ -26,6 +34,7 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
       Future.successful(s"$id COMPLETED\n")
     else
       Future {
+        // TODO: Use system.scheduler...
         Thread.sleep(delayMs)
         s"$id COMPLETED\n"
       }
