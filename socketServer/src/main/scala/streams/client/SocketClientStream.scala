@@ -22,6 +22,8 @@ private[client] object SocketClientActor {
   case class SetResponse(id: Int, resp: String) extends SocketClientActorMessage
   // Gets the response for the command with the given id
   case class GetResponse(id: Int, replyTo: ActorRef[String]) extends SocketClientActorMessage
+  // Stop the actor
+  case object Stop extends SocketClientActorMessage
 
   def behavior(name: String): Behavior[SocketClientActorMessage] =
     Behaviors.setup[SocketClientActorMessage](new SocketClientActor(name, _))
@@ -43,6 +45,8 @@ private[client] class SocketClientActor(name: String, ctx: ActorContext[SocketCl
         } else {
           responseMap = responseMap + (id -> resp)
         }
+        Behaviors.same
+
       case GetResponse(id, replyTo) =>
         if (responseMap.contains(id)) {
           replyTo ! responseMap(id)
@@ -50,8 +54,11 @@ private[client] class SocketClientActor(name: String, ctx: ActorContext[SocketCl
         } else {
           clientMap = clientMap + (id -> replyTo)
         }
+        Behaviors.same
+
+      case Stop =>
+        Behaviors.stopped
     }
-    Behaviors.same
   }
 }
 
@@ -113,5 +120,6 @@ class SocketClientStream(name: String, host: String = "127.0.0.1", port: Int = 8
    */
   def terminate(): Unit = {
     queue.offer("q")
+    clientActor ! Stop
   }
 }
