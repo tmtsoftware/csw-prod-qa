@@ -7,7 +7,7 @@ import streams.server.SocketServerStream
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.util.Timeout
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.*
 
 class SocketClientStreamTest extends AnyFunSuite {
@@ -49,5 +49,12 @@ class SocketClientStreamTest extends AnyFunSuite {
     }
     val list = Await.result(f, 3.seconds)
     assert(list == List("1: COMPLETED", "2: COMPLETED", "3: COMPLETED", "4: COMPLETED", "5: COMPLETED"))
+  }
+
+  test("Test with 492 clients") {
+    val segments = (1 to 492).toList
+    val clientPairs = segments.map(i => (i, new SocketClientStream(s"client$i")))
+    val fList = clientPairs.map(p => p._2.send(p._1, "IMMEDIATE"))
+    assert(Await.result(Future.sequence(fList).map(_.forall(_ == "COMPLETED")), timout.duration))
   }
 }
