@@ -7,7 +7,7 @@ import akka.stream.scaladsl.Framing
 
 import scala.concurrent.{ExecutionContext, Future}
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, SpawnProtocol}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Scheduler, SpawnProtocol}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter.*
 import akka.actor.typed.scaladsl.AskPattern.*
@@ -63,16 +63,19 @@ private[client] class SocketClientActor(name: String, ctx: ActorContext[SocketCl
 }
 
 class SocketClientStream(name: String, host: String = "127.0.0.1", port: Int = 8888)(
-    implicit system: ActorSystem[SpawnProtocol.Command]
+    implicit system: akka.actor.ActorSystem
 ) {
-  implicit val ec: ExecutionContext = system.executionContext
-  private val connection            = Tcp()(system.toClassic).outgoingConnection(host, port)
+  private val typedSystem = system.toTyped
+  implicit val ec: ExecutionContext = typedSystem.executionContext
+  implicit val scheduler: Scheduler = typedSystem.scheduler
+
+  private val connection            = Tcp()(system).outgoingConnection(host, port)
 
   // Use a queue to feed commands to the stream
   private val (queue, source) = Source.queue[String](bufferSize = 2, OverflowStrategy.backpressure).preMaterialize()
 
   // An actor to manage the server responses and match them to command ids
-  private val clientActor = system.spawn(SocketClientActor.behavior(name), "SocketClientActor")
+  private val clientActor = system.spawnAnonymous(SocketClientActor.behavior(name))
 
   // A sink for responses from the server
   private val sink = Sink.foreach[String] { s =>
