@@ -7,11 +7,10 @@ import akka.stream.scaladsl.Framing
 
 import scala.concurrent.{ExecutionContext, Future}
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Scheduler, SpawnProtocol}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Props}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter.*
 import akka.actor.typed.scaladsl.AskPattern.*
-//import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
 import streams.shared.Command
 import SocketClientActor.*
 
@@ -62,20 +61,24 @@ private[client] class SocketClientActor(name: String, ctx: ActorContext[SocketCl
   }
 }
 
-class SocketClientStream(name: String, host: String = "127.0.0.1", port: Int = 8888)(
-    implicit system: akka.actor.ActorSystem
-) {
-  private val typedSystem = system.toTyped
-  implicit val ec: ExecutionContext = typedSystem.executionContext
-  implicit val scheduler: Scheduler = typedSystem.scheduler
+/**
+ * Should be ActorSystem or ActorContext, needed to create a child actor
+ */
+trait SpawnHelper {
+  def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
+}
 
-  private val connection            = Tcp()(system).outgoingConnection(host, port)
+class SocketClientStream(spawnHelper: SpawnHelper, name: String, host: String = "127.0.0.1", port: Int = 8888)(
+    implicit system: ActorSystem[?]
+) {
+  implicit val ec: ExecutionContext = system.executionContext
+  private val connection            = Tcp()(system.toClassic).outgoingConnection(host, port)
 
   // Use a queue to feed commands to the stream
   private val (queue, source) = Source.queue[String](bufferSize = 2, OverflowStrategy.backpressure).preMaterialize()
 
   // An actor to manage the server responses and match them to command ids
-  private val clientActor = system.spawnAnonymous(SocketClientActor.behavior(name))
+  private val clientActor = spawnHelper.spawn(SocketClientActor.behavior(name), s"$name-actor")
 
   // A sink for responses from the server
   private val sink = Sink.foreach[String] { s =>
