@@ -43,7 +43,7 @@ object SocketMessage {
     val msgLen = buffer.getShort() & 0x0ffff
     val seqNo  = buffer.getShort() & 0x0ffff
     val msgHdr = MsgHdr(msgId, srcId, msgLen, seqNo)
-    val bytes  = Array.fill(msgLen)(0.toByte)
+    val bytes  = Array.fill(msgLen - MsgHdr.encodedSize)(0.toByte)
     buffer.get(bytes)
     SocketMessage(msgHdr, new String(bytes, StandardCharsets.UTF_8))
   }
@@ -61,6 +61,7 @@ case class SocketMessage(hdr: MsgHdr, cmd: String) {
     buffer.putShort(hdr.msgLen.toShort)
     buffer.putShort(hdr.seqNo.toShort)
     buffer.put(cmd.getBytes(StandardCharsets.UTF_8))
-    ByteString(buffer)
+    buffer.flip()
+    ByteString.fromByteBuffer(buffer)
   }
 }

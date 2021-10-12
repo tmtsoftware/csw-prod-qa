@@ -98,19 +98,26 @@ class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(
     clientActor ! SetResponse(resp)
   }
 
+
   // Used to feed commands to the stream
-  private val clientFlow = Flow.fromSinkAndSource(sink, source)
+  private val clientFlow = Flow
+    .fromSinkAndSource(sink, source)
+    .map {bs => println(s"XXX clientFlow got: ${bs.size}"); bs}
+
 
   // Quits if "q" received (sending "BYE" to server)
   private val parser: Flow[ByteString, ByteString, NotUsed] = {
     Flow[ByteString]
-      .takeWhile(_ != ByteString("q"))
-      .concat(Source.single(ByteString("BYE\n")))
+      .map {bs => println(s"XXX parser got: ${bs.size}"); bs}
+//      .takeWhile(_ != ByteString("q"))
+//      .concat(Source.single(ByteString("BYE\n")))
   }
 
   // Commands are assumed to be terminated with "\n" (XXX TODO: Check this)
   private val flow = Flow[ByteString]
-    .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
+    .map {bs => println(s"XXX flow got: ${bs.size}"); bs}
+//    .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
+    .via(Framing.lengthField(2, 4, 264))
     .via(clientFlow)
     .via(parser)
 
@@ -137,7 +144,7 @@ class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(
       implicit timeout: Timeout
   ): Future[SocketMessage] = {
     clientActor.ask(GetSeqNo).flatMap { seqNo =>
-      send(SocketMessage(MsgHdr(msgId, srcId, msgLen = msg.length, seqNo = seqNo), msg + "\n"))
+      send(SocketMessage(MsgHdr(msgId, srcId, msgLen = msg.length + MsgHdr.encodedSize, seqNo = seqNo), msg))
     }
   }
 

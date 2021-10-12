@@ -53,12 +53,14 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
         println(s"XXX got connection: $connection")
         // server logic, parses incoming commands
         val commandParser = Flow[ByteString]
-          .takeWhile(_ != ByteString("BYE"))
+          .map{bs => println(s"XXX commandParser got ${bs.size}"); bs}
+//          .takeWhile(_ != ByteString("BYE"))
           .mapAsyncUnordered(100)(handleMessage)
 
         val serverLogic = Flow[ByteString]
-          .map{bs => println(s"XXX serverLogic go ${bs.length}"); bs}
-          .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
+          .map{bs => println(s"XXX serverLogic got ${bs.length}"); bs}
+//          .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
+          .via(Framing.lengthField(2, 4, 264))
           .via(commandParser)
 
         connection.handleWith(serverLogic)
