@@ -6,7 +6,8 @@ import akka.util.ByteString
 import akka.stream.scaladsl.Framing
 import streams.shared.Command
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.*
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
  * A TCL socket server that listens on the given host:port for connections
@@ -33,12 +34,11 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
     val delayMs       = if (command.startsWith("DELAY ")) command.split(" ")(1).toInt else 0
     if (delayMs == 0)
       Future.successful(s"$id COMPLETED\n")
-    else
-      Future {
-        // TODO: Use system.scheduler...
-        Thread.sleep(delayMs)
-        s"$id COMPLETED\n"
-      }
+    else {
+      val p = Promise[String]
+      system.scheduler.scheduleOnce(delayMs.millis)(p.success(s"$id COMPLETED\n"))
+      p.future
+    }
   }
 
   private val binding =

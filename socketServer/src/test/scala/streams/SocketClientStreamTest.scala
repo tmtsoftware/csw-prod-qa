@@ -25,7 +25,7 @@ private object TestActor {
 
 private class TestActor(ctx: ActorContext[TestMessages]) extends AbstractBehavior[TestMessages](ctx) {
   override def onMessage(msg: TestMessages): Behavior[TestMessages] = {
-    implicit val timeout: Timeout              = Timeout(10.seconds)
+    implicit val timeout: Timeout              = Timeout(30.seconds)
     implicit val system: ActorSystem[Nothing]  = ctx.system
     implicit val exc: ExecutionContextExecutor = system.executionContext
     implicit val sched: Scheduler              = ctx.system.scheduler
@@ -34,7 +34,7 @@ private class TestActor(ctx: ActorContext[TestMessages]) extends AbstractBehavio
       case Start(replyTo) =>
         val segments    = (1 to 492).toList
         val clientPairs = segments.map(i => (i, SocketClientStream(ctx, s"client_$i")))
-        val fList       = clientPairs.map(p => p._2.send(p._1, "IMMEDIATE"))
+        val fList       = clientPairs.map(p => p._2.send(p._1, s"DELAY ${p._1 * 10}"))
         assert(Await.result(Future.sequence(fList).map(_.forall(_ == "COMPLETED")), timeout.duration))
         replyTo ! true
         Behaviors.same
@@ -48,7 +48,7 @@ private class TestActor(ctx: ActorContext[TestMessages]) extends AbstractBehavio
 class SocketClientStreamTest extends AnyFunSuite {
   implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SocketServerStream")
   implicit val ece: ExecutionContextExecutor              = system.executionContext
-  implicit val timout: Timeout                            = Timeout(5.seconds)
+  implicit val timout: Timeout                            = Timeout(10.seconds)
 
   // Start the server
   // XXX TODO FIXME: Use typed system
@@ -80,6 +80,8 @@ class SocketClientStreamTest extends AnyFunSuite {
       resp5 <- f5
     } yield {
       client1.terminate()
+      client2.terminate()
+      client3.terminate()
       List(resp1, resp2, resp3, resp4, resp5)
     }
     val list = Await.result(f, 3.seconds)
@@ -88,14 +90,8 @@ class SocketClientStreamTest extends AnyFunSuite {
 
   test("Test with actor") {
     val actorRef = system.spawn(TestActor.behavior(), "TestActor")
-    assert(Await.result(actorRef.ask(Start), 10.seconds))
+    assert(Await.result(actorRef.ask(Start), 30.seconds))
     actorRef ! Stop
   }
 
-//  test("Test with 492 clients") {
-//    val segments    = (1 to 492).toList
-//    val clientPairs = segments.map(i => (i, new SocketClientStream(spawnHelper, s"client$i")))
-//    val fList       = clientPairs.map(p => p._2.send(p._1, "IMMEDIATE"))
-//    assert(Await.result(Future.sequence(fList).map(_.forall(_ == "COMPLETED")), timout.duration))
-//  }
 }

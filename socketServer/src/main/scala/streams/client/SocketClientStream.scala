@@ -39,6 +39,7 @@ private[client] class SocketClientActor(ctx: ActorContext[SocketClientActorMessa
   override def onMessage(msg: SocketClientActorMessage): Behavior[SocketClientActorMessage] = {
     msg match {
       case SetResponse(id, resp) =>
+        println(s"XXX SetResponse($id, $resp)")
         if (clientMap.contains(id)) {
           clientMap(id) ! resp
           clientMap = clientMap - id
@@ -49,9 +50,11 @@ private[client] class SocketClientActor(ctx: ActorContext[SocketClientActorMessa
 
       case GetResponse(id, replyTo) =>
         if (responseMap.contains(id)) {
+          println(s"XXX GetResponse($id) OK")
           replyTo ! responseMap(id)
           responseMap = responseMap - id
         } else {
+          println(s"XXX GetResponse($id) Wait")
           clientMap = clientMap + (id -> replyTo)
         }
         Behaviors.same
@@ -130,7 +133,7 @@ class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: S
 
   private val connectedFlow = connection.join(flow).run()
   connectedFlow.foreach { c =>
-    println(s"XXX local addr: ${c.localAddress}, remote addr: ${c.remoteAddress}")
+    println(s"XXX $name: local addr: ${c.localAddress}, remote addr: ${c.remoteAddress}")
   }
 
   /**
