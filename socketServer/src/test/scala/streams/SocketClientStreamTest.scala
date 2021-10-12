@@ -1,10 +1,8 @@
 package streams
 
-import akka.actor.typed.{ActorSystem, SpawnProtocol}
 import org.scalatest.funsuite.AnyFunSuite
 import streams.client.SocketClientStream
 import streams.server.SocketServerStream
-import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.util.Timeout
 import streams.shared.SocketMessage
 
@@ -12,13 +10,12 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.*
 
 class SocketClientStreamTest extends AnyFunSuite {
-  implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SocketServerStream")
+  implicit val system: akka.actor.ActorSystem = akka.actor.ActorSystem("SocketServerStream")
   import system.*
   implicit val timout: Timeout = Timeout(5.seconds)
 
   // Start the server
-  // XXX TODO FIXME: Use typed system
-  new SocketServerStream()(system.toClassic)
+  new SocketServerStream()(system)
 
   test("Basic test") {
 

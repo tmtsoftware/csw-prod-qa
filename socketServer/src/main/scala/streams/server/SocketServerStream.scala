@@ -58,9 +58,9 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
           .mapAsyncUnordered(100)(handleMessage)
 
         val serverLogic = Flow[ByteString]
-          .map{bs => println(s"XXX serverLogic got ${bs.length}"); bs}
 //          .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
           .via(Framing.lengthField(2, 4, 264))
+          .map{bs => println(s"XXX serverLogic got ${bs.length}"); bs}
           .via(commandParser)
 
         connection.handleWith(serverLogic)

@@ -7,11 +7,10 @@ import akka.stream.scaladsl.Framing
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, SpawnProtocol}
+import akka.actor.typed.{ActorRef, Behavior, Scheduler}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter.*
 import akka.actor.typed.scaladsl.AskPattern.*
-import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
 import streams.shared.SocketMessage
 import SocketClientActor.*
 import streams.shared.SocketMessage.{CMD_TYPE, MessageId, MsgHdr, SourceId}
@@ -79,22 +78,23 @@ private[client] class SocketClientActor(ctx: ActorContext[SocketClientActorMessa
 }
 
 class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(
-    implicit system: ActorSystem[SpawnProtocol.Command]
+    implicit system: akka.actor.ActorSystem
 ) {
-  implicit val ec: ExecutionContext = system.executionContext
-  private val connection            = Tcp()(system.toClassic).outgoingConnection(host, port)
+  private val typedSystem = system.toTyped
+  implicit val ec: ExecutionContext = typedSystem.executionContext
+  implicit val scheduler: Scheduler = typedSystem.scheduler
+
+  private val connection            = Tcp()(system).outgoingConnection(host, port)
 
   // Use a queue to feed commands to the stream
   private val (queue, source) = Source.queue[ByteString](bufferSize = 2, OverflowStrategy.backpressure).preMaterialize()
 
   // An actor to manage the server responses and match them to command ids
-  private val clientActor = system.spawn(SocketClientActor.behavior(), "SocketClientActor")
+  private val clientActor = system.spawnAnonymous(SocketClientActor.behavior())
 
   // A sink for responses from the server
   private val sink = Sink.foreach[ByteString] { bs =>
-    println(s"XXX sink got msg")
     val resp = SocketMessage.parse(bs)
-    println(s"XXX sink got $resp")
     clientActor ! SetResponse(resp)
   }
 
@@ -102,20 +102,16 @@ class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(
   // Used to feed commands to the stream
   private val clientFlow = Flow
     .fromSinkAndSource(sink, source)
-    .map {bs => println(s"XXX clientFlow got: ${bs.size}"); bs}
-
 
   // Quits if "q" received (sending "BYE" to server)
   private val parser: Flow[ByteString, ByteString, NotUsed] = {
     Flow[ByteString]
-      .map {bs => println(s"XXX parser got: ${bs.size}"); bs}
 //      .takeWhile(_ != ByteString("q"))
 //      .concat(Source.single(ByteString("BYE\n")))
   }
 
   // Commands are assumed to be terminated with "\n" (XXX TODO: Check this)
   private val flow = Flow[ByteString]
-    .map {bs => println(s"XXX flow got: ${bs.size}"); bs}
 //    .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 256, allowTruncation = true))
     .via(Framing.lengthField(2, 4, 264))
     .via(clientFlow)
@@ -152,14 +148,14 @@ class SocketClientStream(host: String = "127.0.0.1", port: Int = 8888)(
    * Terminates the stream
    */
   def terminate(): Unit = {
-    queue.offer(ByteString("q"))
+    // XXX FIXME
+//    queue.offer(ByteString("q"))
     clientActor ! Stop
   }
 }
 
 object SocketClientStream extends App {
-  implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SocketServerStream")
-  import system.*
+  implicit val system: akka.actor.ActorSystem = akka.actor.ActorSystem("SocketServerStream")
   implicit val timout: Timeout = Timeout(5.seconds)
   val client = new SocketClientStream()
   val resp = Await.result(client.send(args.mkString(" ")), timout.duration)
