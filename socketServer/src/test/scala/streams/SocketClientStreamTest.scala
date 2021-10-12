@@ -1,9 +1,9 @@
 package streams
 
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Props, Scheduler, SpawnProtocol}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Scheduler, SpawnProtocol}
 import org.scalatest.funsuite.AnyFunSuite
-import streams.client.{SocketClientStream, SpawnHelper}
+import streams.client.SocketClientStream
 import streams.server.SocketServerStream
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.util.Timeout
@@ -19,17 +19,11 @@ private object TestActor {
   case class Start(actorRef: ActorRef[Boolean]) extends TestMessages
   case object Stop                              extends TestMessages
 
-  def behavior(name: String): Behavior[TestMessages] =
-    Behaviors.setup[TestMessages](new TestActor(name, _))
+  def behavior(): Behavior[TestMessages] =
+    Behaviors.setup[TestMessages](new TestActor(_))
 }
 
-private class TestActor(name: String, ctx: ActorContext[TestMessages]) extends AbstractBehavior[TestMessages](ctx) {
-  private val spawnHelper2 = new SpawnHelper {
-    def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
-      ctx.spawn(behavior, name, props)
-    }
-  }
-
+private class TestActor(ctx: ActorContext[TestMessages]) extends AbstractBehavior[TestMessages](ctx) {
   override def onMessage(msg: TestMessages): Behavior[TestMessages] = {
     implicit val timeout: Timeout              = Timeout(10.seconds)
     implicit val system: ActorSystem[Nothing]  = ctx.system
@@ -39,7 +33,7 @@ private class TestActor(name: String, ctx: ActorContext[TestMessages]) extends A
     msg match {
       case Start(replyTo) =>
         val segments    = (1 to 492).toList
-        val clientPairs = segments.map(i => (i, new SocketClientStream(spawnHelper2, s"client_$i")))
+        val clientPairs = segments.map(i => (i, SocketClientStream(ctx, s"client_$i")))
         val fList       = clientPairs.map(p => p._2.send(p._1, "IMMEDIATE"))
         assert(Await.result(Future.sequence(fList).map(_.forall(_ == "COMPLETED")), timeout.duration))
         replyTo ! true
@@ -60,16 +54,11 @@ class SocketClientStreamTest extends AnyFunSuite {
   // XXX TODO FIXME: Use typed system
   new SocketServerStream()(system.toClassic)
 
-  private val spawnHelper = new SpawnHelper {
-    def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
-      system.spawn(behavior, name, props)
-  }
-
   test("Basic test") {
 
-    val client1 = new SocketClientStream(spawnHelper, "client1")
-    val client2 = new SocketClientStream(spawnHelper, "client2")
-    val client3 = new SocketClientStream(spawnHelper, "client3")
+    val client1 = SocketClientStream.withSystem("client1")
+    val client2 = SocketClientStream.withSystem("client2")
+    val client3 = SocketClientStream.withSystem("client3")
 
     def showResult(id: Int, s: String): String = {
       val result = s"$id: $s"
@@ -98,7 +87,7 @@ class SocketClientStreamTest extends AnyFunSuite {
   }
 
   test("Test with actor") {
-    val actorRef = system.spawn(TestActor.behavior("test"), "TestActor")
+    val actorRef = system.spawn(TestActor.behavior(), "TestActor")
     assert(Await.result(actorRef.ask(Start), 10.seconds))
     actorRef ! Stop
   }

@@ -7,12 +7,13 @@ import akka.stream.scaladsl.Framing
 
 import scala.concurrent.{ExecutionContext, Future}
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Props}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Props, SpawnProtocol}
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter.*
 import akka.actor.typed.scaladsl.AskPattern.*
 import streams.shared.Command
 import SocketClientActor.*
+import SocketClientStream.*
 
 // Actor used to keep track of the server responses and match them with ids
 private[client] object SocketClientActor {
@@ -25,10 +26,10 @@ private[client] object SocketClientActor {
   case object Stop extends SocketClientActorMessage
 
   def behavior(name: String): Behavior[SocketClientActorMessage] =
-    Behaviors.setup[SocketClientActorMessage](new SocketClientActor(name, _))
+    Behaviors.setup[SocketClientActorMessage](new SocketClientActor(_))
 }
 
-private[client] class SocketClientActor(name: String, ctx: ActorContext[SocketClientActorMessage])
+private[client] class SocketClientActor(ctx: ActorContext[SocketClientActorMessage])
     extends AbstractBehavior[SocketClientActorMessage](ctx) {
   // Maps command id to server response
   private var responseMap = Map.empty[Int, String]
@@ -61,14 +62,37 @@ private[client] class SocketClientActor(name: String, ctx: ActorContext[SocketCl
   }
 }
 
-/**
- * Should be ActorSystem or ActorContext, needed to create a child actor
- */
-trait SpawnHelper {
-  def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
+object SocketClientStream {
+  /**
+   * Should be ActorSystem or ActorContext, needed to create a child actor
+   */
+  private trait SpawnHelper {
+    def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
+  }
+
+  def withSystem(name: String, host: String = "127.0.0.1", port: Int = 8888)(implicit system: ActorSystem[SpawnProtocol.Command]): SocketClientStream = {
+    val spawnHelper = new SpawnHelper {
+      def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
+        import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
+        system.spawn(behavior, name, props)
+      }
+    }
+    new SocketClientStream(spawnHelper, name, host, port)(system)
+  }
+
+  def apply(ctx: ActorContext[?], name: String, host: String = "127.0.0.1", port: Int = 8888): SocketClientStream = {
+    val spawnHelper = new SpawnHelper {
+      def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
+        ctx.spawn(behavior, name, props)
+      }
+    }
+    new SocketClientStream(spawnHelper, name, host, port)(ctx.system)
+  }
+
 }
 
-class SocketClientStream(spawnHelper: SpawnHelper, name: String, host: String = "127.0.0.1", port: Int = 8888)(
+//noinspection DuplicatedCode
+class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: String = "127.0.0.1", port: Int = 8888)(
     implicit system: ActorSystem[?]
 ) {
   implicit val ec: ExecutionContext = system.executionContext

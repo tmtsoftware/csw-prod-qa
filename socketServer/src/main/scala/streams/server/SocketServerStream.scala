@@ -16,6 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * Currently any command can be sent and COMPLETED is always returned.
  * If the command is "DELAY ms" the reply is made after the giiven ms delay.
  */
+//noinspection DuplicatedCode
 class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit system: ActorSystem) {
   implicit val ec: ExecutionContext = system.dispatcher
 
