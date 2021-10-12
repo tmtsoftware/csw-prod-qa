@@ -11,7 +11,7 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Scheduler, SpawnProtoc
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter.*
 import akka.actor.typed.scaladsl.AskPattern.*
-import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
+//import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
 import streams.shared.Command
 import SocketClientActor.*
 
