@@ -18,12 +18,7 @@ object SocketMessage {
 
   // ascii representation for "<TT>"
   private val NET_HDR_ID           = 0x3c54543e
-//  private val NET_HDR_ID           = 0x3e54543c
   private[streams] val NET_HDR_LEN = 2 * 4
-
-  // C code uses fixed size messages
-  private val CMD_LEN: Short = 256
-  private val MSG_SIZE: Short = (MsgHdr.encodedSize + CMD_LEN).toShort
 
   // sender application ID (TODO: Define ids)
   case class SourceId(id: Int)
@@ -81,25 +76,21 @@ case class SocketMessage(hdr: MsgHdr, cmd: String) {
    * Encodes the command for sending (see parse)
    */
   def toByteString: ByteString = {
-    val buffer1 = ByteBuffer.allocateDirect(NET_HDR_LEN + MSG_SIZE).order(ByteOrder.BIG_ENDIAN)
+//    val buffer1 = ByteBuffer.allocateDirect(NET_HDR_LEN + MSG_SIZE).order(ByteOrder.BIG_ENDIAN)
+    val buffer1 = ByteBuffer.allocateDirect(NET_HDR_LEN + hdr.msgLen).order(ByteOrder.BIG_ENDIAN)
     // from struct msg_hdr_dcl
     buffer1.putInt(NET_HDR_ID)
-//    buffer.putInt(hdr.msgLen)
-    buffer1.putInt(MSG_SIZE)
+    buffer1.putInt(hdr.msgLen)
 
     val buffer = buffer1.order(ByteOrder.LITTLE_ENDIAN)
     // from MsgHdr
     buffer.putShort(hdr.msgId.id.toShort)
     buffer.putShort(hdr.srcId.id.toShort)
-//    buffer.putShort(hdr.msgLen.toShort)
-    buffer.putShort(MSG_SIZE)
+    buffer.putShort(hdr.msgLen.toShort)
     buffer.putShort(hdr.seqNo.toShort)
 
     // Contents of message/command
-//    buffer.put(cmd.getBytes(StandardCharsets.UTF_8))
-    val nullBytes = Array.fill(CMD_LEN-cmd.length)(0.toByte)
-    val ar = cmd.getBytes(StandardCharsets.UTF_8) ++ nullBytes
-    buffer.put(ar)
+    buffer.put(cmd.getBytes(StandardCharsets.UTF_8))
 
     buffer.flip()
     ByteString.fromByteBuffer(buffer)
