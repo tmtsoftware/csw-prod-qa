@@ -36,8 +36,9 @@ private class TestActor(ctx: ActorContext[TestMessages]) extends AbstractBehavio
         val segments    = (1 to 492).toList
         val clientPairs = segments.map(i => (i, SocketClientStream(ctx, s"client_$i")))
         val fList       = clientPairs.map(p => p._2.send(s"DELAY ${p._1 * 10}"))
-        assert(Await.result(Future.sequence(fList).map(_.forall(_.cmd == "COMPLETED")), timeout.duration))
-        replyTo ! true
+        Future.sequence(fList)
+          .map(_.forall(_.cmd.endsWith("COMPLETED")))
+          .foreach(replyTo ! _)
         Behaviors.same
 
       case Stop =>
@@ -49,7 +50,7 @@ private class TestActor(ctx: ActorContext[TestMessages]) extends AbstractBehavio
 class SocketClientStreamTest extends AnyFunSuite {
   implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SocketServerStream")
   implicit val ece: ExecutionContextExecutor              = system.executionContext
-  implicit val timout: Timeout                            = Timeout(10.seconds)
+  implicit val timout: Timeout                            = Timeout(30.seconds)
 
   // Start the server
   // XXX TODO FIXME: Use typed system

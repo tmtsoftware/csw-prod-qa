@@ -55,20 +55,13 @@ case class SocketMessage(hdr: MsgHdr, cmd: String) {
    * Encodes the command for sending (see parse)
    */
   def toByteString: ByteString = {
-    try {
-      val buffer = ByteBuffer.allocateDirect(MsgHdr.encodedSize + cmd.length).order(ByteOrder.LITTLE_ENDIAN)
-      buffer.putShort(hdr.msgId.id.toShort)
-      buffer.putShort(hdr.srcId.id.toShort)
-      buffer.putShort(hdr.msgLen.toShort)
-      buffer.putShort(hdr.seqNo.toShort)
-      buffer.put(cmd.getBytes(StandardCharsets.UTF_8))
-      buffer.flip()
-      ByteString.fromByteBuffer(buffer)
-    } catch {
-      case ex: Exception =>
-        ex.printStackTrace()
-        throw ex
-
-    }
+    val buffer = ByteBuffer.allocateDirect(MsgHdr.encodedSize + cmd.length).order(ByteOrder.LITTLE_ENDIAN)
+    buffer.putShort(hdr.msgId.id.toShort)
+    buffer.putShort(hdr.srcId.id.toShort)
+    buffer.putShort(hdr.msgLen.toShort)
+    buffer.putShort(hdr.seqNo.toShort)
+    buffer.put(cmd.getBytes(StandardCharsets.UTF_8))
+    buffer.flip()
+    ByteString.fromByteBuffer(buffer)
   }
 }

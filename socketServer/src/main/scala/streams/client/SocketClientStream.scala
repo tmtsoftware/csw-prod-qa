@@ -84,6 +84,14 @@ object SocketClientStream {
     def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
   }
 
+  /**
+   * Creates a client, using the given ActorSystem[SpawnProtocol.Command] to create the internal actor
+   * @param name a unique name for the client
+   * @param host the host (default: "127.0.0.1")
+   * @param port the port (default: 8888)
+   * @param system ActorSystem used to create internal actor
+   * @return a new SocketClientStream
+   */
   def withSystem(name: String, host: String = "127.0.0.1", port: Int = 8888)(implicit system: ActorSystem[SpawnProtocol.Command]): SocketClientStream = {
     val spawnHelper = new SpawnHelper {
       def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
@@ -94,6 +102,14 @@ object SocketClientStream {
     new SocketClientStream(spawnHelper, name, host, port)(system)
   }
 
+  /**
+   * Creates a client using the given ActorContext to create the local actor
+   * @param ctx the actor context used to create the internal actor
+   * @param name name
+   * @param host the host (default: "127.0.0.1")
+   * @param port the port (default: 8888)
+   * @return a new SocketClientStream
+   */
   def apply(ctx: ActorContext[?], name: String, host: String = "127.0.0.1", port: Int = 8888): SocketClientStream = {
     val spawnHelper = new SpawnHelper {
       def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
@@ -105,7 +121,8 @@ object SocketClientStream {
 
 }
 
-class SocketClientStream(spawnHelper: SpawnHelper, name: String, host: String = "127.0.0.1", port: Int = 8888)(
+// Private constructor (use one of the above factory methods)
+class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: String = "127.0.0.1", port: Int = 8888)(
     implicit system: ActorSystem[?]
 ) {
   implicit val ec: ExecutionContext = system.executionContext
@@ -130,7 +147,7 @@ class SocketClientStream(spawnHelper: SpawnHelper, name: String, host: String = 
   private val parser: Flow[ByteString, ByteString, NotUsed] = {
     Flow[ByteString]
       .takeWhile(_ != ByteString("q"))
-      .concat(Source.single(SocketMessage(MsgHdr(CMD_TYPE, SourceId(0), MsgHdr.encodedSize + 3, 0), "BYE").toByteString))
+      .concat(Source.single(ByteString("BYE")))
   }
 
   // XXX Note: Looks like there might be a bug in Framing.lengthField, requiring the function arg!
@@ -141,7 +158,7 @@ class SocketClientStream(spawnHelper: SpawnHelper, name: String, host: String = 
 
   private val connectedFlow = connection.join(flow).run()
   connectedFlow.foreach { c =>
-    println(s"local addr: ${c.localAddress}, remote addr: ${c.remoteAddress}")
+    println(s"$name: local addr: ${c.localAddress}, remote addr: ${c.remoteAddress}")
   }
 
   /**
@@ -161,19 +178,16 @@ class SocketClientStream(spawnHelper: SpawnHelper, name: String, host: String = 
   def send(msg: String, msgId: MessageId = CMD_TYPE, srcId: SourceId = SourceId(0))(
       implicit timeout: Timeout
   ): Future[SocketMessage] = {
-//    clientActor.ask(GetSeqNo).flatMap { seqNo =>
-//      send(SocketMessage(MsgHdr(msgId, srcId, msgLen = msg.length + MsgHdr.encodedSize, seqNo = seqNo), msg))
-//    }
-    val seqNo = Await.result(clientActor.ask(GetSeqNo), timeout.duration)
-    send(SocketMessage(MsgHdr(msgId, srcId, msgLen = msg.length + MsgHdr.encodedSize, seqNo = seqNo), msg))
+    clientActor.ask(GetSeqNo).flatMap { seqNo =>
+      send(SocketMessage(MsgHdr(msgId, srcId, msgLen = msg.length + MsgHdr.encodedSize, seqNo = seqNo), msg))
+    }
   }
 
   /**
    * Terminates the stream
    */
   def terminate(): Unit = {
-    // XXX FIXME
-//    queue.offer(ByteString("q"))
+    queue.offer(ByteString("q"))
     clientActor ! Stop
   }
 }

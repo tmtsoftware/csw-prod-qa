@@ -29,24 +29,18 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
   // which just sleeps for that amount of time before replying with: "DELAY: Completed".
   // For now, all other commands get an immediate reply.
   private def handleMessage(bs: ByteString): Future[ByteString] = {
-    try {
-      val msg = SocketMessage.parse(bs)
-      val cmd     = msg.cmd.split(' ').head
-      val s       = if (cmd.startsWith("ERROR")) "ERROR" else "COMPLETED"
-      val respMsg = s"$cmd: $s"
-      val resp    = SocketMessage(MsgHdr(RSP_TYPE, SourceId(120), MsgHdr.encodedSize + respMsg.length, msg.hdr.seqNo), respMsg)
-      val delayMs = if (cmd == "DELAY") msg.cmd.split(" ")(1).toInt else 0
-      if (delayMs == 0) {
-        Future.successful(resp.toByteString)
-      } else {
-        val p = Promise[ByteString]
-        system.scheduler.scheduleOnce(delayMs.millis)(p.success(resp.toByteString))
-        p.future
-      }
-    } catch {
-      case ex: Exception =>
-        ex.printStackTrace()
-        throw ex
+    val msg     = SocketMessage.parse(bs)
+    val cmd     = msg.cmd.split(' ').head
+    val s       = if (cmd.startsWith("ERROR")) "ERROR" else "COMPLETED"
+    val respMsg = s"$cmd: $s"
+    val resp    = SocketMessage(MsgHdr(RSP_TYPE, SourceId(120), MsgHdr.encodedSize + respMsg.length, msg.hdr.seqNo), respMsg)
+    val delayMs = if (cmd == "DELAY") msg.cmd.split(" ")(1).toInt else 0
+    if (delayMs == 0) {
+      Future.successful(resp.toByteString)
+    } else {
+      val p = Promise[ByteString]
+      system.scheduler.scheduleOnce(delayMs.millis)(p.success(resp.toByteString))
+      p.future
     }
   }
 
@@ -67,10 +61,10 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
       })
       .run()
 
-//  binding.foreach { b =>
-//    println(s"XXX local address: ${b.localAddress}")
-//
-//  }
+  binding.foreach { b =>
+    println(s"XXX server: local address: ${b.localAddress}")
+
+  }
 }
 
 object SocketServerStream extends App {
