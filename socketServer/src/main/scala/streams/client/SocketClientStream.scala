@@ -14,9 +14,9 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import streams.shared.SocketMessage
 import SocketClientActor.*
 import SocketClientStream.*
-import streams.shared.SocketMessage.{CMD_TYPE, NET_HDR_LEN, MessageId, MsgHdr, SourceId}
-import scala.concurrent.duration.*
+import streams.shared.SocketMessage.{CMD_TYPE, MAX_FRAME_LEN, MessageId, MsgHdr, NET_HDR_LEN, SourceId}
 
+import scala.concurrent.duration.*
 import java.nio.ByteOrder
 
 // Actor used to keep track of the server responses and match them with ids
@@ -49,6 +49,7 @@ private[client] class SocketClientActor(name: String, ctx: ActorContext[SocketCl
   override def onMessage(msg: SocketClientActorMessage): Behavior[SocketClientActorMessage] = {
     msg match {
       case SetResponse(resp) =>
+        println(s"XXX SetResponse($resp)")
         if (clientMap.contains(resp.hdr.seqNo)) {
           clientMap(resp.hdr.seqNo) ! resp
           clientMap = clientMap - resp.hdr.seqNo
@@ -153,7 +154,7 @@ class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: S
 
   // XXX Note: Looks like there might be a bug in Framing.lengthField, requiring the function arg!
   private val flow = Flow[ByteString]
-    .via(Framing.lengthField(4, 4, 264, ByteOrder.BIG_ENDIAN, (_,i) => i+NET_HDR_LEN))
+    .via(Framing.lengthField(4, 4, MAX_FRAME_LEN, ByteOrder.BIG_ENDIAN, (_, i) => i+NET_HDR_LEN))
     .via(clientFlow)
     .via(parser)
 
@@ -181,7 +182,6 @@ class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: S
   ): Future[SocketMessage] = {
     clientActor.ask(GetSeqNo).flatMap { seqNo =>
       val cmd = SocketMessage(MsgHdr(msgId, srcId, msgLen = msg.length + MsgHdr.encodedSize, seqNo = seqNo), msg)
-      println(s"XXX $cmd")
       send(cmd)
     }
   }
@@ -201,4 +201,5 @@ object SocketClientStreamApp extends App {
   val client = SocketClientStream.withSystem("socketClientStream")
   val resp = Await.result(client.send(args.mkString(" ")), timout.duration)
   println(s"${resp.cmd}")
+  system.terminate()
 }

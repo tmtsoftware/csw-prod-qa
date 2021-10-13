@@ -20,6 +20,9 @@ object SocketMessage {
   private val NET_HDR_ID           = 0x3c54543e
   private[streams] val NET_HDR_LEN = 2 * 4
 
+  // Max size of a command with headers
+  private[streams] val MAX_FRAME_LEN = 256 + MsgHdr.encodedSize + NET_HDR_LEN
+
   // sender application ID (TODO: Define ids)
   case class SourceId(id: Int)
 
