@@ -2,7 +2,7 @@ package streams.shared
 import akka.util.ByteString
 import streams.shared.SocketMessage.*
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.charset.StandardCharsets
 
 /**
@@ -37,7 +37,7 @@ object SocketMessage {
    * Parses the command from the given ByteString
    */
   def parse(bs: ByteString): SocketMessage = {
-    val buffer = bs.toByteBuffer
+    val buffer = bs.toByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
     val msgId  = MessageId(buffer.getShort() & 0x0ffff)
     val srcId  = SourceId(buffer.getShort() & 0x0ffff)
     val msgLen = buffer.getShort() & 0x0ffff
@@ -55,13 +55,20 @@ case class SocketMessage(hdr: MsgHdr, cmd: String) {
    * Encodes the command for sending (see parse)
    */
   def toByteString: ByteString = {
-    val buffer = ByteBuffer.allocateDirect(MsgHdr.encodedSize + cmd.length)
-    buffer.putShort(hdr.msgId.id.toShort)
-    buffer.putShort(hdr.srcId.id.toShort)
-    buffer.putShort(hdr.msgLen.toShort)
-    buffer.putShort(hdr.seqNo.toShort)
-    buffer.put(cmd.getBytes(StandardCharsets.UTF_8))
-    buffer.flip()
-    ByteString.fromByteBuffer(buffer)
+    try {
+      val buffer = ByteBuffer.allocateDirect(MsgHdr.encodedSize + cmd.length).order(ByteOrder.LITTLE_ENDIAN)
+      buffer.putShort(hdr.msgId.id.toShort)
+      buffer.putShort(hdr.srcId.id.toShort)
+      buffer.putShort(hdr.msgLen.toShort)
+      buffer.putShort(hdr.seqNo.toShort)
+      buffer.put(cmd.getBytes(StandardCharsets.UTF_8))
+      buffer.flip()
+      ByteString.fromByteBuffer(buffer)
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        throw ex
+
+    }
   }
 }
