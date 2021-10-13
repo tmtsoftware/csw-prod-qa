@@ -14,7 +14,8 @@ import akka.actor.typed.scaladsl.AskPattern.*
 import streams.shared.SocketMessage
 import SocketClientActor.*
 import SocketClientStream.*
-import streams.shared.SocketMessage.{CMD_TYPE, MessageId, MsgHdr, SourceId}
+import streams.shared.SocketMessage.{CMD_TYPE, NET_HDR_LEN, MessageId, MsgHdr, SourceId}
+import scala.concurrent.duration.*
 
 import java.nio.ByteOrder
 
@@ -88,11 +89,11 @@ object SocketClientStream {
    * Creates a client, using the given ActorSystem[SpawnProtocol.Command] to create the internal actor
    * @param name a unique name for the client
    * @param host the host (default: "127.0.0.1")
-   * @param port the port (default: 8888)
+   * @param port the port (default: 8023)
    * @param system ActorSystem used to create internal actor
    * @return a new SocketClientStream
    */
-  def withSystem(name: String, host: String = "127.0.0.1", port: Int = 8888)(implicit system: ActorSystem[SpawnProtocol.Command]): SocketClientStream = {
+  def withSystem(name: String, host: String = "127.0.0.1", port: Int = 8023)(implicit system: ActorSystem[SpawnProtocol.Command]): SocketClientStream = {
     val spawnHelper = new SpawnHelper {
       def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
         import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
@@ -107,10 +108,10 @@ object SocketClientStream {
    * @param ctx the actor context used to create the internal actor
    * @param name name
    * @param host the host (default: "127.0.0.1")
-   * @param port the port (default: 8888)
+   * @param port the port (default: 8023)
    * @return a new SocketClientStream
    */
-  def apply(ctx: ActorContext[?], name: String, host: String = "127.0.0.1", port: Int = 8888): SocketClientStream = {
+  def apply(ctx: ActorContext[?], name: String, host: String = "127.0.0.1", port: Int = 8023): SocketClientStream = {
     val spawnHelper = new SpawnHelper {
       def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
         ctx.spawn(behavior, name, props)
@@ -122,7 +123,7 @@ object SocketClientStream {
 }
 
 // Private constructor (use one of the above factory methods)
-class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: String = "127.0.0.1", port: Int = 8888)(
+class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: String = "127.0.0.1", port: Int = 8023)(
     implicit system: ActorSystem[?]
 ) {
   implicit val ec: ExecutionContext = system.executionContext
@@ -152,7 +153,7 @@ class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: S
 
   // XXX Note: Looks like there might be a bug in Framing.lengthField, requiring the function arg!
   private val flow = Flow[ByteString]
-    .via(Framing.lengthField(2, 4, 264, ByteOrder.LITTLE_ENDIAN, (_,i) => i))
+    .via(Framing.lengthField(4, 4, 264, ByteOrder.BIG_ENDIAN, (_,i) => i+NET_HDR_LEN))
     .via(clientFlow)
     .via(parser)
 
@@ -179,7 +180,9 @@ class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: S
       implicit timeout: Timeout
   ): Future[SocketMessage] = {
     clientActor.ask(GetSeqNo).flatMap { seqNo =>
-      send(SocketMessage(MsgHdr(msgId, srcId, msgLen = msg.length + MsgHdr.encodedSize, seqNo = seqNo), msg))
+      val cmd = SocketMessage(MsgHdr(msgId, srcId, msgLen = msg.length + MsgHdr.encodedSize, seqNo = seqNo), msg)
+      println(s"XXX $cmd")
+      send(cmd)
     }
   }
 
@@ -192,10 +195,10 @@ class SocketClientStream private(spawnHelper: SpawnHelper, name: String, host: S
   }
 }
 
-//object SocketClientStreamApp extends App {
-//  implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SocketClientStream")
-//  implicit val timout: Timeout = Timeout(5.seconds)
-//  val client = SocketClientStream.withSystem("socketClientStream")
-//  val resp = Await.result(client.send(args.mkString(" ")), timout.duration)
-//  println(s"${resp.cmd}")
-//}
+object SocketClientStreamApp extends App {
+  implicit val system: ActorSystem[SpawnProtocol.Command] = ActorSystem(SpawnProtocol(), "SocketClientStream")
+  implicit val timout: Timeout = Timeout(5.seconds)
+  val client = SocketClientStream.withSystem("socketClientStream")
+  val resp = Await.result(client.send(args.mkString(" ")), timout.duration)
+  println(s"${resp.cmd}")
+}

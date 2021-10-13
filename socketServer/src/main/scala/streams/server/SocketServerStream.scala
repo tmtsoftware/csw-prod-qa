@@ -5,7 +5,7 @@ import akka.stream.scaladsl.*
 import akka.util.ByteString
 import akka.stream.scaladsl.Framing
 import streams.shared.SocketMessage
-import streams.shared.SocketMessage.{MsgHdr, RSP_TYPE, SourceId}
+import streams.shared.SocketMessage.{MsgHdr, NET_HDR_LEN, RSP_TYPE, SourceId}
 
 import java.nio.ByteOrder
 import scala.concurrent.duration.*
@@ -19,7 +19,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
  * Currently any command can be sent and COMPLETED is always returned.
  * If the command is "DELAY ms" the reply is made after the given ms delay.
  */
-class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit system: ActorSystem) {
+class SocketServerStream(host: String = "127.0.0.1", port: Int = 8023)(implicit system: ActorSystem) {
   implicit val ec: ExecutionContext = system.dispatcher
 
   private val connections = Tcp().bind(host, port)
@@ -30,6 +30,7 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
   // For now, all other commands get an immediate reply.
   private def handleMessage(bs: ByteString): Future[ByteString] = {
     val msg     = SocketMessage.parse(bs)
+    println(s"XXX Server received: $msg")
     val cmd     = msg.cmd.split(' ').head
     val s       = if (cmd.startsWith("ERROR")) "ERROR" else "COMPLETED"
     val respMsg = s"$cmd: $s"
@@ -54,7 +55,18 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
 
         // XXX Note: Looks like there might be a bug in Framing.lengthField, requiring the function arg!
         val serverLogic = Flow[ByteString]
-          .via(Framing.lengthField(2, 4, 264, ByteOrder.LITTLE_ENDIAN, (_, i) => i))
+          .map { bs =>
+            println(s"XXX before framing: bs size = ${bs.size}")
+            bs
+          }
+          .via(Framing.lengthField(4, 4, 264+NET_HDR_LEN, ByteOrder.BIG_ENDIAN, (_, i) => {
+            println(s"XXX Frame size: $i + $NET_HDR_LEN = ${i+NET_HDR_LEN}")
+            i+NET_HDR_LEN
+          }))
+          .map { bs =>
+            println(s"XXX after framing: bs size = ${bs.size}")
+            bs
+          }
           .via(commandParser)
 
         connection.handleWith(serverLogic)

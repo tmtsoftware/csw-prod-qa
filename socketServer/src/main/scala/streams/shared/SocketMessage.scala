@@ -16,6 +16,10 @@ object SocketMessage {
   val LOG_TYPE: MessageId  = MessageId(3 << 8)
   val DATA_TYPE: MessageId = MessageId(4 << 8)
 
+  // ascii representation for "<TT>"
+  private val NET_HDR_ID           = 0x3c54543e
+  private[streams] val NET_HDR_LEN = 2 * 4
+
   // sender application ID (TODO: Define ids)
   case class SourceId(id: Int)
 
@@ -37,15 +41,32 @@ object SocketMessage {
    * Parses the command from the given ByteString
    */
   def parse(bs: ByteString): SocketMessage = {
-    val buffer = bs.toByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-    val msgId  = MessageId(buffer.getShort() & 0x0ffff)
-    val srcId  = SourceId(buffer.getShort() & 0x0ffff)
-    val msgLen = buffer.getShort() & 0x0ffff
-    val seqNo  = buffer.getShort() & 0x0ffff
-    val msgHdr = MsgHdr(msgId, srcId, msgLen, seqNo)
-    val bytes  = Array.fill(msgLen - MsgHdr.encodedSize)(0.toByte)
-    buffer.get(bytes)
-    SocketMessage(msgHdr, new String(bytes, StandardCharsets.UTF_8))
+    try {
+      val buffer = bs.toByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+
+      // from struct msg_hdr_dcl
+      buffer.getInt()
+      buffer.getInt()
+
+      // MsgHdr
+      val msgId  = MessageId(buffer.getShort() & 0x0ffff)
+      val srcId  = SourceId(buffer.getShort() & 0x0ffff)
+      val msgLen = buffer.getShort() & 0x0ffff
+      val seqNo  = buffer.getShort() & 0x0ffff
+
+      // Message/Command contents
+      val msgHdr = MsgHdr(msgId, srcId, msgLen, seqNo)
+
+      val bytes = Array.fill(msgLen - MsgHdr.encodedSize)(0.toByte)
+      buffer.get(bytes)
+      // Remove any trailing null chars
+      val s = new String(bytes, StandardCharsets.UTF_8).split('\u0000').head
+      SocketMessage(msgHdr, s)
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        throw ex
+    }
   }
 }
 
@@ -55,12 +76,20 @@ case class SocketMessage(hdr: MsgHdr, cmd: String) {
    * Encodes the command for sending (see parse)
    */
   def toByteString: ByteString = {
-    val buffer = ByteBuffer.allocateDirect(MsgHdr.encodedSize + cmd.length).order(ByteOrder.LITTLE_ENDIAN)
+    val buffer = ByteBuffer.allocateDirect(MsgHdr.encodedSize + cmd.length + 8).order(ByteOrder.LITTLE_ENDIAN)
+    // from struct msg_hdr_dcl
+    buffer.putInt(NET_HDR_ID)
+    buffer.putInt(hdr.msgLen)
+
+    // from MsgHdr
     buffer.putShort(hdr.msgId.id.toShort)
     buffer.putShort(hdr.srcId.id.toShort)
     buffer.putShort(hdr.msgLen.toShort)
     buffer.putShort(hdr.seqNo.toShort)
+
+    // Contents of message/command
     buffer.put(cmd.getBytes(StandardCharsets.UTF_8))
+
     buffer.flip()
     ByteString.fromByteBuffer(buffer)
   }
