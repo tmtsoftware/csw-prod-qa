@@ -25,18 +25,19 @@ class SocketServerStream(host: String = "127.0.0.1", port: Int = 8888)(implicit 
 
   // Reply to an incoming socket message.
   // The message is assumed to be in the command format: "123 commandStr"
-  // For the the DELAY command is supported, with a number of ms: "DELAY 1000".
+  // The DELAY command is supported, with a number of ms: "DELAY 1000".
   // which just sleeps for that amount of time before replying with: "123 COMPLETED",
   // where 123 is the command id number.
+  // A command starting with ERROR returns ERROR
   private def handleMessage(msg: String): Future[String] = {
-//    println(s"XXX server received: $msg")
     val (id, command) = Command.parse(msg)
+    val resp          = if (command.startsWith("ERROR")) "ERROR" else "COMPLETED"
     val delayMs       = if (command.startsWith("DELAY ")) command.split(" ")(1).toInt else 0
     if (delayMs == 0)
-      Future.successful(s"$id COMPLETED\n")
+      Future.successful(s"$id $resp\n")
     else {
       val p = Promise[String]
-      system.scheduler.scheduleOnce(delayMs.millis)(p.success(s"$id COMPLETED\n"))
+      system.scheduler.scheduleOnce(delayMs.millis)(p.success(s"$id $resp\n"))
       p.future
     }
   }
