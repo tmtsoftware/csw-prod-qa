@@ -10,13 +10,13 @@ import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.params.commands.CommandResponse.{SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand}
-import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.AskPattern.*
 import csw.location.api.models.TrackingEvent
 import csw.params.core.models.Id
 import csw.prefix.models.Subsystem.CSW
 import csw.time.core.models.UTCTime
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContextExecutor
 
 private class TestAssemblyBehaviorFactory extends ComponentBehaviorFactory {
@@ -52,8 +52,12 @@ private class TestAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage],
 
   override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = {
     log.info(s"Received submit: $controlCommand")
-    worker ! TestAssemblyWorker.Submit(runId, controlCommand)
-    CommandResponse.Started(runId)
+    controlCommand.commandName.name match {
+      case "myImmediateCommand" => CommandResponse.Completed(runId)
+      case _ =>
+        worker ! TestAssemblyWorker.Submit(runId, controlCommand)
+        CommandResponse.Started(runId)
+    }
   }
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {

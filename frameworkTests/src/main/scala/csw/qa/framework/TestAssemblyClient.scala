@@ -8,7 +8,7 @@ import csw.command.api.scaladsl.CommandService
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
 import csw.event.client.EventServiceFactory
-import csw.location.api.models.{AkkaLocation, ComponentId, LocationRemoved, LocationUpdated, TrackingEvent}
+import csw.location.api.models.{AkkaLocation, ComponentId, ComponentType, LocationRemoved, LocationUpdated, TrackingEvent}
 import csw.location.api.models.ComponentType.Assembly
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.client.ActorSystemFactory
@@ -19,10 +19,12 @@ import csw.params.core.generics.KeyType
 import csw.params.core.models.ObsId
 import csw.params.events.{Event, EventKey, SystemEvent}
 import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
+import csw.params.commands.CommandResponse.SubmitResponse
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.CSW
 
-import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.duration.*
 import scala.util.{Failure, Success}
 
 //noinspection DuplicatedCode,SameParameterValue
@@ -30,7 +32,8 @@ import scala.util.{Failure, Success}
 object TestAssemblyClient extends App {
 
   private val host = InetAddress.getLocalHost.getHostName
-  val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystemFactory.remote(SpawnProtocol(), "TestAssemblyClientSystem")
+  implicit val typedSystem: ActorSystem[SpawnProtocol.Command] =
+    ActorSystemFactory.remote(SpawnProtocol(), "TestAssemblyClientSystem")
   import typedSystem.executionContext
 
   LoggingSystemFactory.start("TestAssemblyClient", "0.1", host, typedSystem)
@@ -43,16 +46,17 @@ object TestAssemblyClient extends App {
 
   // Key for events from assembly
   private val assemblyEventValueKey = TestAssemblyWorker.eventKey1
-  private val assemblyEventName = TestAssemblyWorker.eventName
-  private val assemblyPrefix = Prefix(CSW, "testassembly")
+  private val assemblyEventName     = TestAssemblyWorker.eventName
+  private val assemblyPrefix        = Prefix(CSW, "testassembly")
   // Event that the HCD publishes (must match the names defined by the publisher (TestHcd))
   private val assemblyEventKey = EventKey(assemblyPrefix, assemblyEventName)
 
-  private val obsId = ObsId("2020A-001-123")
-  private val encoderKey = KeyType.IntKey.make("encoder")
-  private val filterKey = KeyType.StringKey.make("filter")
-  private val prefix = Prefix("CSW.blue.filter")
-  private val command = CommandName("myCommand")
+  private val obsId            = ObsId("2020A-001-123")
+  private val encoderKey       = KeyType.IntKey.make("encoder")
+  private val filterKey        = KeyType.StringKey.make("filter")
+  private val prefix           = Prefix("CSW.blue.filter")
+  private val command          = CommandName("myCommand")
+  private val immediateCommand = CommandName("myImmediateCommand")
 
   val connection = AkkaConnection(ComponentId(Prefix(CSW, "testassembly"), Assembly))
 
@@ -90,7 +94,7 @@ object TestAssemblyClient extends App {
   }
 
   def startSubscribingToEvents(ctx: ActorContext[TrackingEvent]): Unit = {
-    val subscriber = eventService.defaultSubscriber
+    val subscriber   = eventService.defaultSubscriber
     val eventHandler = ctx.spawnAnonymous(EventHandler.make())
     subscriber.subscribeActorRef(Set(assemblyEventKey), eventHandler)
   }
@@ -124,17 +128,39 @@ object TestAssemblyClient extends App {
 //    }
   }
 
-  private def makeSetup(encoder: Int, filter: String): Setup = {
+  // XXX Example for Kim
+  def sendImmediateCommand(connection: AkkaConnection, setup: Setup): SubmitResponse = {
+    Await.result(
+      locationService
+        .find(connection)
+        .flatMap { loc =>
+          CommandServiceFactory.make(loc.get).submit(setup)
+        },
+      timeout.duration
+    )
+  }
+
+  private def makeSetup(commandName: CommandName, encoder: Int, filter: String): Setup = {
     val i1 = encoderKey.set(encoder)
     val i2 = filterKey.set(filter)
-    Setup(prefix, command, Some(obsId)).add(i1).add(i2)
+    Setup(prefix, commandName, Some(obsId)).add(i1).add(i2)
   }
 
   private def interact(ctx: ActorContext[TrackingEvent], assembly: CommandService): Unit = {
     log.info(s"Sending filter0 setup to assembly")
-    assembly.submitAndWait(makeSetup(0, s"filter0")).onComplete {
+
+    val connection = AkkaConnection(ComponentId(Prefix("CSW.testassembly"), ComponentType.Assembly))
+    val setup      = makeSetup(immediateCommand, 0, s"filter0")
+    try {
+      val result     = sendImmediateCommand(connection, setup)
+      log.info(s"Immediate result = $result")
+    } catch {
+      case ex: Exception => log.error("Immediate command failed", ex = ex)
+    }
+
+    assembly.submitAndWait(makeSetup(command, 0, s"filter0")).onComplete {
       case Success(response) => log.info(s"Single Submit Test Passed: Responses = $response")
-      case Failure(ex)        => log.info(s"Single Submit Test Failed: $ex")
+      case Failure(ex)       => log.info(s"Single Submit Test Failed: $ex")
     }
   }
 }
