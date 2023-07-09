@@ -13,7 +13,6 @@ import csw.command.client.messages.TopLevelActorMessage;
 import csw.event.api.javadsl.IEventPublisher;
 import csw.event.api.javadsl.IEventSubscriber;
 import csw.event.api.javadsl.IEventSubscription;
-import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.framework.models.JCswContext;
@@ -40,22 +39,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class JTestAssembly {
-
-  @SuppressWarnings("unused")
-  public static class JTestAssemblyBehaviorFactory extends JComponentBehaviorFactory {
-
-    public JTestAssemblyBehaviorFactory() {
-    }
-
-    @Override
-    public JComponentHandlers jHandlers(
-        ActorContext<TopLevelActorMessage> ctx,
-        JCswContext cswCtx) {
-      return new JTestAssembly.JTestAssemblyHandlers(ctx, cswCtx);
-    }
-  }
-
-
   // Key for HCD events
   private static final Key<Integer> hcdEventValueKey = JKeyType.IntKey().make("hcdEventValue");
   private static final EventName hcdEventName = new EventName("myHcdEvent");

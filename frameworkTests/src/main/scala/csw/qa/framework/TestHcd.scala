@@ -8,18 +8,18 @@ import csw.command.client.messages.TopLevelActorMessage
 import csw.event.api.exceptions.PublishFailure
 import csw.framework.deploy.containercmd.ContainerCmd
 import csw.framework.models.CswContext
-import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
+import csw.framework.scaladsl.ComponentHandlers
 import csw.location.api.models.TrackingEvent
 import csw.params.commands.CommandResponse.{Completed, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Setup}
 import csw.params.core.formats.ParamCodecs
 import csw.params.events.{Event, EventName, SystemEvent}
-import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1, eventKey1b, eventKey2b, eventKey3, eventKey4}
+import csw.qa.framework.TestAssemblyWorker.{basePosKey, eventKey1b}
 import csw.time.core.models.UTCTime
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.SolarSystemObject.Venus
-import csw.params.core.models.{Angle, Coords, Id, ProperMotion, Struct}
+import csw.params.core.models.{Angle, Coords, Id, ProperMotion}
 import csw.params.core.states.{CurrentState, StateName}
 import csw.prefix.models.Subsystem.CSW
 
@@ -27,12 +27,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.Random
 
-private class TestHcdBehaviorFactory extends ComponentBehaviorFactory {
-  override def handlers(ctx: ActorContext[TopLevelActorMessage], cswServices: CswContext): ComponentHandlers =
-    new TestHcdHandlers(ctx, cswServices)
-}
-
-//noinspection DuplicatedCode
+//noinspection DuplicatedCode,ScalaUnusedSymbol,SameParameterValue
 private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext)
     extends ComponentHandlers(ctx, cswCtx) with ParamCodecs {
 
@@ -94,17 +89,6 @@ private class TestHcdHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: C
     Setup(componentInfo.prefix, CommandName(commandName), None)
       .add(posParam)
       .add(eventKey1b.set(1.0f, 2.0f, 3.0f))
-      .add(
-        eventKey2b.set(
-          Struct()
-            .add(eventKey1.set(1.0f))
-            .add(eventKey3.set(1, 2, 3)),
-          Struct()
-            .add(eventKey1.set(2.0f))
-            .add(eventKey3.set(4, 5, 6))
-            .add(eventKey4.set(9.toByte, 10.toByte))
-        )
-      )
   }
 
   override def initialize(): Unit = {

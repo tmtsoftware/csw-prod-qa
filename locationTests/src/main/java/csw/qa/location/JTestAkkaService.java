@@ -2,9 +2,7 @@ package csw.qa.location;
 
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
-import csw.location.api.AkkaRegistrationFactory;
 import csw.location.api.JAkkaRegistrationFactory;
-import csw.location.api.extensions.ActorExtension;
 import csw.location.api.javadsl.ILocationService;
 import csw.location.api.javadsl.IRegistrationResult;
 import csw.location.api.javadsl.JComponentType;
@@ -21,7 +19,6 @@ import csw.prefix.javadsl.JSubsystem;
 import csw.prefix.models.Prefix;
 
 import java.net.InetAddress;
-import java.net.URI;
 import java.net.UnknownHostException;
 
 /**

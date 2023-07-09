@@ -6,7 +6,6 @@ import com.typesafe.config.ConfigFactory;
 import csw.command.client.messages.TopLevelActorMessage;
 import csw.event.api.javadsl.IEventPublisher;
 import csw.event.api.javadsl.IEventService;
-import csw.framework.javadsl.JComponentBehaviorFactory;
 import csw.framework.javadsl.JComponentHandlers;
 import csw.framework.javadsl.JContainerCmd;
 import csw.framework.models.JCswContext;
@@ -33,21 +32,6 @@ public class JTestHcd {
   private static final Key<Integer> eventValueKey = JKeyType.IntKey().make("hcdEventValue");
   private static final EventName eventName = new EventName("myHcdEvent");
   private static final Random eventValues = new Random();
-
-
-  @SuppressWarnings("unused")
-  public static class JTestHcdBehaviorFactory extends JComponentBehaviorFactory {
-
-    public JTestHcdBehaviorFactory() {
-    }
-
-    @Override
-    public JComponentHandlers jHandlers(
-        ActorContext<TopLevelActorMessage> ctx,
-        JCswContext cswServices) {
-      return new JTestHcd.JTestHcdHandlers(ctx, cswServices);
-    }
-  }
 
   static class JTestHcdHandlers extends JComponentHandlers {
     private final ILogger log;
